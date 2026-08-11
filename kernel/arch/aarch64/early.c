@@ -121,9 +121,12 @@ void aarch64_early_main(uint64_t dtb)
 	}
 	uart_puts("\n");
 
+	uart_puts("MMU: initializing\n");
 	if (fdt.has_memory && aarch64_mmu_init(fdt.ram_base, fdt.ram_size) == 0) {
 		mmu_ready = 1;
 		uart_puts("MMU: enabled with identity mappings\n");
+	} else {
+		uart_puts("MMU: initialization failed\n");
 	}
 	if (mmu_ready && fdt.has_gic &&
 	    aarch64_gicv3_init(fdt.gic_dist_base, fdt.gic_redist_base) == 0) {

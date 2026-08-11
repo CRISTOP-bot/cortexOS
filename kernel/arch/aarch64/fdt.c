@@ -85,6 +85,10 @@ int aarch64_fdt_parse(uint64_t address, aarch64_fdt_info_t *info)
 	char node_name[96];
 	int compatible_uart = 0;
 	int compatible_gic = 0;
+	int pending_reg = 0;
+	uint64_t pending_reg_base = 0;
+	uint64_t pending_reg_size = 0;
+	uint64_t pending_reg_extra = 0;
 
 	info->valid = 0;
 	info->has_uart = 0;
@@ -134,6 +138,7 @@ int aarch64_fdt_parse(uint64_t address, aarch64_fdt_info_t *info)
 			cursor = align4(cursor + 1);
 			compatible_uart = 0;
 			compatible_gic = 0;
+			pending_reg = 0;
 			continue;
 		}
 
@@ -171,21 +176,33 @@ int aarch64_fdt_parse(uint64_t address, aarch64_fdt_info_t *info)
 				compatible_uart = string_has(value, length, "arm,pl011");
 				compatible_gic = string_has(value, length, "arm,gic-v3") ||
 				                string_has(value, length, "arm,gic-400");
+				if (pending_reg && compatible_uart) {
+					info->uart_base = pending_reg_base;
+					info->has_uart = 1;
+				}
+				if (pending_reg && compatible_gic) {
+					info->gic_dist_base = pending_reg_base;
+					info->gic_redist_base = pending_reg_extra;
+					info->has_gic = 1;
+				}
 			}
 
 			if (property[0] == 'r' && property[1] == 'e' &&
 			    property[2] == 'g' && length >= 16) {
+				pending_reg = 1;
+				pending_reg_base = be64(value);
+				pending_reg_size = be64(value + 8);
+				pending_reg_extra = length >= 32 ? be64(value + 16) : 0;
 				if (compatible_uart) {
-					info->uart_base = be64(value);
+					info->uart_base = pending_reg_base;
 					info->has_uart = 1;
 				} else if (compatible_gic) {
-					info->gic_dist_base = be64(value);
-					if (length >= 32)
-						info->gic_redist_base = be64(value + 16);
+					info->gic_dist_base = pending_reg_base;
+					info->gic_redist_base = pending_reg_extra;
 					info->has_gic = 1;
 				} else if (node_is(node_name, "memory")) {
-					info->ram_base = be64(value);
-					info->ram_size = be64(value + 8);
+					info->ram_base = pending_reg_base;
+					info->ram_size = pending_reg_size;
 					info->has_memory = 1;
 				}
 			}
