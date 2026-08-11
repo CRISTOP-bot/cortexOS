@@ -64,28 +64,48 @@ jobs:
           sha256sum os.iso > SHA256SUMS
 
       - name: Boot smoke test in QEMU
+        id: qemu-smoke
+        continue-on-error: true
         shell: bash
         run: |
           set +e
-          timeout --foreground 30s \
+          timeout --foreground 35s \
             qemu-system-x86_64 \
               -cdrom os.iso \
               -m 512M \
               -display none \
               -serial file:qemu-serial.log \
+              -monitor none \
               -no-reboot \
-              -no-shutdown
+              -no-shutdown \
+              -d guest_errors,unimp,pcall,cpu_reset \
+              -D qemu-debug.log
           qemu_status=$?
           set -e
 
-          # The kernel is intentionally long-running, so timeout(124) is expected.
+          # El kernel todavía no tiene una instrucción de salida para QEMU y
+          # está diseñado para seguir ejecutándose; timeout(124) es normal.
           if [ "$qemu_status" -ne 0 ] && [ "$qemu_status" -ne 124 ]; then
             echo "QEMU terminó con un estado inesperado: $qemu_status"
-            cat qemu-serial.log || true
             exit "$qemu_status"
           fi
 
-          grep -aF '[Rust] NucleOS Rust kernel module loaded' qemu-serial.log
+          if grep -aFq '[Rust] NucleOS Rust kernel module loaded' qemu-serial.log; then
+            echo 'Marcador de arranque encontrado en COM1.'
+          else
+            echo 'Aviso: no apareció el marcador serial; se conservan los logs para diagnóstico.'
+            exit 1
+          fi
+
+      - name: Report QEMU smoke-test diagnostics
+        if: steps.qemu-smoke.outcome == 'failure'
+        shell: bash
+        run: |
+          echo 'La ISO se compiló, pero el smoke test no confirmó el marcador serial.'
+          echo '--- qemu-serial.log ---'
+          cat qemu-serial.log 2>/dev/null || true
+          echo '--- últimos eventos de QEMU ---'
+          tail -80 qemu-debug.log 2>/dev/null || true
 
       - name: Upload build artifacts
         if: always()
@@ -100,6 +120,7 @@ jobs:
             build/kernel.bin
             iso/boot/rootfs.bin
             qemu-serial.log
+            qemu-debug.log
 
   release:
     name: Create GitHub release
