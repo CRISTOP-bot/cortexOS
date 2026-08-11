@@ -12,6 +12,9 @@ NucleOS. No pretende afirmar todavía que Bash sea ejecutable.
 - `dup2` básico para preparar redirecciones.
 - `pipe` y `lseek` básicos.
 - `isatty` para stdin/stdout/stderr.
+- `stat` con un layout fijo de metadatos para archivos y directorios.
+- `fcntl(F_GETFL/F_SETFL)` básico para descriptores.
+- `waitpid` con selección de PID y `WNOHANG`.
 - `exec` deja de copiar bytes arbitrarios y exige una imagen ELF válida.
 - Construcción de `argc/argv/envp` en el stack inicial.
 - libc inicial en `user/` con wrappers de syscalls, `stdio`, `stdlib`, `string`,
@@ -25,4 +28,8 @@ NucleOS. No pretende afirmar todavía que Bash sea ejecutable.
 - Un área de usuario mayor o mapeo bajo demanda; la ventana actual es solo para
   programas pequeños y no alcanza para Bash.
 
-Cada punto debe tener una prueba de usuario antes de considerarse terminado.
+El smoke test de compilación `make user-test-posix` cubre los headers y
+wrappers de `stat`, `fcntl` y `waitpid`; todavía falta ejecutar el ELF dentro
+de NucleOS y validar el comportamiento con procesos reales. Cada capacidad
+debe tener además una prueba de usuario en QEMU antes de considerarse
+terminada.

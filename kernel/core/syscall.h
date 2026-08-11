@@ -21,10 +21,14 @@
 #define SYSCALL_ISATTY  15
 #define SYSCALL_PIPE    16
 #define SYSCALL_LSEEK   17
-#define SYSCALL_MAX     18
+#define SYSCALL_STAT    18
+#define SYSCALL_FCNTL   19
+#define SYSCALL_WAITPID 20
+#define SYSCALL_MAX     21
 
 void syscall_init(void);
 int64_t syscall_handler(uint64_t rdi, uint64_t rsi, uint64_t rdx,
 			uint64_t r10, uint64_t r8, uint64_t rax);
 
 #endif
+

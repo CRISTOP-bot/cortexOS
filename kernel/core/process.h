@@ -54,7 +54,9 @@ void process_exit(int code);
 int process_fork(void);
 int process_exec(const char *path, const char *const *argv,
 		 const char *const *envp);
+#define PROCESS_WNOHANG 1
 int process_wait(int *status);
+int process_waitpid(int pid, int *status, int options);
 struct process *process_current(void);
 void process_list(void);
 void process_schedule(void);
@@ -65,3 +67,4 @@ int process_get_pid(void);
 int keyboard_readline_user(char *buf, int maxlen);
 
 #endif
+

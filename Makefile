@@ -174,6 +174,9 @@ user-libc:
 user-test-hello:
 	$(MAKE) -C user CC="$(CC)" test-hello
 
+user-test-posix:
+	$(MAKE) -C user CC="$(CC)" test-posix
+
 openrc-source:
 	@test -f $(OPENRC_SRC_DIR)/meson.build
 	@test -d $(OPENRC_SRC_DIR)/src
@@ -197,4 +200,4 @@ fastfetch-source:
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)
 
-.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello openrc-source bash-source fastfetch-source clean installer installer-usb
+.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix openrc-source bash-source fastfetch-source clean installer installer-usb

@@ -17,6 +17,9 @@
 #define N_SYS_ISATTY 15
 #define N_SYS_PIPE 16
 #define N_SYS_LSEEK 17
+#define N_SYS_STAT 18
+#define N_SYS_FCNTL 19
+#define N_SYS_WAITPID 20
 
 static inline long __nucleos_syscall5(long number, long a1, long a2,
 				      long a3, long a4, long a5)
@@ -36,3 +39,4 @@ static inline long __nucleos_syscall5(long number, long a1, long a2,
 #define __nucleos_syscall3(n,a,b,c) __nucleos_syscall5((n), (long)(a), (long)(b), (long)(c), 0, 0)
 
 #endif
+

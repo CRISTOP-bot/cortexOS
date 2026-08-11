@@ -52,6 +52,9 @@ jobs:
       - name: Validate architecture matrix
         run: make arch-list
 
+      - name: Build user ABI smoke test
+        run: make user-test-posix
+
       - name: Build kernel
         run: |
           make ARCH=x86_64 clean
@@ -156,3 +159,4 @@ jobs:
           files: |
             release/dist/os.iso
             release/SHA256SUMS
+

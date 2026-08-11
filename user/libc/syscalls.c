@@ -2,6 +2,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <nucleos_syscall.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 int errno;
@@ -32,9 +34,19 @@ int open(const char *path, int flags, ...)
 	if (flags & O_CREAT)
 		mode = va_arg(args, int);
 	va_end(args);
-	(void)mode;
 	value = __nucleos_syscall3(N_SYS_OPEN, path, flags, mode);
 	return (int)result(value);
+}
+
+int fcntl(int fd, int command, ...)
+{
+	va_list args;
+	long value = 0;
+	va_start(args, command);
+	if (command == F_SETFL)
+		value = va_arg(args, int);
+	va_end(args);
+	return (int)result(__nucleos_syscall3(N_SYS_FCNTL, fd, command, value));
 }
 
 int close(int fd)
@@ -79,9 +91,7 @@ int wait(int *status)
 
 int waitpid(pid_t pid, int *status, int options)
 {
-	(void)pid;
-	(void)options;
-	return wait(status);
+	return (int)result(__nucleos_syscall3(N_SYS_WAITPID, pid, status, options));
 }
 
 int getpid(void)
@@ -112,3 +122,9 @@ int chdir(const char *path)
 {
 	return (int)result(__nucleos_syscall1(N_SYS_CHDIR, path));
 }
+
+int stat(const char *path, struct stat *buffer)
+{
+	return (int)result(__nucleos_syscall2(N_SYS_STAT, path, buffer));
+}
+
