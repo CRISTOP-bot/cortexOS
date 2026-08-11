@@ -12,6 +12,7 @@ BUILD_DIR = build
 ISO_DIR   = iso
 PYTHON    ?= python3
 BASH_SRC_DIR = third_party/bash
+OPENRC_SRC_DIR = third_party/openrc
 
 KERNEL = $(BUILD_DIR)/kernel.bin
 ROOTFS = $(ISO_DIR)/boot/rootfs.bin
@@ -167,6 +168,12 @@ installer-usb:
 user-libc:
 	$(MAKE) -C user CC="$(CC)"
 
+openrc-source:
+	@test -f $(OPENRC_SRC_DIR)/meson.build
+	@test -d $(OPENRC_SRC_DIR)/src
+	@echo "  Fuente oficial de OpenRC disponible en $(OPENRC_SRC_DIR)"
+	@echo "  El submódulo se mantiene fijado al commit oficial documentado en docs/OPENRC_PORT.md"
+
 bash-source:
 	@test -f $(BASH_SRC_DIR)/configure.ac
 	@grep -q 'version 5.3' $(BASH_SRC_DIR)/README
@@ -177,4 +184,4 @@ bash-source:
 clean:
 	rm -rf $(BUILD_DIR) os.iso $(ISO_DIR)/boot/kernel.bin $(ISO_DIR)/boot/rootfs.bin $(ISO_DIR)/installer
 
-.PHONY: all iso echo-iso run user-libc bash-source clean installer installer-usb
+.PHONY: all iso echo-iso run user-libc openrc-source bash-source clean installer installer-usb
