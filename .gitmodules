@@ -1,3 +1,7 @@
 [submodule "third_party/bash"]
 	path = third_party/bash
 	url = https://github.com/tianon/mirror-bash.git
+
+[submodule "third_party/openrc"]
+	path = third_party/openrc
+	url = https://github.com/OpenRC/openrc

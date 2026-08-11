@@ -41,7 +41,7 @@
 - **GUI estilo KDE Plasma** — Escritorio con íconos, panel inferior con reloj y lanzador de aplicaciones.
 - **VFS** — Sistema de archivos virtual con soporte para subdirectorios.
 - **Rootfs** — Sistema de archivos raíz cargado como módulo Multiboot.
-- **OpenRC** — Gestor de servicios tipo init con arranque y detención.
+- **OpenRC** — Fuente oficial integrada como submódulo; el port del init real queda separado del gestor provisional de NucleOS.
 - **LCP (Package Manager)** — Gestor de paquetes con repositorios y dependencias.
 - **Calculadora** — Evaluador de expresiones aritméticas en C y ensamblador.
 - **CPUID** — Detección de vendor, familia y características del procesador.
@@ -220,6 +220,7 @@ qemu-system-x86_64 -cdrom os.iso -m 256M -no-reboot
 │   └── mkiso.py            # Generador de ISO
 ├── rootfs/                 # Archivos del sistema de archivos raíz
 ├── third_party/bash/       # Fuente vendorizada de GNU Bash 5.3
+├── third_party/openrc/     # Fuente oficial de OpenRC
 ├── docs/BASH_PORT.md       # Estado y requisitos del port de Bash
 ├── docs/USERSPACE_PORT.md  # Base ELF/syscalls para programas de usuario
 ├── user/                    # libc mínima y crt0 para binarios estáticos
