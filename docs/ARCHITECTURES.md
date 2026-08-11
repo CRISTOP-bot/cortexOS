@@ -9,7 +9,7 @@ smoke test.
 |---|---|---|---|---|
 | x86_64 | Compatible experimental | GRUB Multiboot v1 | Sí | procesos y userspace POSIX |
 | i386 / x86 | Preparada | Pendiente | No | GDT/IDT, paging, ABI y linker de 32 bits |
-| aarch64 / ARM64 | Preparada | Pendiente | No | UEFI/Device Tree, UART, GIC y timer |
+| aarch64 / ARM64 | Boot temprano | QEMU `virt` + UART PL011 | Sí | Device Tree, excepciones, MMU, GIC y timer |
 | armv7 / ARM32 | Preparada | Pendiente | No | boot ARM32, MMU, UART, interrupciones y timer |
 | riscv64 | Planificada | Pendiente | No | SBI, trap handler, PLIC, timer y paging |
 
@@ -20,12 +20,15 @@ El build recibe la arquitectura explícitamente:
 ```bash
 make ARCH=x86_64
 make arch-list
+make aarch64-early
+make aarch64-run
 ```
 
 Por seguridad, `make ARCH=i386`, `make ARCH=aarch64` y `make ARCH=armv7`
-fallan con un mensaje claro mientras sus ports no estén completos. No se
-fabrican kernels que aparenten ser ARM o x86 de 32 bits cuando todavía usan
-rutinas x86_64.
+fallan para el kernel completo mientras sus ports no estén completos. AArch64
+ya dispone de una imagen independiente de boot temprano que no mezcla los
+fuentes x86_64 del kernel principal. No se fabrican kernels que aparenten ser
+ARM o x86 de 32 bits cuando todavía usan rutinas x86_64.
 
 ## Reglas para un port
 
@@ -42,3 +45,4 @@ Cada port debe aportar, como mínimo:
 
 El código común no debe incluir instrucciones específicas de x86. Las nuevas
 APIs de hardware deben vivir detrás de una interfaz en `kernel/arch/`.
+

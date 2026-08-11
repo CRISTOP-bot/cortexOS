@@ -36,6 +36,9 @@ jobs:
             make \
             mtools \
             qemu-system-x86 \
+            qemu-system-arm \
+            gcc-aarch64-linux-gnu \
+            binutils-aarch64-linux-gnu \
             xorriso
 
       - name: Install Rust toolchain
@@ -54,6 +57,12 @@ jobs:
 
       - name: Build user ABI smoke test
         run: make user-test-posix
+
+      - name: Build and boot AArch64 early stage
+        run: |
+          make aarch64-early
+          timeout --foreground 5s make aarch64-run > aarch64-serial.log 2>&1 || test $? -eq 124
+          grep -Fq 'NucleOS AArch64 early boot' aarch64-serial.log
 
       - name: Build kernel
         run: |
@@ -159,4 +168,5 @@ jobs:
           files: |
             release/dist/os.iso
             release/SHA256SUMS
+
 
