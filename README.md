@@ -223,6 +223,7 @@ qemu-system-x86_64 -cdrom os.iso -m 256M -no-reboot
 ├── third_party/openrc/     # Fuente oficial de OpenRC
 ├── docs/BASH_PORT.md       # Estado y requisitos del port de Bash
 ├── docs/USERSPACE_PORT.md  # Base ELF/syscalls para programas de usuario
+├── docs/IMPLEMENTATION_PLAN.md # Port por etapas y criterios de aceptación
 ├── user/                    # libc mínima y crt0 para binarios estáticos
 ├── install-deps.sh         # Instalador multiplataforma de dependencias
 ├── install-deps.bat        # Instalador Windows de dependencias
