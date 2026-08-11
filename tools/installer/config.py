@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -11,9 +11,10 @@ class UserConfig:
 @dataclass
 class PartitionConfig:
     device: str = ""
-    fstype: str = "ext4"
+    fstype: str = "ext2"
     mountpoint: str = "/mnt/nucleos"
     boot_device: str = ""
+    disk_device: str = ""
     uefi: bool = False
     auto_partition: bool = True
 
@@ -31,7 +32,9 @@ class NucleOSConfig:
     def summary_lines(self) -> list[str]:
         p = self.partition
         l = [
-            f"Disco:     {p.device if p else 'N/A'}",
+            f"Disco:     {p.disk_device if p and p.disk_device else (p.device if p else 'N/A')}",
+            f"Root:      {p.device if p else 'N/A'}",
+            f"Boot/EFI:  {p.boot_device if p and p.boot_device else 'automático'}",
             f"S. arch.:  {p.fstype if p else 'N/A'}",
             f"UEFI:      {'Sí' if p and p.uefi else 'No'}",
             f"Part. auto: {'Sí' if p and p.auto_partition else 'No'}",
