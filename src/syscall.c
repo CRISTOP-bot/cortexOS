@@ -10,40 +10,41 @@ typedef int64_t (*syscall_fn)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
 static int64_t sys_read(uint64_t fd, uint64_t buf, uint64_t count, uint64_t a4, uint64_t a5)
 {
 	(void)a4; (void)a5;
-	if (fd != 0)
-		return -1;
-	struct process *proc = process_current();
-	if (!proc)
-		return -1;
-	int r = keyboard_readline_user((char *)buf, count);
-	return r;
+	if (!buf || count == 0)
+		return 0;
+	if (fd == 0)
+		return keyboard_readline_user((char *)buf, count);
+	return vfs_read_fd((int)fd, (void *)buf, (size_t)count);
 }
 
 static int64_t sys_write(uint64_t fd, uint64_t buf, uint64_t count, uint64_t a4, uint64_t a5)
 {
 	(void)a4; (void)a5;
-	if (fd > 2)
+	if (!buf)
 		return -1;
-	const char *src = (const char *)buf;
-	for (uint64_t i = 0; i < count; ++i)
-		console_putchar(src[i]);
-	return (int64_t)count;
+	if (fd <= 2) {
+		const char *src = (const char *)buf;
+		for (uint64_t i = 0; i < count; ++i)
+			console_putchar(src[i]);
+		return (int64_t)count;
+	}
+	return vfs_write_fd((int)fd, (const void *)buf, (size_t)count);
 }
 
 static int64_t sys_open(uint64_t path, uint64_t flags, uint64_t a3, uint64_t a4, uint64_t a5)
 {
-	(void)flags; (void)a3; (void)a4; (void)a5;
+	(void)a3; (void)a4; (void)a5;
 	if (!path)
 		return -1;
-	if (vfs_exists((const char *)path))
-		return 0;
-	return -1;
+	return vfs_open_fd((const char *)path, (int)flags);
 }
 
 static int64_t sys_close(uint64_t fd, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
 {
-	(void)fd; (void)a2; (void)a3; (void)a4; (void)a5;
-	return 0;
+	(void)a2; (void)a3; (void)a4; (void)a5;
+	if (fd <= 2)
+		return 0;
+	return vfs_close_fd((int)fd);
 }
 
 static int64_t sys_exit(uint64_t code, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
@@ -127,6 +128,20 @@ static int64_t sys_ticks(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uin
 	return (int64_t)timer_get_ticks();
 }
 
+static int64_t sys_dup2(uint64_t old_fd, uint64_t new_fd, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a3; (void)a4; (void)a5;
+	if (old_fd <= 2 && new_fd <= 2)
+		return old_fd == new_fd ? (int64_t)new_fd : -1;
+	return vfs_dup_fd((int)old_fd, (int)new_fd);
+}
+
+static int64_t sys_isatty(uint64_t fd, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a2; (void)a3; (void)a4; (void)a5;
+	return vfs_isatty_fd((int)fd) ? 1 : 0;
+}
+
 static syscall_fn syscall_table[SYSCALL_MAX] = {
 	sys_read,
 	sys_write,
@@ -142,6 +157,8 @@ static syscall_fn syscall_table[SYSCALL_MAX] = {
 	sys_chdir,
 	sys_ps,
 	sys_ticks,
+	sys_dup2,
+	sys_isatty,
 };
 
 void syscall_init(void)
@@ -149,14 +166,14 @@ void syscall_init(void)
 	console_print("[ OK ] Syscalls initialized (INT 0x80)\n");
 }
 
-void syscall_handler(uint64_t rdi, uint64_t rsi, uint64_t rdx,
-		     uint64_t r10, uint64_t r8, uint64_t rax)
+int64_t syscall_handler(uint64_t rdi, uint64_t rsi, uint64_t rdx,
+			uint64_t r10, uint64_t r8, uint64_t rax)
 {
-	if (rax >= SYSCALL_MAX) {
-		return;
-	}
-	syscall_fn fn = syscall_table[rax];
+	syscall_fn fn;
+	if (rax >= SYSCALL_MAX)
+		return -1;
+	fn = syscall_table[rax];
 	if (!fn)
-		return;
-	fn(rdi, rsi, rdx, r10, r8);
+		return -1;
+	return fn(rdi, rsi, rdx, r10, r8);
 }

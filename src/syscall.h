@@ -17,10 +17,12 @@
 #define SYSCALL_CHDIR   11
 #define SYSCALL_PS      12
 #define SYSCALL_TICKS   13
-#define SYSCALL_MAX     14
+#define SYSCALL_DUP2    14
+#define SYSCALL_ISATTY  15
+#define SYSCALL_MAX     16
 
 void syscall_init(void);
-void syscall_handler(uint64_t rdi, uint64_t rsi, uint64_t rdx,
-		     uint64_t r10, uint64_t r8, uint64_t rax);
+int64_t syscall_handler(uint64_t rdi, uint64_t rsi, uint64_t rdx,
+			uint64_t r10, uint64_t r8, uint64_t rax);
 
 #endif
