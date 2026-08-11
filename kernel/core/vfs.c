@@ -862,3 +862,21 @@ bool vfs_isatty_fd(int fd)
 {
 	return fd >= 0 && fd <= 2;
 }
+
+int vfs_get_fd_flags(int fd)
+{
+	if (fd >= 0 && fd <= 2)
+		return 0;
+	if (fd < 3 || fd >= VFS_MAX_FDS || !fd_table[fd].used)
+		return -1;
+	return fd_table[fd].flags;
+}
+
+int vfs_set_fd_flags(int fd, int flags)
+{
+	if (fd < 3 || fd >= VFS_MAX_FDS || !fd_table[fd].used)
+		return -1;
+	fd_table[fd].flags = flags;
+	return 0;
+}
+

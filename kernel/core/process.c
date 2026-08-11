@@ -334,14 +334,23 @@ int process_spawn_exec(const char *name, const char *path,
 
 int process_wait(int *status)
 {
+	return process_waitpid(-1, status, 0);
+}
+
+int process_waitpid(int pid, int *status, int options)
+{
 	struct process *proc = process_current();
-	if (!proc)
+	bool has_child = false;
+	if (!proc || pid == 0 || pid < -1)
 		return -1;
 
-	/* Check for zombie children */
+	/* Reap a matching zombie. pid=-1 means any child. */
 	for (int i = 0; i < MAX_PROCESSES; ++i) {
-		if (processes[i].state == PROCESS_ZOMBIE &&
-		    processes[i].parent_pid == proc->pid) {
+		if (processes[i].parent_pid != proc->pid ||
+		    (pid > 0 && processes[i].pid != pid))
+			continue;
+		has_child = true;
+		if (processes[i].state == PROCESS_ZOMBIE) {
 			int child_pid = processes[i].pid;
 			if (status)
 				*status = processes[i].exit_code;
@@ -350,10 +359,26 @@ int process_wait(int *status)
 		}
 	}
 
-	/* Block until a child exits */
+	if (!has_child)
+		return -1;
+	if (options & PROCESS_WNOHANG)
+		return 0;
+
+	/* Block until the scheduler wakes us after a matching child exits. */
 	proc->state = PROCESS_BLOCKED;
 	process_schedule();
-	return proc->wait_exit;
+	for (int i = 0; i < MAX_PROCESSES; ++i) {
+		if (processes[i].parent_pid == proc->pid &&
+		    (pid == -1 || processes[i].pid == pid) &&
+		    processes[i].state == PROCESS_ZOMBIE) {
+			int child_pid = processes[i].pid;
+			if (status)
+				*status = processes[i].exit_code;
+			processes[i].state = PROCESS_UNUSED;
+			return child_pid;
+		}
+	}
+	return proc->wait_exit ? proc->wait_exit : -1;
 }
 
 struct process *process_current(void)
@@ -449,3 +474,4 @@ void process_yield(void)
 {
 	process_schedule();
 }
+

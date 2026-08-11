@@ -17,13 +17,16 @@
 #define N_SYS_ISATTY 15
 #define N_SYS_PIPE 16
 #define N_SYS_LSEEK 17
+#define N_SYS_STAT 18
+#define N_SYS_FCNTL 19
+#define N_SYS_WAITPID 20
 
 static inline long __nucleos_syscall5(long number, long a1, long a2,
 				      long a3, long a4, long a5)
 {
-	register long r10 asm("r10") = a4;
-	register long r8 asm("r8") = a5;
-	asm volatile("int $0x80"
+	register long r10 __asm__("r10") = a4;
+	register long r8 __asm__("r8") = a5;
+	__asm__ volatile("int $0x80"
 		: "+a"(number)
 		: "D"(a1), "S"(a2), "d"(a3), "r"(r10), "r"(r8)
 		: "rcx", "r11", "memory");
@@ -36,3 +39,4 @@ static inline long __nucleos_syscall5(long number, long a1, long a2,
 #define __nucleos_syscall3(n,a,b,c) __nucleos_syscall5((n), (long)(a), (long)(b), (long)(c), 0, 0)
 
 #endif
+

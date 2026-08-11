@@ -39,4 +39,7 @@ int vfs_dup_fd(int old_fd, int new_fd);
 int vfs_pipe(int pipe_fds[2]);
 int vfs_lseek_fd(int fd, long offset, int whence);
 bool vfs_isatty_fd(int fd);
+int vfs_get_fd_flags(int fd);
+int vfs_set_fd_flags(int fd, int flags);
 #endif /* VFS_H */
+

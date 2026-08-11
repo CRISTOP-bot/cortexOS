@@ -169,6 +169,7 @@ qemu-system-x86_64 -cdrom dist/os.iso -m 256M
 # Compilar la libc/programas de usuario y el ELF de prueba
 make user-libc
 make user-test-hello
+make user-test-posix
 
 # Eliminar build/ y dist/
 make clean
@@ -295,6 +296,7 @@ make ARCH=x86_64 run
 # Programas de usuario
 make user-libc
 make user-test-hello
+make user-test-posix
 
 # Smoke test manual usando la ISO generada
 qemu-system-x86_64 -cdrom dist/os.iso -m 256M -serial stdio -no-reboot
@@ -398,6 +400,7 @@ rm -rf build dist           # Limpieza manual equivalente
 | `run` | Genera la ISO y la ejecuta con QEMU. |
 | `user-libc` | Compila la libc mínima y programas de `user/`. |
 | `user-test-hello` | Compila el ELF de prueba `user/tests/hello.c`. |
+| `user-test-posix` | Compila el smoke test de `stat`, `fcntl` y `waitpid`. |
 | `openrc-source` | Comprueba que el submódulo oficial de OpenRC está disponible. |
 | `bash-source` | Comprueba que el submódulo de GNU Bash 5.3 está disponible. |
 | `fastfetch-source` | Comprueba que el submódulo oficial de Fastfetch está disponible. |
