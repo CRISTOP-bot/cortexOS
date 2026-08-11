@@ -182,9 +182,8 @@ y artefactos generados. `build/` y `dist/` nunca forman parte del código fuente
 │   └── linker.ld            # Script de enlace del kernel
 ├── config/grub/             # grub.cfg y tema fuente de la ISO
 ├── rootfs/                  # Contenido empaquetado como módulo Multiboot
-│   └── etc/openrc/examples/ # Ejemplos de servicios, separados de init.d activos
 ├── tools/
-│   ├── build/               # Constructores de rootfs e ISO
+│   ├── build/               # Constructor de rootfs
 │   ├── installer/           # Instalador Python y su punto de entrada
 │   ├── lcp/                 # Cliente LCP y repositorio principal
 │   ├── media/               # Creación de USB booteable

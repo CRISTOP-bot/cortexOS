@@ -1,10 +1,6 @@
 # Build and release output
 build/
 dist/
-os.iso
-
-# Generated ISO staging (kept out of source control)
-iso/
 
 # Python cache
 __pycache__/
