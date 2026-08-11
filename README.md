@@ -123,26 +123,73 @@ El flujo de arranque comienza en `kernel/arch/x86_64/boot.S` (punto de entrada `
 
 Para crear una ISO, ejecuta `bash tools/setup/install-deps.sh`. Para instalar NucleOS en un disco también necesitas las herramientas de particionado y formateo indicadas arriba (en Debian/Ubuntu suelen estar en `util-linux`, `gdisk`, `parted`, `e2fsprogs` y `dosfstools`). El instalador comprueba las dependencias antes de modificar el disco.
 
+Inicializa los componentes externos antes de compilar o validar sus fuentes:
+
+```bash
+git submodule update --init --recursive
+make bash-source
+make openrc-source
+make fastfetch-source
+```
+
+Los submódulos conservan sus licencias originales. Consulta
+[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) antes de redistribuirlos.
+
 ---
 
 ## Compilación y Ejecución
 
 ```bash
-# Instalar dependencias (opcional)
+# Instalar dependencias interactivamente
 bash tools/setup/install-deps.sh
 
-# Ver arquitecturas y compilar el port actual
+# Inicializar los submódulos oficiales
+git submodule update --init --recursive
+
+# Mostrar el estado de las arquitecturas
 make arch-list
-make ARCH=x86_64 clean && make ARCH=x86_64
+make check-arch ARCH=x86_64
 
-# Generar ISO de arranque
-make echo-iso
+# Limpiar y compilar el kernel x86_64
+make ARCH=x86_64 clean
+make ARCH=x86_64 -j"$(nproc)"
 
-# Ejecutar con QEMU
+# Crear solo el árbol ISO y el rootfs
+make ARCH=x86_64 iso
+
+# Generar la ISO final en dist/os.iso
+make ARCH=x86_64 echo-iso
+
+# Crear la ISO y arrancarla en QEMU
+make ARCH=x86_64 run
+
+# Ejecutar la ISO ya generada manualmente
 qemu-system-x86_64 -cdrom dist/os.iso -m 256M
 
-# Limpiar artefactos de compilación
+# Compilar la libc/programas de usuario y el ELF de prueba
+make user-libc
+make user-test-hello
+
+# Eliminar build/ y dist/
 make clean
+```
+
+`x86_64` es actualmente el único port arrancable. Los siguientes comandos
+muestran los ports preparados, pero fallan intencionalmente hasta que se
+complete su código de boot, MMU, interrupciones y drivers:
+
+```bash
+make ARCH=i386
+make ARCH=aarch64
+make ARCH=armv7
+```
+
+Para una compilación reproducible se puede fijar el compilador y ejecutar el
+mismo perfil de CI:
+
+```bash
+CC=gcc AS=gcc LD=ld make ARCH=x86_64 clean all
+CC=gcc AS=gcc LD=ld make ARCH=x86_64 echo-iso
 ```
 
 ### Flags de compilación clave
@@ -162,14 +209,25 @@ make clean
 ## Depuración
 
 ```bash
-# Con serial output
+# Con salida serial en la terminal
 qemu-system-x86_64 -cdrom dist/os.iso -m 256M -serial stdio
 
-# Con registro de interrupciones
+# Con registro de interrupciones y sin reinicio automático
 qemu-system-x86_64 -cdrom dist/os.iso -m 256M -serial stdio -d int -no-reboot
 
 # Sin reinicio en triple fault
 qemu-system-x86_64 -cdrom dist/os.iso -m 256M -no-reboot
+
+# Smoke test: serial a archivo y diagnóstico de QEMU
+mkdir -p build
+(timeout 35s qemu-system-x86_64 \
+  -cdrom dist/os.iso -m 256M \
+  -serial file:build/qemu-serial.log \
+  -monitor none -no-reboot -no-shutdown \
+  -d guest_errors,unimp,pcall,cpu_reset) || true
+
+# Mostrar los logs del smoke test
+cat build/qemu-serial.log
 ```
 
 ---
@@ -208,14 +266,78 @@ y artefactos generados. `build/` y `dist/` nunca forman parte del código fuente
 └── LICENSE                  # Licencia del código propio
 ```
 
-Comandos principales:
+### Validación de fuentes y submódulos
 
 ```bash
-make                    # Compilar el kernel
-make echo-iso           # Crear dist/os.iso
-make run                # Crear la ISO y arrancarla en QEMU
-make user-test-hello    # Compilar el primer ELF de usuario
-make clean              # Eliminar build/ y dist/
+# Descargar o actualizar todos los submódulos fijados por el repositorio
+git submodule update --init --recursive
+
+# Validar las fuentes oficiales integradas
+make bash-source
+make openrc-source
+make fastfetch-source
+
+# Verificar que el port seleccionado tiene implementación de build
+make check-arch ARCH=x86_64
+make arch-list
+```
+
+### Construcción, ISO y pruebas
+
+```bash
+# Targets de compilación
+make all
+make ARCH=x86_64 all
+make ARCH=x86_64 iso
+make ARCH=x86_64 echo-iso
+make ARCH=x86_64 run
+
+# Programas de usuario
+make user-libc
+make user-test-hello
+
+# Smoke test manual usando la ISO generada
+qemu-system-x86_64 -cdrom dist/os.iso -m 256M -serial stdio -no-reboot
+```
+
+### Instalación en USB o disco
+
+`installer` solo muestra las instrucciones del instalador. No modifica ningún
+disco por sí mismo:
+
+```bash
+make installer
+```
+
+Para crear un USB se sobrescribe el dispositivo indicado. Revisa muy bien la
+ruta antes de ejecutarlo:
+
+```bash
+make installer-usb
+sudo bash tools/media/make-usb.sh /dev/sdX
+```
+
+Para instalar desde el USB/ISO:
+
+```bash
+sudo python3 /mnt/installer/nucleos-install
+```
+
+Para ejecutar el instalador desde el repositorio local:
+
+```bash
+sudo tools/installer/nucleos-install
+```
+
+El instalador puede particionar, formatear e instalar GRUB. Haz copia de
+seguridad y usa un dispositivo de prueba; estas operaciones pueden borrar el
+disco.
+
+### Limpieza
+
+```bash
+make clean                  # Elimina build/ y dist/
+rm -rf build dist           # Limpieza manual equivalente
 ```
 
 ## Comandos del Shell
@@ -223,7 +345,7 @@ make clean              # Eliminar build/ y dist/
 | Comando       | Descripción                                         |
 |---------------|-----------------------------------------------------|
 | `help`        | Muestra ayuda categorizada                          |
-| `fastfetch`   | Información del sistema (CPU, RAM, uptime, etc.)    |
+| `fastfetch`   | Información del sistema provisional (el binario oficial aún está en port). |
 | `gui`         | Inicia la interfaz gráfica estilo KDE Plasma        |
 | `ls`          | Lista contenido del directorio                      |
 | `pwd`         | Muestra el directorio actual                        |
@@ -266,13 +388,32 @@ make clean              # Eliminar build/ y dist/
 
 ## Referencia de Make
 
-| Target       | Descripción                                         |
-|-------------|-----------------------------------------------------|
-| `all`       | Compila el kernel (`build/kernel.bin`)              |
-| `iso`       | Compila el kernel + genera rootfs                   |
-| `echo-iso`  | `iso` + genera `dist/os.iso`                       |
-| `run`       | `echo-iso` + ejecuta con QEMU                       |
-| `clean`     | Elimina `build/` y `dist/`                          |
+| Target | Descripción |
+|---|---|
+| `all` | Compila el kernel en `build/kernel.bin`. |
+| `check-arch` | Comprueba que `ARCH` tenga un port implementado. |
+| `arch-list` | Muestra arquitecturas declaradas y su estado. |
+| `iso` | Compila kernel, rootfs e instalador dentro de `build/iso/`. |
+| `echo-iso` | Ejecuta `iso` y genera `dist/os.iso`. |
+| `run` | Genera la ISO y la ejecuta con QEMU. |
+| `user-libc` | Compila la libc mínima y programas de `user/`. |
+| `user-test-hello` | Compila el ELF de prueba `user/tests/hello.c`. |
+| `openrc-source` | Comprueba que el submódulo oficial de OpenRC está disponible. |
+| `bash-source` | Comprueba que el submódulo de GNU Bash 5.3 está disponible. |
+| `fastfetch-source` | Comprueba que el submódulo oficial de Fastfetch está disponible. |
+| `installer` | Muestra instrucciones para el instalador; no toca discos. |
+| `installer-usb` | Muestra instrucciones para crear un USB; requiere confirmación manual. |
+| `clean` | Elimina `build/` y `dist/`. |
+
+La arquitectura se selecciona con una variable de Make:
+
+```bash
+make ARCH=x86_64
+make ARCH=x86_64 echo-iso
+make ARCH=i386              # rechazado hasta completar el port i386
+make ARCH=aarch64           # rechazado hasta completar el port ARM64
+make ARCH=armv7             # rechazado hasta completar el port ARM32
+```
 
 ---
 
