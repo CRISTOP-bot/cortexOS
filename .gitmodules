@@ -5,3 +5,7 @@
 [submodule "third_party/openrc"]
 	path = third_party/openrc
 	url = https://github.com/OpenRC/openrc
+
+[submodule "third_party/fastfetch"]
+	path = third_party/fastfetch
+	url = https://github.com/fastfetch-cli/fastfetch

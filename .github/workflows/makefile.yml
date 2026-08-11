@@ -46,6 +46,9 @@ jobs:
       - name: Validate Bash submodule
         run: make bash-source
 
+      - name: Validate Fastfetch submodule
+        run: make fastfetch-source
+
       - name: Build kernel
         run: |
           make clean

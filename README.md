@@ -41,7 +41,7 @@
 - **Consola VGA** — Modo texto 80×25 con soporte completo de colores (16 colores VGA).
 - **Shell interactivo** — Prompt coloreado (`nucleos@nucleos:/path$`), historial, comandos nativos.
 - **GNU Bash 5.3 (fuente integrada)** — Incorporado mediante el submódulo `third_party/bash/`; su port como `/bin/bash` queda pendiente de libc, ABI POSIX y cargador ELF para NucleOS.
-- **fastfetch** — Información del sistema: CPU (vía CPUID), memoria, uptime, archivos, layout.
+- **Fastfetch** — Fuente oficial integrada como submódulo en `third_party/fastfetch/`; el binario real queda pendiente del port de libc/POSIX. El shell actual conserva un comando informativo provisional.
 - **GUI estilo KDE Plasma** — Escritorio con íconos, panel inferior con reloj y lanzador de aplicaciones.
 - **VFS** — Sistema de archivos virtual con soporte para subdirectorios.
 - **Rootfs** — Sistema de archivos raíz cargado como módulo Multiboot.
@@ -194,7 +194,11 @@ y artefactos generados. `build/` y `dist/` nunca forman parte del código fuente
 │   └── setup/               # Instaladores de dependencias Linux/Windows
 ├── user/                    # crt0, libc mínima y programas de prueba
 ├── third_party/             # Submódulos externos sin modificar
+│   ├── bash/                # GNU Bash 5.3
+│   ├── openrc/              # OpenRC oficial
+│   └── fastfetch/           # Fastfetch oficial
 ├── docs/                    # Documentación técnica y planes de port
+│   └── FASTFETCH_PORT.md    # Estado del port de Fastfetch oficial
 ├── build/                   # Artefactos temporales (ignorado por Git)
 ├── dist/                    # ISO y sumas de distribución (ignorado por Git)
 ├── Makefile                 # Puntos de entrada reproducibles del build
