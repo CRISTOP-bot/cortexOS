@@ -19,7 +19,9 @@
 #define SYSCALL_TICKS   13
 #define SYSCALL_DUP2    14
 #define SYSCALL_ISATTY  15
-#define SYSCALL_MAX     16
+#define SYSCALL_PIPE    16
+#define SYSCALL_LSEEK   17
+#define SYSCALL_MAX     18
 
 void syscall_init(void);
 int64_t syscall_handler(uint64_t rdi, uint64_t rsi, uint64_t rdx,

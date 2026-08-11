@@ -33,13 +33,27 @@ static int root_node = -1;
 static int cwd_node = -1;
 
 #define VFS_MAX_FDS 64
+#define VFS_MAX_PIPES 16
+#define VFS_PIPE_SIZE 4096
+struct vfs_pipe_state {
+	bool used;
+	unsigned char data[VFS_PIPE_SIZE];
+	size_t read_offset;
+	size_t write_offset;
+	int readers;
+	int writers;
+};
 struct vfs_fd_state {
 	bool used;
 	int node;
 	size_t offset;
 	int flags;
+	int pipe_id;
+	bool pipe_read;
+	bool pipe_write;
 };
 static struct vfs_fd_state fd_table[VFS_MAX_FDS];
+static struct vfs_pipe_state pipe_table[VFS_MAX_PIPES];
 
 static int vfs_new_node(void)
 {
@@ -252,6 +266,16 @@ bool vfs_init(void)
 		fd_table[i].node = -1;
 		fd_table[i].offset = 0;
 		fd_table[i].flags = 0;
+		fd_table[i].pipe_id = -1;
+		fd_table[i].pipe_read = false;
+		fd_table[i].pipe_write = false;
+	}
+	for (int i = 0; i < VFS_MAX_PIPES; ++i) {
+		pipe_table[i].used = false;
+		pipe_table[i].read_offset = 0;
+		pipe_table[i].write_offset = 0;
+		pipe_table[i].readers = 0;
+		pipe_table[i].writers = 0;
 	}
 	root_node = 0;
 	vfs_clear_node(root_node);
@@ -630,6 +654,9 @@ int vfs_open_fd(const char *path, int flags)
 	fd_table[fd].node = node;
 	fd_table[fd].offset = 0;
 	fd_table[fd].flags = flags;
+	fd_table[fd].pipe_id = -1;
+	fd_table[fd].pipe_read = false;
+	fd_table[fd].pipe_write = false;
 	return fd;
 }
 
@@ -642,6 +669,21 @@ int vfs_read_fd(int fd, void *buffer, size_t count)
 	if (fd < 3 || fd >= VFS_MAX_FDS || !buffer || !fd_table[fd].used)
 		return -1;
 	state = &fd_table[fd];
+	if (state->pipe_id >= 0) {
+		struct vfs_pipe_state *pipe = &pipe_table[state->pipe_id];
+		size_t available;
+		if (!state->pipe_read || !pipe->used)
+			return -1;
+		available = pipe->write_offset - pipe->read_offset;
+		if (count > available)
+			count = available;
+		for (size_t i = 0; i < count; ++i)
+			((unsigned char *)buffer)[i] = pipe->data[pipe->read_offset + i];
+		pipe->read_offset += count;
+		if (pipe->read_offset == pipe->write_offset)
+			pipe->read_offset = pipe->write_offset = 0;
+		return (int)count;
+	}
 	node = &nodes[state->node];
 	if (node->is_dir || state->offset >= node->size)
 		return 0;
@@ -664,6 +706,19 @@ int vfs_write_fd(int fd, const void *buffer, size_t count)
 	if (fd < 3 || fd >= VFS_MAX_FDS || !buffer || !fd_table[fd].used)
 		return -1;
 	state = &fd_table[fd];
+	if (state->pipe_id >= 0) {
+		struct vfs_pipe_state *pipe = &pipe_table[state->pipe_id];
+		size_t available;
+		if (!state->pipe_write || !pipe->used || pipe->readers <= 0)
+			return -1;
+		available = VFS_PIPE_SIZE - pipe->write_offset;
+		if (count > available)
+			count = available;
+		for (size_t i = 0; i < count; ++i)
+			pipe->data[pipe->write_offset + i] = ((const unsigned char *)buffer)[i];
+		pipe->write_offset += count;
+		return (int)count;
+	}
 	if (!(state->flags & (VFS_OPEN_WRITE | VFS_OPEN_RDWR)))
 		return -1;
 	node = &nodes[state->node];
@@ -689,12 +744,26 @@ int vfs_write_fd(int fd, const void *buffer, size_t count)
 
 int vfs_close_fd(int fd)
 {
+	struct vfs_fd_state *state;
 	if (fd < 3 || fd >= VFS_MAX_FDS || !fd_table[fd].used)
 		return -1;
-	fd_table[fd].used = false;
-	fd_table[fd].node = -1;
-	fd_table[fd].offset = 0;
-	fd_table[fd].flags = 0;
+	state = &fd_table[fd];
+	if (state->pipe_id >= 0 && pipe_table[state->pipe_id].used) {
+		if (state->pipe_read && pipe_table[state->pipe_id].readers > 0)
+			--pipe_table[state->pipe_id].readers;
+		if (state->pipe_write && pipe_table[state->pipe_id].writers > 0)
+			--pipe_table[state->pipe_id].writers;
+		if (pipe_table[state->pipe_id].readers == 0 &&
+		    pipe_table[state->pipe_id].writers == 0)
+			pipe_table[state->pipe_id].used = false;
+	}
+	state->used = false;
+	state->node = -1;
+	state->offset = 0;
+	state->flags = 0;
+	state->pipe_id = -1;
+	state->pipe_read = false;
+	state->pipe_write = false;
 	return 0;
 }
 
@@ -709,7 +778,84 @@ int vfs_dup_fd(int old_fd, int new_fd)
 		vfs_close_fd(new_fd);
 	fd_table[new_fd] = fd_table[old_fd];
 	fd_table[new_fd].used = true;
+	if (fd_table[new_fd].pipe_id >= 0) {
+		if (fd_table[new_fd].pipe_read)
+			++pipe_table[fd_table[new_fd].pipe_id].readers;
+		if (fd_table[new_fd].pipe_write)
+			++pipe_table[fd_table[new_fd].pipe_id].writers;
+	}
 	return new_fd;
+}
+
+int vfs_pipe(int pipe_fds[2])
+{
+	int pipe_id = -1;
+	int read_fd = -1;
+	int write_fd = -1;
+	if (!pipe_fds)
+		return -1;
+	for (int i = 0; i < VFS_MAX_PIPES; ++i) {
+		if (!pipe_table[i].used) {
+			pipe_id = i;
+			break;
+		}
+	}
+	for (int i = 3; i < VFS_MAX_FDS; ++i) {
+		if (!fd_table[i].used) {
+			read_fd = i;
+			break;
+		}
+	}
+	for (int i = read_fd + 1; i < VFS_MAX_FDS; ++i) {
+		if (!fd_table[i].used) {
+			write_fd = i;
+			break;
+		}
+	}
+	if (pipe_id < 0 || read_fd < 0 || write_fd < 0)
+		return -1;
+	pipe_table[pipe_id].used = true;
+	pipe_table[pipe_id].read_offset = 0;
+	pipe_table[pipe_id].write_offset = 0;
+	pipe_table[pipe_id].readers = 1;
+	pipe_table[pipe_id].writers = 1;
+	fd_table[read_fd].used = true;
+	fd_table[read_fd].node = -1;
+	fd_table[read_fd].offset = 0;
+	fd_table[read_fd].flags = 0;
+	fd_table[read_fd].pipe_id = pipe_id;
+	fd_table[read_fd].pipe_read = true;
+	fd_table[read_fd].pipe_write = false;
+	fd_table[write_fd] = fd_table[read_fd];
+	fd_table[write_fd].pipe_read = false;
+	fd_table[write_fd].pipe_write = true;
+	pipe_fds[0] = read_fd;
+	pipe_fds[1] = write_fd;
+	return 0;
+}
+
+int vfs_lseek_fd(int fd, long offset, int whence)
+{
+	struct vfs_fd_state *state;
+	long base;
+	long next;
+	if (fd < 3 || fd >= VFS_MAX_FDS || !fd_table[fd].used ||
+	    fd_table[fd].pipe_id >= 0)
+		return -1;
+	state = &fd_table[fd];
+	if (whence == VFS_SEEK_SET)
+		base = 0;
+	else if (whence == VFS_SEEK_CUR)
+		base = (long)state->offset;
+	else if (whence == VFS_SEEK_END)
+		base = (long)nodes[state->node].size;
+	else
+		return -1;
+	next = base + offset;
+	if (next < 0)
+		return -1;
+	state->offset = (size_t)next;
+	return (int)state->offset;
 }
 
 bool vfs_isatty_fd(int fd)

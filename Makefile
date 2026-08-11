@@ -164,6 +164,9 @@ installer-usb:
 	@echo "  ADVERTENCIA: Esto BORRA todos los datos del dispositivo"
 	@echo ""
 
+user-libc:
+	$(MAKE) -C user CC="$(CC)"
+
 bash-source:
 	@test -f $(BASH_SRC_DIR)/configure.ac
 	@grep -q 'version 5.3' $(BASH_SRC_DIR)/README
@@ -174,4 +177,4 @@ bash-source:
 clean:
 	rm -rf $(BUILD_DIR) os.iso $(ISO_DIR)/boot/kernel.bin $(ISO_DIR)/boot/rootfs.bin $(ISO_DIR)/installer
 
-.PHONY: all iso echo-iso run bash-source clean installer installer-usb
+.PHONY: all iso echo-iso run user-libc bash-source clean installer installer-usb

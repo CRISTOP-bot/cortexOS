@@ -192,7 +192,87 @@ int process_fork(void)
 	return child->pid;
 }
 
-int process_exec(const char *path)
+#define EXEC_MAX_ARGS 32
+#define EXEC_MAX_ENVP 32
+#define EXEC_STRING_MAX 128
+
+static size_t process_bounded_strlen(const char *text, size_t limit)
+{
+	size_t length = 0;
+	if (!text)
+		return 0;
+	while (length < limit && text[length])
+		++length;
+	return length;
+}
+
+static uint64_t process_build_stack(struct process *proc, const char *path,
+				    const char *const *argv,
+				    const char *const *envp)
+{
+	const char *arg_values[EXEC_MAX_ARGS];
+	const char *env_values[EXEC_MAX_ENVP];
+	uint64_t arg_addresses[EXEC_MAX_ARGS];
+	uint64_t env_addresses[EXEC_MAX_ENVP];
+	int argc = 0;
+	int envc = 0;
+	uint64_t sp = proc->user_stack + USER_STACK_SIZE;
+
+	if (argv) {
+		while (argc < EXEC_MAX_ARGS && argv[argc]) {
+			arg_values[argc] = argv[argc];
+			++argc;
+		}
+	}
+	if (argc == 0)
+		arg_values[argc++] = path;
+	if (envp) {
+		while (envc < EXEC_MAX_ENVP && envp[envc]) {
+			env_values[envc] = envp[envc];
+			++envc;
+		}
+	}
+
+	for (int i = envc - 1; i >= 0; --i) {
+		size_t length = process_bounded_strlen(env_values[i], EXEC_STRING_MAX - 1) + 1;
+		sp -= length;
+		for (size_t j = 0; j < length; ++j)
+			((char *)sp)[j] = env_values[i][j];
+		env_addresses[i] = sp;
+	}
+	for (int i = argc - 1; i >= 0; --i) {
+		size_t length = process_bounded_strlen(arg_values[i], EXEC_STRING_MAX - 1) + 1;
+		sp -= length;
+		for (size_t j = 0; j < length; ++j)
+			((char *)sp)[j] = arg_values[i][j];
+		arg_addresses[i] = sp;
+	}
+	sp &= ~0xFULL;
+
+	sp -= sizeof(uint64_t);
+	*(uint64_t *)sp = 0;
+	for (int i = envc - 1; i >= 0; --i) {
+		sp -= sizeof(uint64_t);
+		*(uint64_t *)sp = env_addresses[i];
+	}
+	sp -= sizeof(uint64_t);
+	*(uint64_t *)sp = 0;
+	for (int i = argc - 1; i >= 0; --i) {
+		sp -= sizeof(uint64_t);
+		*(uint64_t *)sp = arg_addresses[i];
+	}
+	sp -= sizeof(uint64_t);
+	*(uint64_t *)sp = (uint64_t)argc;
+
+	/* Keep the initial stack below the mapped stack base even for malformed
+	 * callers that supplied unusually long argument vectors. */
+	if (sp < proc->user_stack)
+		return 0;
+	return sp;
+}
+
+int process_exec(const char *path, const char *const *argv,
+		 const char *const *envp)
 {
 	struct process *proc = process_current();
 	if (!proc)
@@ -208,8 +288,11 @@ int process_exec(const char *path)
 			    proc->user_code + USER_CODE_SIZE, &entry))
 		return -1;
 
+	uint64_t initial_stack = process_build_stack(proc, path, argv, envp);
+	if (!initial_stack)
+		return -1;
 	proc->ctx.rip = entry;
-	proc->ctx.rsp = proc->user_stack + USER_STACK_SIZE - 8;
+	proc->ctx.rsp = initial_stack;
 
 	return 0;
 }
