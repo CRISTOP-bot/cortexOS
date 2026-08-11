@@ -60,6 +60,7 @@ AARCH64_LD  ?= aarch64-linux-gnu-ld
 AARCH64_BUILD = $(BUILD_DIR)/aarch64
 AARCH64_EARLY = $(AARCH64_BUILD)/early.elf
 AARCH64_DTB = $(AARCH64_BUILD)/virt.dtb
+AARCH64_DTB_ADDRESS = 0x47f00000
 AARCH64_OBJECTS = $(AARCH64_BUILD)/boot.o $(AARCH64_BUILD)/early.o \
 	$(AARCH64_BUILD)/fdt.o $(AARCH64_BUILD)/mmu.o $(AARCH64_BUILD)/gic.o
 
@@ -214,10 +215,10 @@ $(AARCH64_EARLY): $(AARCH64_OBJECTS) $(KERNEL_DIR)/arch/aarch64/linker.ld
 
 # QEMU virt exposes the PL011 UART at 0x09000000. QEMU does not always
 # provide its generated DTB in x0 when loading an ELF with -kernel, so create
-# the machine DTB explicitly and pass it with -dtb.
+# the machine DTB explicitly and load it at the documented fallback address.
 aarch64-run: aarch64-early
 	$(QEMU_AARCH64) -machine virt,dumpdtb=$(AARCH64_DTB) -cpu cortex-a57 -m 128M -display none
-	$(QEMU_AARCH64) -machine virt -cpu cortex-a57 -m 128M -nographic -monitor none -serial stdio -no-reboot -dtb $(AARCH64_DTB) -kernel $(AARCH64_EARLY)
+	$(QEMU_AARCH64) -machine virt -cpu cortex-a57 -m 128M -nographic -monitor none -serial stdio -no-reboot -device loader,file=$(AARCH64_DTB),addr=$(AARCH64_DTB_ADDRESS) -kernel $(AARCH64_EARLY)
 
 openrc-source:
 	@test -f $(OPENRC_SRC_DIR)/meson.build

@@ -5,6 +5,7 @@
 #include "mmu.h"
 
 #define PL011_BASE 0x09000000UL
+#define FALLBACK_DTB 0x47f00000UL
 #define UART_FR_TXFF (1U << 5)
 
 static uintptr_t uart_base = PL011_BASE;
@@ -87,6 +88,10 @@ void aarch64_early_main(uint64_t dtb)
 	uart_puts("NucleOS AArch64 early boot\n");
 	uart_puts("EL: ");
 	uart_puthex((read_currentel() >> 2) & 0x3);
+	if (!dtb) {
+		dtb = FALLBACK_DTB;
+		uart_puts("\nDTB register empty; using QEMU fallback address");
+	}
 	uart_puts("\nDTB: ");
 	uart_puthex(dtb);
 	uart_puts("\nCNTFRQ: ");
