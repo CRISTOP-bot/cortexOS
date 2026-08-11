@@ -1,5 +1,9 @@
 # NucleOS
 
+<p align="center">
+  <img src="assets/branding/nucleos-logo.png" alt="Logo de NucleOS" width="320">
+</p>
+
 ![Architecture](https://img.shields.io/badge/architecture-x86__64-blue?style=flat-square)
 ![Language](https://img.shields.io/badge/language-C%2BASM-orange?style=flat-square)
 ![Bootloader](https://img.shields.io/badge/boot-GRUB%20Multiboot-purple?style=flat-square)
