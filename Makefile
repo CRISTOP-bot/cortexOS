@@ -65,7 +65,8 @@ SRCS  = $(SRC_DIR)/kernel.c \
         $(SRC_DIR)/ata.c \
         $(SRC_DIR)/part.c \
         $(SRC_DIR)/ext2.c \
-        $(SRC_DIR)/installer.c
+        $(SRC_DIR)/installer.c \
+        $(SRC_DIR)/elf.c
 
 DRV_SRCS = $(DRV_DIR)/console.c \
            $(DRV_DIR)/keyboard.c \

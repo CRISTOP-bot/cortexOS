@@ -66,6 +66,9 @@ syscall_entry:
     /* Arguments: rdi, rsi, rdx, r10, r8, rax (syscall number) */
     /* Already in correct registers, just call */
     call syscall_handler
+    /* Replace the saved syscall number with the return value.  The final
+       pop into rax exposes the result to the user process. */
+    mov %rax, 112(%rsp)
 
     /* Restore segments */
     popq %r15

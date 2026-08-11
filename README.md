@@ -221,6 +221,7 @@ qemu-system-x86_64 -cdrom os.iso -m 256M -no-reboot
 ├── rootfs/                 # Archivos del sistema de archivos raíz
 ├── third_party/bash/       # Fuente vendorizada de GNU Bash 5.3
 ├── docs/BASH_PORT.md       # Estado y requisitos del port de Bash
+├── docs/USERSPACE_PORT.md  # Base ELF/syscalls para programas de usuario
 ├── install-deps.sh         # Instalador multiplataforma de dependencias
 ├── install-deps.bat        # Instalador Windows de dependencias
 ├── linker.ld               # Script de enlace (elf64-x86-64)

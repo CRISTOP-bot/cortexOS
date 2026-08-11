@@ -32,6 +32,15 @@ static size_t data_used;
 static int root_node = -1;
 static int cwd_node = -1;
 
+#define VFS_MAX_FDS 64
+struct vfs_fd_state {
+	bool used;
+	int node;
+	size_t offset;
+	int flags;
+};
+static struct vfs_fd_state fd_table[VFS_MAX_FDS];
+
 static int vfs_new_node(void)
 {
 	for (int i = 0; i < VFS_MAX_NODES; ++i) {
@@ -60,7 +69,7 @@ static char *vfs_alloc_data(const char *data, size_t size)
 		return 0;
 	char *dest = data_store + data_used;
 	for (size_t i = 0; i < size; ++i)
-		dest[i] = data[i];
+		dest[i] = data ? data[i] : 0;
 	data_used += size;
 	return dest;
 }
@@ -238,6 +247,12 @@ bool vfs_init(void)
 		nodes[i].own_data = 0;
 	}
 	data_used = 0;
+	for (int i = 0; i < VFS_MAX_FDS; ++i) {
+		fd_table[i].used = false;
+		fd_table[i].node = -1;
+		fd_table[i].offset = 0;
+		fd_table[i].flags = 0;
+	}
 	root_node = 0;
 	vfs_clear_node(root_node);
 	nodes[root_node].is_dir = true;
@@ -581,4 +596,123 @@ bool vfs_stat(const char *path)
 		console_print("\n");
 	}
 	return true;
+}
+
+/* User-space descriptor operations. Standard input/output/error remain
+ * terminal descriptors owned by syscall.c; this table stores regular files. */
+int vfs_open_fd(const char *path, int flags)
+{
+	int node;
+	int fd = -1;
+
+	if (!path)
+		return -1;
+	node = vfs_resolve(path);
+	if (node < 0 && (flags & VFS_OPEN_CREAT))
+		node = vfs_create_node(path, false);
+	if (node < 0 || nodes[node].is_dir)
+		return -1;
+	if ((flags & (VFS_OPEN_WRITE | VFS_OPEN_RDWR)) && nodes[node].read_only)
+		return -1;
+	if ((flags & VFS_OPEN_TRUNC) && (flags & (VFS_OPEN_WRITE | VFS_OPEN_RDWR))) {
+		nodes[node].data = 0;
+		nodes[node].size = 0;
+	}
+	for (int i = 3; i < VFS_MAX_FDS; ++i) {
+		if (!fd_table[i].used) {
+			fd = i;
+			break;
+		}
+	}
+	if (fd < 0)
+		return -1;
+	fd_table[fd].used = true;
+	fd_table[fd].node = node;
+	fd_table[fd].offset = 0;
+	fd_table[fd].flags = flags;
+	return fd;
+}
+
+int vfs_read_fd(int fd, void *buffer, size_t count)
+{
+	struct vfs_fd_state *state;
+	const vfs_node_t *node;
+	size_t available;
+
+	if (fd < 3 || fd >= VFS_MAX_FDS || !buffer || !fd_table[fd].used)
+		return -1;
+	state = &fd_table[fd];
+	node = &nodes[state->node];
+	if (node->is_dir || state->offset >= node->size)
+		return 0;
+	available = node->size - state->offset;
+	if (count > available)
+		count = available;
+	for (size_t i = 0; i < count; ++i)
+		((unsigned char *)buffer)[i] = ((const unsigned char *)node->data)[state->offset + i];
+	state->offset += count;
+	return (int)count;
+}
+
+int vfs_write_fd(int fd, const void *buffer, size_t count)
+{
+	struct vfs_fd_state *state;
+	vfs_node_t *node;
+	size_t new_size;
+	char *storage;
+
+	if (fd < 3 || fd >= VFS_MAX_FDS || !buffer || !fd_table[fd].used)
+		return -1;
+	state = &fd_table[fd];
+	if (!(state->flags & (VFS_OPEN_WRITE | VFS_OPEN_RDWR)))
+		return -1;
+	node = &nodes[state->node];
+	if (node->is_dir || node->read_only || count > (size_t)-1 - state->offset)
+		return -1;
+	new_size = node->size;
+	if (state->offset + count > new_size)
+		new_size = state->offset + count;
+	storage = vfs_alloc_data(0, new_size);
+	if (!storage)
+		return -1;
+	for (size_t i = 0; i < node->size; ++i)
+		storage[i] = node->data ? node->data[i] : 0;
+	for (size_t i = 0; i < count; ++i)
+		storage[state->offset + i] = ((const unsigned char *)buffer)[i];
+	node->data = storage;
+	node->size = new_size;
+	node->own_data = storage;
+	node->own_size = new_size;
+	state->offset += count;
+	return (int)count;
+}
+
+int vfs_close_fd(int fd)
+{
+	if (fd < 3 || fd >= VFS_MAX_FDS || !fd_table[fd].used)
+		return -1;
+	fd_table[fd].used = false;
+	fd_table[fd].node = -1;
+	fd_table[fd].offset = 0;
+	fd_table[fd].flags = 0;
+	return 0;
+}
+
+int vfs_dup_fd(int old_fd, int new_fd)
+{
+	if (old_fd < 3 || old_fd >= VFS_MAX_FDS || !fd_table[old_fd].used ||
+	    new_fd < 3 || new_fd >= VFS_MAX_FDS)
+		return -1;
+	if (old_fd == new_fd)
+		return new_fd;
+	if (fd_table[new_fd].used)
+		vfs_close_fd(new_fd);
+	fd_table[new_fd] = fd_table[old_fd];
+	fd_table[new_fd].used = true;
+	return new_fd;
+}
+
+bool vfs_isatty_fd(int fd)
+{
+	return fd >= 0 && fd <= 2;
 }

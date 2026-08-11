@@ -9,6 +9,7 @@
 #include "keyboard.h"
 #include "tss.h"
 #include "asm.h"
+#include "elf.h"
 
 static struct process processes[MAX_PROCESSES];
 static int current_pid = -1;
@@ -68,8 +69,8 @@ int process_create(const char *name, uint64_t entry, bool user)
 	kstrcpy(proc->name, name, PROCESS_NAME_SIZE);
 
 	proc->user_code = USER_CODE_TOP;
-	proc->user_stack = USER_STACK_TOP;
-	proc->brk = USER_STACK_TOP + USER_STACK_SIZE;
+	proc->user_stack = USER_STACK_TOP - USER_STACK_SIZE;
+	proc->brk = USER_STACK_TOP;
 	proc->brk_limit = proc->brk + PAGE_SIZE * 16;
 
 	proc->kernel_stack = (uint64_t)kmalloc_aligned(KERNEL_STACK_SIZE);
@@ -79,9 +80,21 @@ int process_create(const char *name, uint64_t entry, bool user)
 	}
 	proc->kernel_stack += KERNEL_STACK_SIZE;
 
-	/* Map user code page */
-	for (uint64_t offset = 0; offset < USER_STACK_SIZE + USER_STACK_SIZE; offset += PAGE_SIZE) {
+	/* Map the code and user-stack ranges separately. */
+	for (uint64_t offset = 0; offset < USER_CODE_SIZE; offset += PAGE_SIZE) {
 		uint64_t vaddr = proc->user_code + offset;
+		void *page = pmm_alloc_page();
+		if (!page) {
+			proc->state = PROCESS_UNUSED;
+			return -1;
+		}
+		unsigned int flags = VMM_PRESENT | VMM_WRITE;
+		if (user)
+			flags |= VMM_USER;
+		vmm_map_page((unsigned long)page, vaddr, flags);
+	}
+	for (uint64_t offset = 0; offset < USER_STACK_SIZE; offset += PAGE_SIZE) {
+		uint64_t vaddr = proc->user_stack + offset;
 		void *page = pmm_alloc_page();
 		if (!page) {
 			proc->state = PROCESS_UNUSED;
@@ -190,16 +203,12 @@ int process_exec(const char *path)
 	if (!data || size == 0)
 		return -1;
 
-	/* Copy program data to user code area */
-	uint8_t *dst = (uint8_t *)proc->user_code;
-	const uint8_t *src = (const uint8_t *)data;
-	uint64_t copy_size = size;
-	if (copy_size > PAGE_SIZE * 4)
-		copy_size = PAGE_SIZE * 4;
-	for (uint64_t i = 0; i < copy_size; ++i)
-		dst[i] = src[i];
+	uint64_t entry;
+	if (!elf_load_image(data, size, proc->user_code,
+			    proc->user_code + USER_CODE_SIZE, &entry))
+		return -1;
 
-	proc->ctx.rip = proc->user_code;
+	proc->ctx.rip = entry;
 	proc->ctx.rsp = proc->user_stack + USER_STACK_SIZE - 8;
 
 	return 0;
