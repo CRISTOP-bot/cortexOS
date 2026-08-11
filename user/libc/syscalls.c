@@ -103,7 +103,7 @@ void _exit(int status)
 {
 	(void)__nucleos_syscall1(N_SYS_EXIT, status);
 	for (;;)
-		asm volatile("hlt");
+		__asm__ volatile("hlt");
 }
 
 void *sbrk(intptr_t increment)
