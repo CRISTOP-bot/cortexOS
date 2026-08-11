@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: nucleos-${{ github.workflow }}-${{ github.ref }}
@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install build and emulator dependencies
         run: |
@@ -40,6 +42,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-gnu
+
+      - name: Validate Bash submodule
+        run: make bash-source
 
       - name: Build kernel
         run: |
@@ -95,3 +100,32 @@ jobs:
             build/kernel.bin
             iso/boot/rootfs.bin
             qemu-serial.log
+
+  release:
+    name: Create GitHub release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nucleos-${{ github.sha }}
+          path: release
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nucleos-${{ github.run_number }}
+          name: NucleOS build ${{ github.run_number }}
+          generate_release_notes: true
+          body: |
+            Release automático generado después de un cambio en `main`.
+
+            Commit: `${{ github.sha }}`
+          files: |
+            release/os.iso
+            release/SHA256SUMS
