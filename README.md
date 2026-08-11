@@ -299,4 +299,12 @@ Este proyecto fue originalmente llamado **CrisOS** (repo: [cris-os-v2](https://g
 
 ## Licencia
 
-Este proyecto se distribuye bajo la licencia **GNU General Public License v3**. Consulte el archivo [LICENSE](LICENSE) para más detalles.
+El código original de NucleOS se distribuye bajo la **GNU General Public License v3.0**.
+
+- Texto legal completo: [LICENSE](LICENSE)
+- Resumen y política del proyecto: [LICENSE.md](LICENSE.md)
+- Copyright: [COPYRIGHT.md](COPYRIGHT.md)
+- Componentes externos y sus licencias: [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
+
+Bash y OpenRC son submódulos independientes y conservan sus propios avisos,
+copyrights y condiciones de distribución.
