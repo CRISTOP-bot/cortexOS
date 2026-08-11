@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-import os, sys, subprocess
+import os
+import subprocess
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from installer.config import NucleOSConfig, PartitionConfig, UserConfig
 from installer.disk import detect_disks, format_size, is_efi
-from installer.install import install
+from installer.install import HOSTNAME_RE, USERNAME_RE, install
 from installer.ui import banner, section, info, ok, warn, error, dim, confirm, prompt, password, menu
 
 DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,15 +37,15 @@ def pick_disk() -> str | None:
     return disks[i].path if i >= 0 else None
 
 
-def pick_scheme() -> tuple:
+def pick_scheme() -> tuple[bool, bool] | None:
     section("Particionado")
     opts = [
         ("Automático (todo el disco)", "Borra todo y crea particiones"),
-        ("Usar existentes", "Instala en partición existente"),
+        ("Usar existentes", "Conserva las particiones y selecciona root + boot/EFI"),
     ]
     i = menu("Modo de particionado", opts)
     if i < 0:
-        return False, False
+        return None
     uefi = is_efi()
     info("Sistema " + ("UEFI" if uefi else "BIOS") + " detectado")
     return i == 0, uefi
@@ -50,23 +53,27 @@ def pick_scheme() -> tuple:
 
 def pick_fs() -> str:
     section("Sistema de archivos")
-    fses = [
-        ("ext4", "Journaling, recomendado"),
-        ("ext3", "Journaling, legado"),
-        ("ext2", "Sin journaling"),
-        ("btrfs", "COW, snapshots"),
-    ]
-    i = menu("Selecciona FS para root", fses)
-    return fses[i][0] if i >= 0 else "ext4"
+    info("El kernel actual de NucleOS implementa ext2 para el almacenamiento del sistema")
+    return "ext2"
 
 
-def ask_users() -> tuple:
+def ask_hostname() -> str:
+    while True:
+        hostname = prompt("Hostname", default="nucleos")
+        if HOSTNAME_RE.fullmatch(hostname):
+            return hostname
+        warn("Hostname inválido: usa letras, números, puntos y guiones")
+
+
+def ask_users() -> tuple[str, list[UserConfig]]:
     section("Usuarios")
-    rp = ""
     while True:
         rp = password("Contraseña root:")
         if not rp:
             warn("No puede estar vacía")
+            continue
+        if any(c in rp for c in ":\n\r"):
+            warn("No puede contener ':' ni saltos de línea")
             continue
         if rp != password("Confirmar root:"):
             warn("No coinciden")
@@ -77,20 +84,26 @@ def ask_users() -> tuple:
     if confirm("¿Crear usuario adicional?"):
         while True:
             u = prompt("Nombre de usuario")
-            if not u:
-                warn("Obligatorio"); continue
+            if not USERNAME_RE.fullmatch(u):
+                warn("Usa 1-32 caracteres: minúsculas, números, '_' o '-'")
+                continue
+            if u == "root":
+                warn("'root' está reservado")
+                continue
             pw = password(f"Contraseña para {u}:")
-            if not pw:
-                warn("Obligatorio"); continue
+            if not pw or any(c in pw for c in ":\n\r"):
+                warn("Contraseña obligatoria y sin ':' ni saltos de línea")
+                continue
             if pw != password(f"Confirmar {u}:"):
-                warn("No coinciden"); continue
+                warn("No coinciden")
+                continue
             users.append(UserConfig(username=u, password=pw))
             if not confirm("¿Otro usuario?", default=False):
                 break
     return rp, users
 
 
-def find_paths() -> tuple:
+def find_paths() -> tuple[str, str]:
     k = os.path.join(PROJECT, "build", "kernel.bin")
     if not os.path.isfile(k):
         k = os.path.join(PROJECT, "iso", "boot", "kernel.bin")
@@ -103,10 +116,13 @@ def ensure_kernel(ks: str) -> bool:
     warn(f"Kernel no encontrado en {ks}")
     if os.path.isfile(os.path.join(PROJECT, "Makefile")) and confirm("¿Compilar kernel ahora?"):
         try:
-            subprocess.run(["make", "-C", PROJECT, "iso"], check=True)
-            return True
-        except Exception as e:
-            error(str(e))
+            subprocess.run(
+                ["make", "-C", PROJECT, "PYTHON=python3", "iso"],
+                check=True,
+            )
+            return os.path.isfile(ks) or os.path.isfile(os.path.join(PROJECT, "build", "kernel.bin"))
+        except Exception as exc:
+            error(str(exc))
     return False
 
 
@@ -123,16 +139,33 @@ def main() -> int:
         if not confirm("¿Iniciar instalación?"):
             return 0
 
-        disk = pick_disk()
-        if not disk:
+        target_disk = pick_disk()
+        if not target_disk:
             return 1
 
-        auto_part, uefi = pick_scheme()
-        if auto_part is False and uefi is False:
+        scheme = pick_scheme()
+        if scheme is None:
             return 1
-
+        auto_part, uefi = scheme
         fstype = pick_fs()
-        hostname = prompt("Hostname", default="nucleos")
+
+        root_device = target_disk
+        boot_device = ""
+        if not auto_part:
+            root_device = prompt("Dispositivo root (ej: /dev/sda2)")
+            default_boot = "" if uefi else root_device
+            boot_device = prompt(
+                "Partición boot/EFI (ej: /dev/sda1)",
+                default=default_boot or None,
+            )
+            if not root_device or not boot_device:
+                error("Debes indicar las particiones root y boot/EFI")
+                return 1
+            if uefi and root_device == boot_device:
+                error("En UEFI root y EFI deben ser particiones distintas")
+                return 1
+
+        hostname = ask_hostname()
         root_pw, users = ask_users()
 
         ks, rs = find_paths()
@@ -140,22 +173,31 @@ def main() -> int:
             error("Compila primero: make iso")
             return 1
 
-        if not auto_part:
-            disk = prompt("Dispositivo root (ej: /dev/sda2)")
-
-        p = PartitionConfig(device=disk, fstype=fstype, boot_device=disk,
-                            uefi=uefi, auto_partition=auto_part)
-        cfg = NucleOSConfig(kernel_source=ks, rootfs_source=rs,
-                            hostname=hostname, root_password=root_pw,
-                            users=users or None, partition=p)
+        p = PartitionConfig(
+            device=root_device,
+            fstype=fstype,
+            boot_device=boot_device,
+            disk_device=target_disk,
+            uefi=uefi,
+            auto_partition=auto_part,
+        )
+        cfg = NucleOSConfig(
+            kernel_source=ks,
+            rootfs_source=rs,
+            hostname=hostname,
+            root_password=root_pw,
+            users=users or None,
+            partition=p,
+        )
 
         print()
         section("Resumen")
-        for l in cfg.summary_lines():
-            info(l)
+        for line in cfg.summary_lines():
+            info(line)
         print()
-        if not confirm("¿Proceder con la instalación?") or \
-           not confirm("ADVERTENCIA: se borrarán datos. ¿Continuar?"):
+        if not confirm("¿Proceder con la instalación?"):
+            return 0
+        if auto_part and not confirm("ADVERTENCIA: se borrarán todos los datos del disco. ¿Continuar?"):
             return 0
 
         ok("Instalando...")
@@ -163,18 +205,19 @@ def main() -> int:
             section("Completado")
             ok("NucleOS instalado")
             if confirm("¿Reiniciar ahora?", default=False):
-                os.system("reboot")
+                subprocess.run(["reboot"], check=False)
             return 0
 
         section("Error")
-        error("Falló la instalación")
+        error("Falló la instalación; revisa el mensaje anterior")
         return 1
 
     except KeyboardInterrupt:
-        print(); info("Cancelado")
+        print()
+        info("Cancelado")
         return 130
-    except Exception as e:
-        error(str(e))
+    except Exception as exc:
+        error(str(exc))
         return 1
 
 
