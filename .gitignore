@@ -1,10 +1,10 @@
+# Build and release output
 build/
+dist/
 os.iso
-iso/boot/kernel.bin
-iso/boot/rootfs.bin
-iso/boot/grub/core.img
-iso/boot/grub/eltorito.img
-.github/workflows
+
+# Generated ISO staging (kept out of source control)
+iso/
 
 # Python cache
 __pycache__/
@@ -13,5 +13,7 @@ __pycache__/
 # Backup directories
 .header_fix_backup_*/
 
-# Bochs emulator logs
+# Bochs and emulator logs
 bochsout.txt
+qemu-serial.log
+qemu-debug.log

@@ -95,7 +95,7 @@
 └──────────────────────────────────────────────┘
 ```
 
-El flujo de arranque comienza en `boot/boot.S` (punto de entrada `start`), que configura un GDT temporal de 32 bits, cambia a modo largo 64 bits via far jump, carga un GDT de 64 bits, establece las page tables de arranque (2MB large pages, 1GB identity map) y salta a `kmain()` en C. `kmain` inicializa los subsistemas en orden, carga el rootfs vía Multiboot y lanza el shell interactivo.
+El flujo de arranque comienza en `kernel/arch/x86_64/boot.S` (punto de entrada `start`), que configura un GDT temporal de 32 bits, cambia a modo largo 64 bits via far jump, carga un GDT de 64 bits, establece las page tables de arranque (2MB large pages, 1GB identity map) y salta a `kmain()` en C. `kmain` inicializa los subsistemas en orden, carga el rootfs vía Multiboot y lanza el shell interactivo.
 
 ---
 
@@ -116,7 +116,7 @@ El flujo de arranque comienza en `boot/boot.S` (punto de entrada `start`), que c
 | `wipefs`, `partprobe`, `blkid` | Preparación y detección de discos |
 | `mkfs.ext2`, `mkfs.fat` | Formateo de root y EFI                  |
 
-Para crear una ISO, ejecuta `./install-deps.sh`. Para instalar NucleOS en un disco también necesitas las herramientas de particionado y formateo indicadas arriba (en Debian/Ubuntu suelen estar en `util-linux`, `gdisk`, `parted`, `e2fsprogs` y `dosfstools`). El instalador comprueba las dependencias antes de modificar el disco.
+Para crear una ISO, ejecuta `bash tools/setup/install-deps.sh`. Para instalar NucleOS en un disco también necesitas las herramientas de particionado y formateo indicadas arriba (en Debian/Ubuntu suelen estar en `util-linux`, `gdisk`, `parted`, `e2fsprogs` y `dosfstools`). El instalador comprueba las dependencias antes de modificar el disco.
 
 ---
 
@@ -124,7 +124,7 @@ Para crear una ISO, ejecuta `./install-deps.sh`. Para instalar NucleOS en un dis
 
 ```bash
 # Instalar dependencias (opcional)
-./install-deps.sh
+bash tools/setup/install-deps.sh
 
 # Compilar el kernel
 make clean && make
@@ -133,7 +133,7 @@ make clean && make
 make echo-iso
 
 # Ejecutar con QEMU
-qemu-system-x86_64 -cdrom os.iso -m 256M
+qemu-system-x86_64 -cdrom dist/os.iso -m 256M
 
 # Limpiar artefactos de compilación
 make clean
@@ -157,82 +157,56 @@ make clean
 
 ```bash
 # Con serial output
-qemu-system-x86_64 -cdrom os.iso -m 256M -serial stdio
+qemu-system-x86_64 -cdrom dist/os.iso -m 256M -serial stdio
 
 # Con registro de interrupciones
-qemu-system-x86_64 -cdrom os.iso -m 256M -serial stdio -d int -no-reboot
+qemu-system-x86_64 -cdrom dist/os.iso -m 256M -serial stdio -d int -no-reboot
 
 # Sin reinicio en triple fault
-qemu-system-x86_64 -cdrom os.iso -m 256M -no-reboot
+qemu-system-x86_64 -cdrom dist/os.iso -m 256M -no-reboot
 ```
 
 ---
 
 ## Estructura del Proyecto
 
+El repositorio separa código del kernel, arquitectura, herramientas, configuración
+y artefactos generados. `build/` y `dist/` nunca forman parte del código fuente.
+
 ```text
-├── boot/
-│   └── boot.S              # Entry: 32→64 long mode, page tables, jump to kmain
-├── src/
-│   ├── kernel.c            # kmain(): inicialización y lanzamiento
-│   ├── asm_utils.S         # ISR/IRQ stubs x86_64, outb/inb, cpuid
-│   ├── math_asm.S          # Operaciones aritméticas en ASM
-│   ├── asm.h               # Declaraciones de funciones assembly
-│   ├── gdt.c / gdt.h       # Tabla de descriptores globales (64-bit)
-│   ├── idt.c / idt.h       # Tabla de descriptores de interrupción (16-byte)
-│   ├── kstring.c / kstring.h    # Funciones de cadena (kitoa, kxtoa, kutoa, etc.)
-│   ├── fs.c / fs.h         # Sistema de archivos rootfs
-│   ├── vfs.c / vfs.h       # Capa de abstracción VFS
-│   ├── shell.c / shell.h   # Shell interactivo con TUI apps y juegos
-│   ├── openrc.c / openrc.h # Gestor de servicios OpenRC
-│   ├── lcp.c / lcp.h       # Gestor de paquetes
-│   ├── boot.c / boot.h     # Helper de arranque
-│   ├── gui.c / gui.h       # Interfaz gráfica Plasma-like
-│   ├── memory.c / memory.h # Heap allocator (free-list, coalescing)
-│   ├── pmm.c / pmm.h       # Physical Memory Manager (bitmap)
-│   ├── vmm.c / vmm.h       # Virtual Memory Manager (page tables)
-│   ├── pci.c / pci.h       # PCI device enumeration
-│   ├── calc.c / calc.h     # Calculadora en C
-│   ├── calc_app.c          # Calculadora en ensamblador
-│   ├── apps.c / apps.h     # Framework TUI (ventanas, menús)
-│   ├── app_nano.c          # Editor de texto
-│   ├── app_hexview.c       # Visor hexadecimal
-│   ├── app_sysinfo.c       # Información del sistema
-│   ├── app_filemanager.c   # Administrador de archivos
-│   ├── app_htop.c          # Monitor de procesos
-│   ├── app_calc.c          # Calculadora TUI
-│   ├── games.c / games.h   # 8 juegos con branding NucleOS
-│   ├── console.h           # Constantes VGA
-│   ├── keyboard.h          # Scancode set completo
-│   ├── mouse.h             # Definiciones del mouse PS/2
-│   ├── pic.h               # Definiciones del PIC 8259A
-│   └── timer.h             # Definiciones del PIT 8253
-├── drivers/
-│   ├── console.c           # Controlador VGA + kernel_panic_ex()
-│   ├── keyboard.c          # Controlador de teclado PS/2
-│   ├── mouse.c             # Controlador de mouse PS/2
-│   ├── pic.c               # Controlador de PIC 8259A
-│   └── timer.c             # Controlador de PIT 8253
+├── kernel/
+│   ├── arch/x86_64/        # Entrada 32→64 y ensamblador específico de x86_64
+│   ├── core/               # Kernel, memoria, procesos, VFS, shell y servicios
+│   │   └── rust/           # Módulo Rust freestanding
+│   ├── drivers/             # Controladores de consola, teclado, mouse, PIC y PIT
+│   └── linker.ld            # Script de enlace del kernel
+├── config/grub/             # grub.cfg y tema fuente de la ISO
+├── rootfs/                  # Contenido empaquetado como módulo Multiboot
+│   └── etc/openrc/examples/ # Ejemplos de servicios, separados de init.d activos
 ├── tools/
-│   ├── build_rootfs.py     # Genera el rootfs a partir de rootfs/
-│   ├── mkiso.py            # Script auxiliar para crear ISO
-│   ├── lcp_main_repo.json  # Repositorio LCP (29 paquetes, 6 repos)
-│   └── mkiso.py            # Generador de ISO
-├── rootfs/                 # Archivos del sistema de archivos raíz
-├── third_party/bash/       # Fuente vendorizada de GNU Bash 5.3
-├── third_party/openrc/     # Fuente oficial de OpenRC
-├── docs/BASH_PORT.md       # Estado y requisitos del port de Bash
-├── docs/USERSPACE_PORT.md  # Base ELF/syscalls para programas de usuario
-├── docs/IMPLEMENTATION_PLAN.md # Port por etapas y criterios de aceptación
-├── user/                    # libc mínima y crt0 para binarios estáticos
-├── install-deps.sh         # Instalador multiplataforma de dependencias
-├── install-deps.bat        # Instalador Windows de dependencias
-├── linker.ld               # Script de enlace (elf64-x86-64)
-├── Makefile                # Build system (x86_64)
-└── os.iso                  # ISO de arranque (generada con make echo-iso)
+│   ├── build/               # Constructores de rootfs e ISO
+│   ├── installer/           # Instalador Python y su punto de entrada
+│   ├── lcp/                 # Cliente LCP y repositorio principal
+│   ├── media/               # Creación de USB booteable
+│   └── setup/               # Instaladores de dependencias Linux/Windows
+├── user/                    # crt0, libc mínima y programas de prueba
+├── third_party/             # Submódulos externos sin modificar
+├── docs/                    # Documentación técnica y planes de port
+├── build/                   # Artefactos temporales (ignorado por Git)
+├── dist/                    # ISO y sumas de distribución (ignorado por Git)
+├── Makefile                 # Puntos de entrada reproducibles del build
+└── LICENSE                  # Licencia del código propio
 ```
 
----
+Comandos principales:
+
+```bash
+make                    # Compilar el kernel
+make echo-iso           # Crear dist/os.iso
+make run                # Crear la ISO y arrancarla en QEMU
+make user-test-hello    # Compilar el primer ELF de usuario
+make clean              # Eliminar build/ y dist/
+```
 
 ## Comandos del Shell
 
@@ -286,9 +260,9 @@ qemu-system-x86_64 -cdrom os.iso -m 256M -no-reboot
 |-------------|-----------------------------------------------------|
 | `all`       | Compila el kernel (`build/kernel.bin`)              |
 | `iso`       | Compila el kernel + genera rootfs                   |
-| `echo-iso`  | `iso` + genera imagen ISO (`os.iso`)                |
+| `echo-iso`  | `iso` + genera `dist/os.iso`                       |
 | `run`       | `echo-iso` + ejecuta con QEMU                       |
-| `clean`     | Elimina `build/`, `os.iso` y restos ISO             |
+| `clean`     | Elimina `build/` y `dist/`                          |
 
 ---
 

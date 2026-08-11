@@ -58,10 +58,10 @@ jobs:
       - name: Build bootable ISO
         run: |
           make PYTHON=python3 echo-iso
-          test -s os.iso
-          test -s iso/boot/kernel.bin
-          test -s iso/boot/rootfs.bin
-          sha256sum os.iso > SHA256SUMS
+          test -s dist/os.iso
+          test -s build/iso/boot/kernel.bin
+          test -s build/iso/boot/rootfs.bin
+          sha256sum dist/os.iso > SHA256SUMS
 
       - name: Boot smoke test in QEMU
         id: qemu-smoke
@@ -71,7 +71,7 @@ jobs:
           set +e
           timeout --foreground 35s \
             qemu-system-x86_64 \
-              -cdrom os.iso \
+              -cdrom dist/os.iso \
               -m 512M \
               -display none \
               -serial file:qemu-serial.log \
@@ -115,10 +115,10 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           path: |
-            os.iso
+            dist/os.iso
             SHA256SUMS
             build/kernel.bin
-            iso/boot/rootfs.bin
+            build/iso/boot/rootfs.bin
             qemu-serial.log
             qemu-debug.log
 
@@ -148,5 +148,5 @@ jobs:
 
             Commit: `${{ github.sha }}`
           files: |
-            release/os.iso
+            release/dist/os.iso
             release/SHA256SUMS
