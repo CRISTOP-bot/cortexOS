@@ -1,27 +1,97 @@
-name: Makefile CI
+name: NucleOS CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleos-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    name: Build kernel and bootable ISO
+    runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: configure
-      run: ./configure
+      - name: Install build and emulator dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            binutils \
+            gcc \
+            grub-common \
+            grub-pc-bin \
+            make \
+            mtools \
+            qemu-system-x86 \
+            xorriso
 
-    - name: Install dependencies
-      run: make
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
 
-    - name: Run check
-      run: make check
+      - name: Build kernel
+        run: |
+          make clean
+          make -j"$(nproc)"
+          test -s build/kernel.bin
 
-    - name: Run distcheck
-      run: make distcheck
+      - name: Validate Multiboot kernel
+        run: grub-file --is-x86-multiboot build/kernel.bin
+
+      - name: Build bootable ISO
+        run: |
+          make PYTHON=python3 echo-iso
+          test -s os.iso
+          test -s iso/boot/kernel.bin
+          test -s iso/boot/rootfs.bin
+          sha256sum os.iso > SHA256SUMS
+
+      - name: Boot smoke test in QEMU
+        shell: bash
+        run: |
+          set +e
+          timeout --foreground 30s \
+            qemu-system-x86_64 \
+              -cdrom os.iso \
+              -m 512M \
+              -display none \
+              -serial file:qemu-serial.log \
+              -no-reboot \
+              -no-shutdown
+          qemu_status=$?
+          set -e
+
+          # The kernel is intentionally long-running, so timeout(124) is expected.
+          if [ "$qemu_status" -ne 0 ] && [ "$qemu_status" -ne 124 ]; then
+            echo "QEMU terminó con un estado inesperado: $qemu_status"
+            cat qemu-serial.log || true
+            exit "$qemu_status"
+          fi
+
+          grep -aF '[Rust] NucleOS Rust kernel module loaded' qemu-serial.log
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleos-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            os.iso
+            SHA256SUMS
+            build/kernel.bin
+            iso/boot/rootfs.bin
+            qemu-serial.log
