@@ -59,6 +59,8 @@ AARCH64_CC  ?= aarch64-linux-gnu-gcc
 AARCH64_LD  ?= aarch64-linux-gnu-ld
 AARCH64_BUILD = $(BUILD_DIR)/aarch64
 AARCH64_EARLY = $(AARCH64_BUILD)/early.elf
+AARCH64_OBJECTS = $(AARCH64_BUILD)/boot.o $(AARCH64_BUILD)/early.o \
+	$(AARCH64_BUILD)/fdt.o $(AARCH64_BUILD)/mmu.o $(AARCH64_BUILD)/gic.o
 
 CFLAGS  = -ffreestanding -O2 -Wall -Wextra -m64 -nostdlib -std=c99 -I $(CORE_DIR) -fno-stack-protector -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -fno-strict-aliasing -mno-red-zone -mcmodel=kernel -fno-pic -fno-pie
 ASFLAGS = -m64 -ffreestanding
@@ -194,11 +196,20 @@ $(AARCH64_BUILD):
 $(AARCH64_BUILD)/boot.o: $(KERNEL_DIR)/arch/aarch64/boot.S | $(AARCH64_BUILD)
 	$(AARCH64_CC) -c -ffreestanding -nostdlib -march=armv8-a $< -o $@
 
-$(AARCH64_BUILD)/early.o: $(KERNEL_DIR)/arch/aarch64/early.c | $(AARCH64_BUILD)
-	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a $< -o $@
+$(AARCH64_BUILD)/early.o: $(KERNEL_DIR)/arch/aarch64/early.c $(KERNEL_DIR)/arch/aarch64/fdt.h $(KERNEL_DIR)/arch/aarch64/mmu.h $(KERNEL_DIR)/arch/aarch64/gic.h | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
 
-$(AARCH64_EARLY): $(AARCH64_BUILD)/boot.o $(AARCH64_BUILD)/early.o $(KERNEL_DIR)/arch/aarch64/linker.ld
-	$(AARCH64_LD) -nostdlib -T $(KERNEL_DIR)/arch/aarch64/linker.ld -o $@ $(AARCH64_BUILD)/boot.o $(AARCH64_BUILD)/early.o
+$(AARCH64_BUILD)/fdt.o: $(KERNEL_DIR)/arch/aarch64/fdt.c $(KERNEL_DIR)/arch/aarch64/fdt.h | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
+
+$(AARCH64_BUILD)/mmu.o: $(KERNEL_DIR)/arch/aarch64/mmu.c $(KERNEL_DIR)/arch/aarch64/mmu.h | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
+
+$(AARCH64_BUILD)/gic.o: $(KERNEL_DIR)/arch/aarch64/gic.c $(KERNEL_DIR)/arch/aarch64/gic.h | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
+
+$(AARCH64_EARLY): $(AARCH64_OBJECTS) $(KERNEL_DIR)/arch/aarch64/linker.ld
+	$(AARCH64_LD) -nostdlib -T $(KERNEL_DIR)/arch/aarch64/linker.ld -o $@ $(AARCH64_OBJECTS)
 
 # QEMU virt exposes the PL011 UART at 0x09000000.
 aarch64-run: aarch64-early
