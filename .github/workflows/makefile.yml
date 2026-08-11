@@ -62,6 +62,7 @@ jobs:
         run: |
           make aarch64-early
           timeout --foreground 5s make aarch64-run > aarch64-serial.log 2>&1 || test $? -eq 124
+          cat aarch64-serial.log
           grep -Fq 'NucleOS AArch64 early boot' aarch64-serial.log
           grep -Fq 'FDT: valid' aarch64-serial.log
           grep -Fq 'MMU: enabled with identity mappings' aarch64-serial.log
