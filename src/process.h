@@ -50,7 +50,8 @@ void process_init(void);
 int process_create(const char *name, uint64_t entry, bool user);
 void process_exit(int code);
 int process_fork(void);
-int process_exec(const char *path);
+int process_exec(const char *path, const char *const *argv,
+		 const char *const *envp);
 int process_wait(int *status);
 struct process *process_current(void);
 void process_list(void);

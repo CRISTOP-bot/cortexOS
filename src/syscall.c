@@ -60,12 +60,13 @@ static int64_t sys_fork(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint
 	return process_fork();
 }
 
-static int64_t sys_exec(uint64_t path, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+static int64_t sys_exec(uint64_t path, uint64_t argv, uint64_t envp, uint64_t a4, uint64_t a5)
 {
-	(void)a2; (void)a3; (void)a4; (void)a5;
+	(void)a4; (void)a5;
 	if (!path)
 		return -1;
-	return process_exec((const char *)path);
+	return process_exec((const char *)path,
+		(const char *const *)argv, (const char *const *)envp);
 }
 
 static int64_t sys_wait(uint64_t status, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
@@ -142,6 +143,23 @@ static int64_t sys_isatty(uint64_t fd, uint64_t a2, uint64_t a3, uint64_t a4, ui
 	return vfs_isatty_fd((int)fd) ? 1 : 0;
 }
 
+static int64_t sys_pipe(uint64_t pipe_fds, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	int fds[2];
+	(void)a2; (void)a3; (void)a4; (void)a5;
+	if (!pipe_fds || vfs_pipe(fds) < 0)
+		return -1;
+	((int *)pipe_fds)[0] = fds[0];
+	((int *)pipe_fds)[1] = fds[1];
+	return 0;
+}
+
+static int64_t sys_lseek(uint64_t fd, uint64_t offset, uint64_t whence, uint64_t a4, uint64_t a5)
+{
+	(void)a4; (void)a5;
+	return vfs_lseek_fd((int)fd, (long)offset, (int)whence);
+}
+
 static syscall_fn syscall_table[SYSCALL_MAX] = {
 	sys_read,
 	sys_write,
@@ -159,6 +177,8 @@ static syscall_fn syscall_table[SYSCALL_MAX] = {
 	sys_ticks,
 	sys_dup2,
 	sys_isatty,
+	sys_pipe,
+	sys_lseek,
 };
 
 void syscall_init(void)
