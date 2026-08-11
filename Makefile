@@ -169,6 +169,9 @@ installer-usb:
 user-libc:
 	$(MAKE) -C user CC="$(CC)"
 
+user-test-hello:
+	$(MAKE) -C user CC="$(CC)" test-hello
+
 openrc-source:
 	@test -f $(OPENRC_SRC_DIR)/meson.build
 	@test -d $(OPENRC_SRC_DIR)/src
@@ -185,4 +188,4 @@ bash-source:
 clean:
 	rm -rf $(BUILD_DIR) os.iso $(ISO_DIR)/boot/kernel.bin $(ISO_DIR)/boot/rootfs.bin $(ISO_DIR)/installer
 
-.PHONY: all iso echo-iso run user-libc openrc-source bash-source clean installer installer-usb
+.PHONY: all iso echo-iso run user-libc user-test-hello openrc-source bash-source clean installer installer-usb
