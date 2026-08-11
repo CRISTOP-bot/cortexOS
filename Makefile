@@ -1,11 +1,33 @@
-ifeq ($(shell command -v i686-elf-gcc >/dev/null 2>&1 && echo yes),yes)
-	CC  = i686-elf-gcc
-	AS  = i686-elf-gcc
-	LD  = i686-elf-ld
-else
+# Target architecture. Only x86_64 is bootable today; other ports are
+# explicitly rejected by check-arch until their architecture code is complete.
+ARCH ?= x86_64
+SUPPORTED_ARCHES = x86_64
+
+ifeq ($(ARCH),x86_64)
+	ARCH_SUPPORTED = yes
 	CC  = gcc
 	AS  = gcc
 	LD  = ld
+else ifeq ($(ARCH),i386)
+	ARCH_SUPPORTED = no
+	CC  = i686-elf-gcc
+	AS  = i686-elf-gcc
+	LD  = i686-elf-ld
+else ifeq ($(ARCH),aarch64)
+	ARCH_SUPPORTED = no
+	CC  = aarch64-none-elf-gcc
+	AS  = aarch64-none-elf-gcc
+	LD  = aarch64-none-elf-ld
+else ifeq ($(ARCH),armv7)
+	ARCH_SUPPORTED = no
+	CC  = arm-none-eabi-gcc
+	AS  = arm-none-eabi-gcc
+	LD  = arm-none-eabi-ld
+else
+	ARCH_SUPPORTED = no
+	CC  = false
+	AS  = false
+	LD  = false
 endif
 
 # Project layout
@@ -13,7 +35,7 @@ BUILD_DIR   = build
 DIST_DIR    = dist
 ISO_DIR     = $(BUILD_DIR)/iso
 KERNEL_DIR  = kernel
-ARCH_DIR    = $(KERNEL_DIR)/arch/x86_64
+ARCH_DIR    = $(KERNEL_DIR)/arch/$(ARCH)
 CORE_DIR    = $(KERNEL_DIR)/core
 DRIVER_DIR  = $(KERNEL_DIR)/drivers
 CONFIG_DIR  = config
@@ -63,7 +85,19 @@ INSTALLER_FILES = tools/installer/__init__.py \
                   tools/installer/nucleos-install
 LCP_FILES      = tools/lcp/lcp.py tools/lcp/main_repo.json
 
-all: $(KERNEL)
+all: check-arch $(KERNEL)
+
+check-arch:
+ifeq ($(ARCH_SUPPORTED),yes)
+	@echo "  Arquitectura seleccionada: $(ARCH)"
+else
+	$(error ARCH=$(ARCH) todavía no tiene un port arrancable; consulta docs/ARCHITECTURES.md)
+endif
+
+arch-list:
+	@echo "Arquitecturas declaradas: x86_64 i386 aarch64 armv7"
+	@echo "Compatible y arrancable: x86_64"
+	@echo "Preparadas para port: i386 aarch64 armv7"
 
 $(BUILD_DIR):
 	mkdir -p $@
@@ -163,4 +197,4 @@ fastfetch-source:
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)
 
-.PHONY: all iso echo-iso run user-libc user-test-hello openrc-source bash-source fastfetch-source clean installer installer-usb
+.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello openrc-source bash-source fastfetch-source clean installer installer-usb
