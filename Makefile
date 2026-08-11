@@ -53,7 +53,12 @@ KERNEL      = $(BUILD_DIR)/kernel.bin
 ROOTFS      = $(ISO_DIR)/boot/rootfs.bin
 ISO_IMAGE   = $(DIST_DIR)/os.iso
 QEMU        = qemu-system-x86_64
+QEMU_AARCH64 ?= qemu-system-aarch64
 LINKER      = $(KERNEL_DIR)/linker.ld
+AARCH64_CC  ?= aarch64-linux-gnu-gcc
+AARCH64_LD  ?= aarch64-linux-gnu-ld
+AARCH64_BUILD = $(BUILD_DIR)/aarch64
+AARCH64_EARLY = $(AARCH64_BUILD)/early.elf
 
 CFLAGS  = -ffreestanding -O2 -Wall -Wextra -m64 -nostdlib -std=c99 -I $(CORE_DIR) -fno-stack-protector -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -fno-strict-aliasing -mno-red-zone -mcmodel=kernel -fno-pic -fno-pie
 ASFLAGS = -m64 -ffreestanding
@@ -96,8 +101,9 @@ endif
 
 arch-list:
 	@echo "Arquitecturas declaradas: x86_64 i386 aarch64 armv7"
-	@echo "Compatible y arrancable: x86_64"
-	@echo "Preparadas para port: i386 aarch64 armv7"
+	@echo "Kernel completo arrancable: x86_64"
+	@echo "Etapa de boot independiente: aarch64"
+	@echo "Preparadas para port completo: i386 armv7 aarch64"
 
 $(BUILD_DIR):
 	mkdir -p $@
@@ -177,6 +183,27 @@ user-test-hello:
 user-test-posix:
 	$(MAKE) -C user CC="$(CC)" test-posix
 
+# First independently buildable AArch64 stage. This does not yet build the
+# x86_64-oriented kernel/core; it validates the ARM64 boot and UART path.
+aarch64-early: $(AARCH64_EARLY)
+	@echo "  AArch64 early image: $(AARCH64_EARLY)"
+
+$(AARCH64_BUILD):
+	mkdir -p $@
+
+$(AARCH64_BUILD)/boot.o: $(KERNEL_DIR)/arch/aarch64/boot.S | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -march=armv8-a $< -o $@
+
+$(AARCH64_BUILD)/early.o: $(KERNEL_DIR)/arch/aarch64/early.c | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a $< -o $@
+
+$(AARCH64_EARLY): $(AARCH64_BUILD)/boot.o $(AARCH64_BUILD)/early.o $(KERNEL_DIR)/arch/aarch64/linker.ld
+	$(AARCH64_LD) -nostdlib -T $(KERNEL_DIR)/arch/aarch64/linker.ld -o $@ $(AARCH64_BUILD)/boot.o $(AARCH64_BUILD)/early.o
+
+# QEMU virt exposes the PL011 UART at 0x09000000.
+aarch64-run: aarch64-early
+	$(QEMU_AARCH64) -machine virt -cpu cortex-a57 -m 128M -nographic -monitor none -serial stdio -no-reboot -kernel $(AARCH64_EARLY)
+
 openrc-source:
 	@test -f $(OPENRC_SRC_DIR)/meson.build
 	@test -d $(OPENRC_SRC_DIR)/src
@@ -200,4 +227,5 @@ fastfetch-source:
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)
 
-.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix openrc-source bash-source fastfetch-source clean installer installer-usb
+.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix aarch64-early aarch64-run openrc-source bash-source fastfetch-source clean installer installer-usb
+

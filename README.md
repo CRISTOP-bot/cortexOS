@@ -64,7 +64,22 @@ NucleOS.
 
 La base multi-arquitectura se documenta en
 [`docs/ARCHITECTURES.md`](docs/ARCHITECTURES.md). Actualmente solo x86_64
-puede generar una imagen arrancable.
+genera la imagen principal de NucleOS.
+
+El port AArch64 ya tiene una primera imagen independiente para QEMU `virt`:
+configura el stack inicial y escribe por la UART PL011. Todavía no es el
+kernel completo ni comparte el build x86_64.
+
+```bash
+make aarch64-early \
+  AARCH64_CC=aarch64-linux-gnu-gcc \
+  AARCH64_LD=aarch64-linux-gnu-ld
+
+make aarch64-run \
+  AARCH64_CC=aarch64-linux-gnu-gcc \
+  AARCH64_LD=aarch64-linux-gnu-ld \
+  QEMU_AARCH64=qemu-system-aarch64
+```
 
 ## Arquitectura del sistema
 
@@ -317,6 +332,8 @@ incluye comandos experimentales y funciones que todavía pueden ser parciales.
 | `user-libc` | Compila la libc inicial y `crt0`. |
 | `user-test-hello` | Compila el ELF de prueba básico. |
 | `user-test-posix` | Compila el smoke test de la ABI POSIX inicial. |
+| `aarch64-early` | Compila la imagen independiente de boot temprano AArch64. |
+| `aarch64-run` | Ejecuta la imagen temprana AArch64 en QEMU `virt`. |
 | `bash-source` | Valida el submódulo de Bash 5.3. |
 | `openrc-source` | Valida el submódulo oficial de OpenRC. |
 | `fastfetch-source` | Valida el submódulo oficial de Fastfetch. |
