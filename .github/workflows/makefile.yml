@@ -49,9 +49,12 @@ jobs:
       - name: Validate Fastfetch submodule
         run: make fastfetch-source
 
+      - name: Validate architecture matrix
+        run: make arch-list
+
       - name: Build kernel
         run: |
-          make clean
+          make ARCH=x86_64 clean
           make -j"$(nproc)"
           test -s build/kernel.bin
 

@@ -6,7 +6,8 @@ y los artefactos generados.
 ## Reglas
 
 - `kernel/` contiene exclusivamente el kernel y se divide en `core/`,
-  `drivers/` y `arch/x86_64/`.
+  `drivers/` y `arch/<arquitectura>/`. El port arrancable actual es
+  `arch/x86_64/`; los demás directorios contienen la preparación de sus ports.
 - `config/` contiene archivos fuente de configuración, como el menú de GRUB.
 - `rootfs/` es el contenido que se empaqueta dentro del módulo raíz; no debe
   mezclarse con los archivos de compilación.

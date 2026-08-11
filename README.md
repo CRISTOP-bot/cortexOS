@@ -32,6 +32,7 @@
 ## Características
 
 - **Kernel freestanding x86_64** — 64 bits, sin libc, compilado con `-ffreestanding -m64`.
+- **Base multi-arquitectura** — código común separado de `kernel/arch/`, con perfiles preparados para i386, AArch64 y ARMv7; x86_64 es el único port arrancable actualmente.
 - **GRUB Multiboot** — Arranque conforme al estándar Multiboot v1.
 - **GDT/IDT 64-bit** — Segmentación (L=1 code segments) y tabla de interrupciones con 16-byte entries completamente configuradas.
 - **PIC (8259A)** — Remapeo de IRQ y enmascaramiento.
@@ -130,8 +131,9 @@ Para crear una ISO, ejecuta `bash tools/setup/install-deps.sh`. Para instalar Nu
 # Instalar dependencias (opcional)
 bash tools/setup/install-deps.sh
 
-# Compilar el kernel
-make clean && make
+# Ver arquitecturas y compilar el port actual
+make arch-list
+make ARCH=x86_64 clean && make ARCH=x86_64
 
 # Generar ISO de arranque
 make echo-iso
@@ -198,6 +200,7 @@ y artefactos generados. `build/` y `dist/` nunca forman parte del código fuente
 │   ├── openrc/              # OpenRC oficial
 │   └── fastfetch/           # Fastfetch oficial
 ├── docs/                    # Documentación técnica y planes de port
+│   ├── ARCHITECTURES.md     # Matriz y requisitos multi-arquitectura
 │   └── FASTFETCH_PORT.md    # Estado del port de Fastfetch oficial
 ├── build/                   # Artefactos temporales (ignorado por Git)
 ├── dist/                    # ISO y sumas de distribución (ignorado por Git)
