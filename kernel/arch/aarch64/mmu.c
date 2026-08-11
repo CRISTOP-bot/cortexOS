@@ -83,7 +83,8 @@ int aarch64_mmu_init(uint64_t ram_base, uint64_t ram_size)
 	/* 39-bit VA, 4 KiB granule, inner-shareable WBWA normal memory. */
 	tcr = 25UL | (1UL << 8) | (1UL << 10) | (3UL << 12) | (5UL << 32);
 	write_mair(0x00000000000004ffUL);
-	write_ttbr0((uint64_t)(uintptr_t)l0_table);
+	/* T0SZ=25 selects a 39-bit VA space, whose root is level 1. */
+	write_ttbr0((uint64_t)(uintptr_t)l1_table);
 	write_tcr(tcr);
 	__asm__ volatile("dsb ish\n\ttlbi vmalle1\n\tdsb ish\n\tisb" ::: "memory");
 
