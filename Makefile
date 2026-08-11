@@ -22,8 +22,10 @@ ROOTFS_DIR  = rootfs
 TOOLS_DIR   = tools
 
 PYTHON      ?= python3
-BASH_SRC_DIR = third_party/bash
-OPENRC_SRC_DIR = third_party/openrc
+BASH_SRC_DIR    = third_party/bash
+OPENRC_SRC_DIR  = third_party/openrc
+FASTFETCH_SRC_DIR = third_party/fastfetch
+FASTFETCH_COMMIT  = a0452b8323aaa9d3b5b6ded435ed6660cee2bbb9
 
 KERNEL      = $(BUILD_DIR)/kernel.bin
 ROOTFS      = $(ISO_DIR)/boot/rootfs.bin
@@ -151,7 +153,14 @@ bash-source:
 	@echo "  Si falta, ejecuta: git submodule update --init --recursive"
 	@echo "  Pendiente: libc/ABI POSIX y cargador ELF para compilarlo para NucleOS"
 
+fastfetch-source:
+	@test -f $(FASTFETCH_SRC_DIR)/CMakeLists.txt
+	@test -f $(FASTFETCH_SRC_DIR)/LICENSE
+	@echo "  Fuente oficial de Fastfetch disponible en $(FASTFETCH_SRC_DIR)"
+	@echo "  Commit fijado: $(FASTFETCH_COMMIT)"
+	@echo "  Pendiente: portar libc/POSIX y compilar el binario para NucleOS"
+
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)
 
-.PHONY: all iso echo-iso run user-libc user-test-hello openrc-source bash-source clean installer installer-usb
+.PHONY: all iso echo-iso run user-libc user-test-hello openrc-source bash-source fastfetch-source clean installer installer-usb

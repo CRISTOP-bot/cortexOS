@@ -8,6 +8,7 @@ licenses.
 |---|---|---|---|
 | GNU Bash 5.3 | `third_party/bash/` | GPL-3.0 | Source mirror pinned by the Bash integration. |
 | OpenRC | `third_party/openrc/` | BSD-2-Clause | Official OpenRC source pinned for the NucleOS port. |
+| Fastfetch | `third_party/fastfetch/` | MIT | Official Fastfetch source pinned for the NucleOS port. |
 
 The authoritative notices, copyright statements, and full license texts are
 inside each submodule. Initialize them before inspecting or redistributing the
