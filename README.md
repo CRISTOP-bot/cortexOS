@@ -41,7 +41,7 @@
 - **GUI estilo KDE Plasma** — Escritorio con íconos, panel inferior con reloj y lanzador de aplicaciones.
 - **VFS** — Sistema de archivos virtual con soporte para subdirectorios.
 - **Rootfs** — Sistema de archivos raíz cargado como módulo Multiboot.
-- **OpenRC** — Fuente oficial integrada como submódulo; el port del init real queda separado del gestor provisional de NucleOS.
+- **OpenRC** — Fuente oficial integrada como submódulo, con handoff del kernel a `/sbin/openrc-init` cuando el binario real esté instalado y fallback provisional durante el port.
 - **LCP (Package Manager)** — Gestor de paquetes con repositorios y dependencias.
 - **Calculadora** — Evaluador de expresiones aritméticas en C y ensamblador.
 - **CPUID** — Detección de vendor, familia y características del procesador.

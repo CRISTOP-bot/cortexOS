@@ -297,6 +297,41 @@ int process_exec(const char *path, const char *const *argv,
 	return 0;
 }
 
+int process_spawn_exec(const char *name, const char *path,
+		       const char *const *argv, const char *const *envp)
+{
+	int pid;
+	struct process *proc;
+	const void *data;
+	size_t size;
+	uint64_t entry;
+	uint64_t initial_stack;
+
+	if (!name || !path)
+		return -1;
+	pid = process_create(name, 0, true);
+	if (pid < 0)
+		return -1;
+	proc = find_process(pid);
+	data = vfs_read(path);
+	size = vfs_get_size(path);
+	if (!proc || !data || size == 0 ||
+	    !elf_load_image(data, size, proc->user_code,
+			     proc->user_code + USER_CODE_SIZE, &entry)) {
+		if (proc)
+			proc->state = PROCESS_UNUSED;
+		return -1;
+	}
+	initial_stack = process_build_stack(proc, path, argv, envp);
+	if (!initial_stack) {
+		proc->state = PROCESS_UNUSED;
+		return -1;
+	}
+	proc->ctx.rip = entry;
+	proc->ctx.rsp = initial_stack;
+	return pid;
+}
+
 int process_wait(int *status)
 {
 	struct process *proc = process_current();
@@ -349,6 +384,12 @@ void process_list(void)
 				     VGA_ATTR(VGA_LIGHT_GREY, VGA_BLACK));
 		console_print("\n");
 	}
+}
+
+void process_start_scheduler(void)
+{
+	scheduler_enabled = true;
+	process_schedule();
 }
 
 void process_schedule(void)

@@ -13,11 +13,17 @@ environment`.
 
 ## Importante
 
-`src/openrc.c` sigue siendo el gestor provisional que NucleOS usa dentro del
-kernel. La fuente de `third_party/openrc` es el OpenRC real, pero todavía no se
-compila ni se arranca dentro del kernel: OpenRC necesita un espacio de usuario,
-libc, procesos, señales, TTY, `/proc`/montajes y varios servicios POSIX que
-NucleOS aún está implementando.
+`src/openrc.c` sigue siendo el gestor provisional de respaldo que NucleOS usa
+si no encuentra el binario real. La fuente de `third_party/openrc` es el OpenRC
+real y el kernel ya tiene el punto de entrada para entregarle el control como
+primer proceso de usuario: busca `/sbin/openrc-init`, le construye
+`argv/envp`, lo carga como ELF y habilita el planificador.
+
+Si `/sbin/openrc-init` no existe o no es un ELF válido, NucleOS conserva el
+arranque provisional para que la imagen siga siendo utilizable durante el port.
+OpenRC todavía necesita libc, procesos, señales, TTY, `/proc`/montajes y varios
+servicios POSIX que NucleOS está implementando antes de poder generar ese
+binario para NucleOS.
 
 Para comprobar que el submódulo fue descargado:
 

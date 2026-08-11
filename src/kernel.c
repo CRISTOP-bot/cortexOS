@@ -6,6 +6,7 @@
 #include "keyboard.h"
 #include "lcp.h"
 #include "openrc.h"
+#include "init.h"
 #include "boot.h"
 #include "idt.h"
 #include "gdt.h"
@@ -299,8 +300,7 @@ void kmain(unsigned long mbi_addr)
 	boot_status("Started Boot Manager");
 	boot_delay();
 
-	openrc_init();
-	boot_status("Started Service Manager (OpenRC)");
+	boot_status("Prepared OpenRC user-space handoff");
 	boot_delay();
 
 	lcp_init();
@@ -313,6 +313,15 @@ void kmain(unsigned long mbi_addr)
 
 	syscall_init();
 	boot_status("Initialized Syscalls (INT 0x80)");
+	boot_delay();
+
+	if (init_start_openrc()) {
+		boot_status("Starting real OpenRC as user-space init");
+		process_start_scheduler();
+	} else {
+		openrc_init();
+		boot_status("Started compatibility Service Manager");
+	}
 	boot_delay();
 
 	persist_init();
