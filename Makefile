@@ -41,6 +41,7 @@ SRCS  = $(SRC_DIR)/kernel.c \
         $(SRC_DIR)/shell.c \
         $(SRC_DIR)/boot.c \
         $(SRC_DIR)/openrc.c \
+        $(SRC_DIR)/init.c \
         $(SRC_DIR)/lcp.c \
         $(SRC_DIR)/gui.c \
         $(SRC_DIR)/memory.c \

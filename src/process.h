@@ -48,6 +48,8 @@ struct process {
 
 void process_init(void);
 int process_create(const char *name, uint64_t entry, bool user);
+int process_spawn_exec(const char *name, const char *path,
+		       const char *const *argv, const char *const *envp);
 void process_exit(int code);
 int process_fork(void);
 int process_exec(const char *path, const char *const *argv,
@@ -56,6 +58,7 @@ int process_wait(int *status);
 struct process *process_current(void);
 void process_list(void);
 void process_schedule(void);
+void process_start_scheduler(void);
 void process_switch_to(struct process *next);
 int process_get_pid(void);
 
