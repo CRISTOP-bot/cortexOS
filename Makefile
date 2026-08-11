@@ -10,7 +10,8 @@ endif
 
 BUILD_DIR = build
 ISO_DIR   = iso
-PYTHON    ?= python
+PYTHON    ?= python3
+BASH_SRC_DIR = third_party/bash
 
 KERNEL = $(BUILD_DIR)/kernel.bin
 ROOTFS = $(ISO_DIR)/boot/rootfs.bin
@@ -150,7 +151,7 @@ installer:
 	@echo "  Para ejecutar el instalador LOCALMENTE:"
 	@echo "    sudo tools/nucleos-install"
 	@echo ""
-	@echo "  Requiere: grub-install, grub-mkrescue, python3, sfdisk, mkfs.*"
+	@echo "  Requiere: grub-install, grub-mkrescue, python3, sfdisk, sgdisk, wipefs, partprobe, blkid, mkfs.ext2, mkfs.fat"
 	@echo "  Debes compilar primero: make iso"
 	@echo ""
 
@@ -162,7 +163,14 @@ installer-usb:
 	@echo "  ADVERTENCIA: Esto BORRA todos los datos del dispositivo"
 	@echo ""
 
+bash-source:
+	@test -f $(BASH_SRC_DIR)/configure.ac
+	@grep -q 'version 5.3' $(BASH_SRC_DIR)/README
+	@echo "  Fuente de GNU Bash disponible en $(BASH_SRC_DIR)"
+	@echo "  Si falta, ejecuta: git submodule update --init --recursive"
+	@echo "  Pendiente: libc/ABI POSIX y cargador ELF para compilarlo para NucleOS"
+
 clean:
 	rm -rf $(BUILD_DIR) os.iso $(ISO_DIR)/boot/kernel.bin $(ISO_DIR)/boot/rootfs.bin $(ISO_DIR)/installer
 
-.PHONY: all iso echo-iso run clean installer installer-usb
+.PHONY: all iso echo-iso run bash-source clean installer installer-usb

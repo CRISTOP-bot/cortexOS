@@ -36,6 +36,7 @@
 - **Mouse PS/2** — Controlador con aceleración y scroll wheel.
 - **Consola VGA** — Modo texto 80×25 con soporte completo de colores (16 colores VGA).
 - **Shell interactivo** — Prompt coloreado (`nucleos@nucleos:/path$`), historial, comandos nativos.
+- **GNU Bash 5.3 (fuente integrada)** — Incorporado mediante el submódulo `third_party/bash/`; su port como `/bin/bash` queda pendiente de libc, ABI POSIX y cargador ELF para NucleOS.
 - **fastfetch** — Información del sistema: CPU (vía CPUID), memoria, uptime, archivos, layout.
 - **GUI estilo KDE Plasma** — Escritorio con íconos, panel inferior con reloj y lanzador de aplicaciones.
 - **VFS** — Sistema de archivos virtual con soporte para subdirectorios.
@@ -110,8 +111,12 @@ El flujo de arranque comienza en `boot/boot.S` (punto de entrada `start`), que c
 | `xorriso`          | Dependencia de `grub-mkrescue`                |
 | `python`           | Construcción del rootfs                        |
 | `mtools`           | Soporte FAT para `grub-mkrescue`              |
+| `grub-install`     | Instalación de GRUB en el disco destino       |
+| `sfdisk`, `sgdisk` | Particionado automático                       |
+| `wipefs`, `partprobe`, `blkid` | Preparación y detección de discos |
+| `mkfs.ext2`, `mkfs.fat` | Formateo de root y EFI                  |
 
-Ejecuta `./install-deps.sh` para instalar todas las dependencias automáticamente (soporta Arch, Debian, Fedora, SUSE, Void, Alpine, Gentoo, NixOS, FreeBSD, macOS).
+Para crear una ISO, ejecuta `./install-deps.sh`. Para instalar NucleOS en un disco también necesitas las herramientas de particionado y formateo indicadas arriba (en Debian/Ubuntu suelen estar en `util-linux`, `gdisk`, `parted`, `e2fsprogs` y `dosfstools`). El instalador comprueba las dependencias antes de modificar el disco.
 
 ---
 
@@ -214,6 +219,8 @@ qemu-system-x86_64 -cdrom os.iso -m 256M -no-reboot
 │   ├── lcp_main_repo.json  # Repositorio LCP (29 paquetes, 6 repos)
 │   └── mkiso.py            # Generador de ISO
 ├── rootfs/                 # Archivos del sistema de archivos raíz
+├── third_party/bash/       # Fuente vendorizada de GNU Bash 5.3
+├── docs/BASH_PORT.md       # Estado y requisitos del port de Bash
 ├── install-deps.sh         # Instalador multiplataforma de dependencias
 ├── install-deps.bat        # Instalador Windows de dependencias
 ├── linker.ld               # Script de enlace (elf64-x86-64)
