@@ -6,6 +6,8 @@
 
 #define PL011_BASE 0x09000000UL
 #define FALLBACK_DTB 0x47f00000UL
+#define FALLBACK_GICD 0x08000000UL
+#define FALLBACK_GICR 0x080a0000UL
 #define UART_FR_TXFF (1U << 5)
 
 static uintptr_t uart_base = PL011_BASE;
@@ -113,8 +115,16 @@ void aarch64_early_main(uint64_t dtb)
 		uart_puts("\nUART base: ");
 		uart_puthex(fdt.uart_base);
 	}
+	if (!fdt.has_gic) {
+		/* QEMU virt fallback for firmware versions that omit GIC
+		 * compatibility data from the generated DTB. */
+		fdt.gic_dist_base = FALLBACK_GICD;
+		fdt.gic_redist_base = FALLBACK_GICR;
+		fdt.has_gic = 1;
+		uart_puts("\nGIC: using QEMU virt fallback addresses\n");
+	}
 	if (fdt.has_gic) {
-		uart_puts("\nGICD base: ");
+		uart_puts("GICD base: ");
 		uart_puthex(fdt.gic_dist_base);
 		uart_puts("\nGICR base: ");
 		uart_puthex(fdt.gic_redist_base);
