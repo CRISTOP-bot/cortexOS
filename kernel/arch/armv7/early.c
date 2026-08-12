@@ -50,7 +50,9 @@ static void uart_puthex(uint32_t value)
 
 static int fdt_valid(uint32_t address)
 {
-	return address && *(volatile uint32_t *)(uintptr_t)address == 0xd00dfeedU;
+	volatile const uint8_t *p = (volatile const uint8_t *)(uintptr_t)address;
+	return address && p[0] == 0xd0 && p[1] == 0x0d &&
+	       p[2] == 0xfe && p[3] == 0xed;
 }
 
 static uint32_t find_fdt_in_ram(void)
