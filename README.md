@@ -37,7 +37,7 @@ implica que el componente ya funcione como programa dentro de NucleOS.
 | Bash 5.3 | Fuente integrada; binario NucleOS pendiente |
 | OpenRC | Fuente integrada; binarios NucleOS pendientes |
 | Fastfetch | Fuente integrada; binario NucleOS pendiente |
-| AArch64 | Boot temprano con FDT, MMU y base de IRQ; no kernel completo |
+| AArch64 | Boot con FDT, MMU, PMM, IRQ, EL0 y SVC smoke; no kernel completo |
 | ARMv7 | Boot temprano con vectores y UART; no kernel completo |
 | i386 | Preparado para port; todavía no arrancable |
 
@@ -68,9 +68,11 @@ La base multi-arquitectura se documenta en
 [`docs/ARCHITECTURES.md`](docs/ARCHITECTURES.md). Actualmente solo x86_64
 genera la imagen principal de NucleOS.
 
-El port AArch64 ya tiene una primera imagen independiente para QEMU `virt`:
-configura el stack, analiza el FDT, instala la MMU, prepara el GICv2 y programa
-el Generic Timer. Todavía no es el kernel completo ni comparte el build x86_64.
+El port AArch64 ya tiene una imagen independiente para QEMU `virt`: configura
+el stack, analiza el FDT, inicializa el PMM, instala la MMU, prepara el GICv2,
+programa el Generic Timer y ejecuta un smoke test EL0/SVC. Todavía no es el
+kernel completo ni comparte el build x86_64: faltan aislamiento por proceso,
+scheduler y rootfs integrado.
 
 ```bash
 make aarch64-early \

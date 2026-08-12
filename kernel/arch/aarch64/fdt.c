@@ -91,6 +91,12 @@ int aarch64_fdt_parse(uint64_t address, aarch64_fdt_info_t *info)
 	uint64_t pending_reg_extra = 0;
 
 	info->valid = 0;
+	info->dtb_size = 0;
+	info->ram_range_count = 0;
+	for (uint32_t i = 0; i < AARCH64_FDT_MAX_RAM_RANGES; i++) {
+		info->ram_ranges[i].base = 0;
+		info->ram_ranges[i].size = 0;
+	}
 	info->has_uart = 0;
 	info->has_memory = 0;
 	info->has_gic = 0;
@@ -104,6 +110,7 @@ int aarch64_fdt_parse(uint64_t address, aarch64_fdt_info_t *info)
 		return -1;
 
 	total = be32(&header->totalsize);
+	info->dtb_size = total;
 	struct_offset = be32(&header->off_dt_struct);
 	struct_size = be32(&header->size_dt_struct);
 	strings_offset = be32(&header->off_dt_strings);
@@ -202,8 +209,15 @@ int aarch64_fdt_parse(uint64_t address, aarch64_fdt_info_t *info)
 					info->gic_redist_base = pending_reg_extra;
 					info->has_gic = 1;
 				} else if (node_is(node_name, "memory")) {
-					info->ram_base = pending_reg_base;
-					info->ram_size = pending_reg_size;
+					if (info->ram_range_count < AARCH64_FDT_MAX_RAM_RANGES) {
+						uint32_t n = info->ram_range_count++;
+						info->ram_ranges[n].base = pending_reg_base;
+						info->ram_ranges[n].size = pending_reg_size;
+					}
+					if (!info->has_memory) {
+						info->ram_base = pending_reg_base;
+						info->ram_size = pending_reg_size;
+					}
 					info->has_memory = 1;
 				}
 			}

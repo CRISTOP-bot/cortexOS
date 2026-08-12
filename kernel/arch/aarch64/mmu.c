@@ -1,4 +1,5 @@
 #include "mmu.h"
+#include "pmm.h"
 
 #define PAGE_SIZE       4096UL
 #define TABLE_DESC      0x3UL
@@ -8,14 +9,17 @@
 #define ATTR_DEVICE     (1UL << 2)
 #define UXN             (1UL << 54)
 #define PXN             (1UL << 53)
+#define AP_EL0_RW       (1UL << 6)
 #define SCTLR_M         (1UL << 0)
 #define SCTLR_C         (1UL << 2)
 #define SCTLR_I         (1UL << 12)
 
-/* QEMU virt RAM starts at 0x40000000. These tables are identity mapped. */
-static uint64_t l0_table[512] __attribute__((aligned(PAGE_SIZE)));
-static uint64_t l1_table[512] __attribute__((aligned(PAGE_SIZE)));
-static uint64_t l2_table[512] __attribute__((aligned(PAGE_SIZE)));
+/* These early tables live inside the reserved kernel image. The PMM owns all
+ * other pages; replacing these with PMM pages is a later multi-level VMM step. */
+static uint64_t l1_storage[512] __attribute__((aligned(PAGE_SIZE)));
+static uint64_t l2_storage[512] __attribute__((aligned(PAGE_SIZE)));
+static uint64_t *l1_table = l1_storage;
+static uint64_t *l2_table = l2_storage;
 
 static inline void write_ttbr0(uint64_t value)
 {
@@ -47,7 +51,6 @@ static inline void write_sctlr(uint64_t value)
 static void clear_tables(void)
 {
 	for (unsigned int i = 0; i < 512; i++) {
-		l0_table[i] = 0;
 		l1_table[i] = 0;
 		l2_table[i] = 0;
 	}
@@ -64,7 +67,6 @@ int aarch64_mmu_init(uint64_t ram_base, uint64_t ram_size)
 		return -1;
 
 	clear_tables();
-	l0_table[0] = ((uint64_t)(uintptr_t)l1_table & ~0xfffUL) | TABLE_DESC;
 
 	/* The first 1 GiB is split into 2 MiB device blocks. This covers the
 	 * MMIO ranges described by QEMU virt, including UART and GIC. */

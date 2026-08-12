@@ -9,7 +9,7 @@ smoke test.
 |---|---|---|---|---|
 | x86_64 | Compatible experimental | GRUB Multiboot v1 | Sí | procesos y userspace POSIX |
 | i386 / x86 | Preparada | Pendiente | No | GDT/IDT, paging, ABI y linker de 32 bits |
-| aarch64 / ARM64 | Boot temprano + MMU/IRQ | QEMU `virt` + UART PL011/GICv2 | Sí | allocator, EL0, syscalls y procesos |
+| aarch64 / ARM64 | Boot + PMM/EL0/SVC smoke | QEMU `virt` + UART PL011/GICv2 | Sí | aislamiento por proceso, scheduler y rootfs |
 | armv7 / ARM32 | Boot temprano | QEMU `virt` + UART PL011 | Sí | FDT, MMU, GIC, timer y EL0 |
 | riscv64 | Planificada | Pendiente | No | SBI, trap handler, PLIC, timer y paging |
 
@@ -28,8 +28,10 @@ make armv7-run
 
 Por seguridad, `make ARCH=i386`, `make ARCH=aarch64` y `make ARCH=armv7`
 fallan para el kernel completo mientras sus ports no estén completos. AArch64
-y ARMv7 ya disponen de imágenes independientes de boot temprano que no
-mezclan los fuentes x86_64 del kernel principal. No se fabrican kernels que
+y ARMv7 ya disponen de imágenes independientes con smoke tests de arranque que
+no mezclan los fuentes x86_64 del kernel principal. AArch64 valida además PMM,
+EL0 y SVC, pero todavía no declara aislamiento por proceso ni rootfs integrado.
+No se fabrican kernels que
 aparenten estar completos cuando todavía usan rutinas de otra arquitectura.
 
 ## Reglas para un port

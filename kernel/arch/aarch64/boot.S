@@ -51,8 +51,9 @@ aarch64_vectors:
 	VECTOR_IRQ_SLOT
 	VECTOR_SLOT 6
 	VECTOR_SLOT 7
-	/* Lower EL using AArch64: sync, IRQ, FIQ, SError. */
-	VECTOR_SLOT 8
+	/* Lower EL using AArch64: SVC, IRQ, FIQ, SError. */
+	b aarch64_svc_entry
+	.space 124
 	VECTOR_IRQ_SLOT
 	VECTOR_SLOT 10
 	VECTOR_SLOT 11
@@ -108,6 +109,67 @@ aarch64_irq_entry:
 	ldp x2, x3, [sp, #16]
 	ldp x0, x1, [sp, #0]
 	add sp, sp, #256
+	eret
+
+.global aarch64_svc_entry
+.type aarch64_svc_entry, %function
+aarch64_svc_entry:
+	/* Keep the EL0 context intact across the C syscall dispatcher. */
+	sub sp, sp, #256
+	stp x0, x1, [sp, #0]
+	stp x2, x3, [sp, #16]
+	stp x4, x5, [sp, #32]
+	stp x6, x7, [sp, #48]
+	stp x8, x9, [sp, #64]
+	stp x10, x11, [sp, #80]
+	stp x12, x13, [sp, #96]
+	stp x14, x15, [sp, #112]
+	stp x16, x17, [sp, #128]
+	stp x18, x19, [sp, #144]
+	stp x20, x21, [sp, #160]
+	stp x22, x23, [sp, #176]
+	stp x24, x25, [sp, #192]
+	stp x26, x27, [sp, #208]
+	stp x28, x29, [sp, #224]
+	str x30, [sp, #240]
+
+	mov x4, x8
+	ldr x1, [sp, #0]
+	ldr x2, [sp, #8]
+	ldr x3, [sp, #16]
+	mov x0, x4
+	bl aarch64_syscall_c
+	str x0, [sp, #248]
+
+	ldr x30, [sp, #240]
+	ldp x28, x29, [sp, #224]
+	ldp x26, x27, [sp, #208]
+	ldp x24, x25, [sp, #192]
+	ldp x22, x23, [sp, #176]
+	ldp x20, x21, [sp, #160]
+	ldp x18, x19, [sp, #144]
+	ldp x16, x17, [sp, #128]
+	ldp x14, x15, [sp, #112]
+	ldp x12, x13, [sp, #96]
+	ldp x10, x11, [sp, #80]
+	ldp x8, x9, [sp, #64]
+	ldp x6, x7, [sp, #48]
+	ldp x4, x5, [sp, #32]
+	ldp x2, x3, [sp, #16]
+	ldr x1, [sp, #8]
+	ldr x0, [sp, #248]
+	add sp, sp, #256
+	eret
+
+.global aarch64_enter_user
+.type aarch64_enter_user, %function
+aarch64_enter_user:
+	/* x0 = EL0 entry, x1 = EL0 stack top. */
+	msr SP_EL0, x1
+	msr ELR_EL1, x0
+	mov x2, #0
+	msr SPSR_EL1, x2
+	isb
 	eret
 
 .global aarch64_exception_entry

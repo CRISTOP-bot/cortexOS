@@ -62,7 +62,8 @@ AARCH64_EARLY = $(AARCH64_BUILD)/early.elf
 AARCH64_DTB = $(AARCH64_BUILD)/virt.dtb
 AARCH64_DTB_ADDRESS = 0x47f00000
 AARCH64_OBJECTS = $(AARCH64_BUILD)/boot.o $(AARCH64_BUILD)/early.o \
-	$(AARCH64_BUILD)/fdt.o $(AARCH64_BUILD)/mmu.o $(AARCH64_BUILD)/gic.o
+	$(AARCH64_BUILD)/fdt.o $(AARCH64_BUILD)/mmu.o $(AARCH64_BUILD)/pmm.o \
+	$(AARCH64_BUILD)/gic.o $(AARCH64_BUILD)/syscall.o $(AARCH64_BUILD)/user.o
 ARMV7_CC ?= arm-linux-gnueabihf-gcc
 ARMV7_LD ?= arm-linux-gnueabihf-ld
 QEMU_ARMV7 ?= qemu-system-arm
@@ -205,14 +206,23 @@ $(AARCH64_BUILD):
 $(AARCH64_BUILD)/boot.o: $(KERNEL_DIR)/arch/aarch64/boot.S | $(AARCH64_BUILD)
 	$(AARCH64_CC) -c -ffreestanding -nostdlib -march=armv8-a $< -o $@
 
-$(AARCH64_BUILD)/early.o: $(KERNEL_DIR)/arch/aarch64/early.c $(KERNEL_DIR)/arch/aarch64/fdt.h $(KERNEL_DIR)/arch/aarch64/mmu.h $(KERNEL_DIR)/arch/aarch64/gic.h | $(AARCH64_BUILD)
+$(AARCH64_BUILD)/early.o: $(KERNEL_DIR)/arch/aarch64/early.c $(KERNEL_DIR)/arch/aarch64/fdt.h $(KERNEL_DIR)/arch/aarch64/mmu.h $(KERNEL_DIR)/arch/aarch64/gic.h $(KERNEL_DIR)/arch/aarch64/pmm.h | $(AARCH64_BUILD)
 	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
 
 $(AARCH64_BUILD)/fdt.o: $(KERNEL_DIR)/arch/aarch64/fdt.c $(KERNEL_DIR)/arch/aarch64/fdt.h | $(AARCH64_BUILD)
 	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
 
-$(AARCH64_BUILD)/mmu.o: $(KERNEL_DIR)/arch/aarch64/mmu.c $(KERNEL_DIR)/arch/aarch64/mmu.h | $(AARCH64_BUILD)
+$(AARCH64_BUILD)/mmu.o: $(KERNEL_DIR)/arch/aarch64/mmu.c $(KERNEL_DIR)/arch/aarch64/mmu.h $(KERNEL_DIR)/arch/aarch64/pmm.h | $(AARCH64_BUILD)
 	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
+
+$(AARCH64_BUILD)/pmm.o: $(KERNEL_DIR)/arch/aarch64/pmm.c $(KERNEL_DIR)/arch/aarch64/pmm.h | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
+
+$(AARCH64_BUILD)/syscall.o: $(KERNEL_DIR)/arch/aarch64/syscall.c $(KERNEL_DIR)/arch/aarch64/gic.h | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
+
+$(AARCH64_BUILD)/user.o: $(KERNEL_DIR)/arch/aarch64/user.S | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -march=armv8-a $< -o $@
 
 $(AARCH64_BUILD)/gic.o: $(KERNEL_DIR)/arch/aarch64/gic.c $(KERNEL_DIR)/arch/aarch64/gic.h | $(AARCH64_BUILD)
 	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
