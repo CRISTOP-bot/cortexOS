@@ -55,6 +55,14 @@ static void clear_tables(void)
 	}
 }
 
+static void clean_table(const uint64_t *table)
+{
+	for (unsigned int offset = 0; offset < PAGE_SIZE; offset += 64) {
+		uint64_t address = (uint64_t)(uintptr_t)((const uint8_t *)table + offset);
+		__asm__ volatile("dc cvac, %0" : : "r"(address) : "memory");
+	}
+}
+
 int aarch64_mmu_init(uint64_t ram_base, uint64_t ram_size)
 {
 	uint64_t ram_block;
@@ -89,6 +97,9 @@ int aarch64_mmu_init(uint64_t ram_base, uint64_t ram_size)
 
 	/* 39-bit VA, 4 KiB granule, inner-shareable WBWA normal memory. */
 	tcr = 25UL | (1UL << 8) | (1UL << 10) | (3UL << 12) | (5UL << 32);
+	clean_table(l1_table);
+	clean_table(l2_table);
+	__asm__ volatile("dsb sy" ::: "memory");
 	write_mair(0x00000000000004ffUL);
 	/* T0SZ=25 selects a 39-bit VA space, whose root is level 1. */
 	aarch64_mmu_trace(3, tcr);
