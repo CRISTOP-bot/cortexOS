@@ -69,6 +69,8 @@ static void uart_putc(char c)
 	UART_DR = (uint32_t)c;
 }
 
+static void uart_puthex(uint64_t value);
+
 static void uart_puts(const char *text)
 {
 	while (*text) {
