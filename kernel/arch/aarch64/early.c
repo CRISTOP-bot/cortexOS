@@ -1,9 +1,18 @@
 #include <stdint.h>
 
+#include "fdt.h"
+#include "gic.h"
+#include "mmu.h"
+
 #define PL011_BASE 0x09000000UL
-#define UART_DR    (*(volatile uint32_t *)(PL011_BASE + 0x00))
-#define UART_FR    (*(volatile uint32_t *)(PL011_BASE + 0x18))
+#define FALLBACK_DTB 0x47f00000UL
+#define FALLBACK_GICD 0x08000000UL
+#define FALLBACK_GICC 0x08010000UL
 #define UART_FR_TXFF (1U << 5)
+
+static uintptr_t uart_base = PL011_BASE;
+#define UART_DR (*(volatile uint32_t *)(uart_base + 0x00))
+#define UART_FR (*(volatile uint32_t *)(uart_base + 0x18))
 
 static inline uint64_t read_currentel(void)
 {
@@ -75,9 +84,16 @@ static void uart_puthex(uint64_t value)
 
 void aarch64_early_main(uint64_t dtb)
 {
+	aarch64_fdt_info_t fdt;
+	int mmu_ready = 0;
+
 	uart_puts("NucleOS AArch64 early boot\n");
 	uart_puts("EL: ");
 	uart_puthex((read_currentel() >> 2) & 0x3);
+	if (!dtb) {
+		dtb = FALLBACK_DTB;
+		uart_puts("\nDTB register empty; using QEMU fallback address");
+	}
 	uart_puts("\nDTB: ");
 	uart_puthex(dtb);
 	uart_puts("\nCNTFRQ: ");
@@ -85,7 +101,51 @@ void aarch64_early_main(uint64_t dtb)
 	uart_puts("\nCNTPCT: ");
 	uart_puthex(read_cntpct());
 	uart_puts("\nException vectors installed at VBAR_EL1\n");
-	uart_puts("Next: Device Tree, MMU, GIC and timer interrupts\n");
+
+	if (aarch64_fdt_parse(dtb, &fdt) != 0) {
+		uart_puts("FDT: invalid or unavailable\n");
+		return;
+	}
+	uart_puts("FDT: valid\nRAM base: ");
+	uart_puthex(fdt.ram_base);
+	uart_puts("\nRAM size: ");
+	uart_puthex(fdt.ram_size);
+	if (fdt.has_uart) {
+		uart_base = (uintptr_t)fdt.uart_base;
+		uart_puts("\nUART base: ");
+		uart_puthex(fdt.uart_base);
+	}
+	if (!fdt.has_gic) {
+		/* QEMU virt fallback for firmware versions that omit GIC
+		 * compatibility data from the generated DTB. */
+		fdt.gic_dist_base = FALLBACK_GICD;
+		fdt.gic_redist_base = FALLBACK_GICC;
+		fdt.has_gic = 1;
+		uart_puts("\nGIC: using QEMU virt fallback addresses\n");
+	}
+	if (fdt.has_gic) {
+		uart_puts("GICD base: ");
+		uart_puthex(fdt.gic_dist_base);
+		uart_puts("\nGICC base: ");
+		uart_puthex(fdt.gic_redist_base);
+	}
+	uart_puts("\n");
+
+	uart_puts("MMU: initializing\n");
+	if (fdt.has_memory && aarch64_mmu_init(fdt.ram_base, fdt.ram_size) == 0) {
+		mmu_ready = 1;
+		uart_puts("MMU: enabled with identity mappings\n");
+	} else {
+		uart_puts("MMU: initialization failed\n");
+	}
+	if (mmu_ready && fdt.has_gic &&
+	    aarch64_gic_init(fdt.gic_dist_base, fdt.gic_redist_base) == 0) {
+		uart_puts("GICv2: initialized; timer PPI enabled\n");
+		__asm__ volatile("msr daifclr, #2\n\tisb" ::: "memory");
+		uart_puts("IRQ: unmasked\n");
+	} else {
+		uart_puts("GIC/MMU: not enabled\n");
+	}
 }
 
 __attribute__((noreturn)) void aarch64_exception_c(uint64_t vector)

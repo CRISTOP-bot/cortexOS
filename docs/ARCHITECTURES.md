@@ -9,7 +9,7 @@ smoke test.
 |---|---|---|---|---|
 | x86_64 | Compatible experimental | GRUB Multiboot v1 | Sí | procesos y userspace POSIX |
 | i386 / x86 | Preparada | Pendiente | No | GDT/IDT, paging, ABI y linker de 32 bits |
-| aarch64 / ARM64 | Boot temprano | QEMU `virt` + UART PL011 | Sí | Device Tree, excepciones, MMU, GIC y timer |
+| aarch64 / ARM64 | Boot temprano + MMU/IRQ | QEMU `virt` + UART PL011/GICv2 | Sí | allocator, EL0, syscalls y procesos |
 | armv7 / ARM32 | Preparada | Pendiente | No | boot ARM32, MMU, UART, interrupciones y timer |
 | riscv64 | Planificada | Pendiente | No | SBI, trap handler, PLIC, timer y paging |
 

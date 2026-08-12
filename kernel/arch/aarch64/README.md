@@ -11,15 +11,19 @@ QEMU y procesadores ARMv8-A.
 - instalación de `VBAR_EL1`;
 - handler común de excepciones con diagnóstico de `ESR_EL1`, `ELR_EL1` y
   `FAR_EL1`;
-- salida por UART PL011 (`0x09000000`);
-- lectura inicial de la dirección del Device Tree proporcionada en `x0`;
+- salida por UART PL011 (detectada desde el Device Tree; `0x09000000` en QEMU);
+- parser FDT mínimo para RAM, UART PL011 y controlador de interrupciones;
 - lectura de `CurrentEL`, `CNTFRQ_EL0` y `CNTPCT_EL0`;
+- MMU con tablas de 4 KiB, identidad inicial de RAM y dispositivos;
+- configuración inicial de GICv2 y del Generic Timer PPI;
+- IRQ con guardado y restauración del contexto completo de registros;
+- diagnóstico de excepciones síncronas mediante `ESR_EL1`, `ELR_EL1` y `FAR_EL1`;
 - linker script con dirección de carga para QEMU `virt`;
 - bucle de espera mediante `wfe`.
 
 La etapa todavía no es el kernel completo de NucleOS. Aún deben implementarse
-la validación y lectura del Device Tree, MMU y tablas de páginas, GIC, timer
-con interrupciones, allocator, drivers, syscalls, procesos y una consola de
+un parser FDT completo, allocator basado en los rangos de memoria, paginación
+por proceso, drivers completos, syscalls, procesos, EL0 y una consola de
 usuario.
 
 ## Compilar y ejecutar
