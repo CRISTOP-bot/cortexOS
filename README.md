@@ -56,7 +56,7 @@ NucleOS.
 - Arquitectura arrancable: x86_64.
 - Bootloader: GRUB Multiboot v1.
 - Kernel: freestanding C/ASM, sin libc del host.
-- Entrada: `kernel/arch/x86_64/boot.S`.
+- Entrada: `arch/x86_64/boot.S`.
 - Linker script: `kernel/linker.ld`.
 - Rootfs: módulo Multiboot generado desde `rootfs/`.
 - Build: Make y artefactos separados en `build/` y `dist/`.
@@ -65,7 +65,7 @@ NucleOS.
   smoke test diagnóstico.
 
 La base multi-arquitectura se documenta en
-[`docs/ARCHITECTURES.md`](docs/ARCHITECTURES.md). Actualmente solo x86_64
+[`Documentation/ARCHITECTURES.md`](Documentation/ARCHITECTURES.md). Actualmente solo x86_64
 genera la imagen principal de NucleOS.
 
 El port AArch64 ya tiene una imagen independiente para QEMU `virt`: configura
@@ -106,7 +106,7 @@ make armv7-run \
 GRUB Multiboot v1
         |
         v
-kernel/arch/x86_64/boot.S
+arch/x86_64/boot.S
   32 bits -> long mode -> page tables iniciales
         |
         v
@@ -120,8 +120,8 @@ kmain()
   +-- shell y servicios provisionales
 ```
 
-El código común está en `kernel/core/`. El código específico de arquitectura
-se encuentra en `kernel/arch/`. Esta separación es necesaria para incorporar
+El código común está en `kernel/`. El código específico de arquitectura
+se encuentra en `arch/`. Esta separación es necesaria para incorporar
 posteriormente i386, ARMv7 y AArch64 sin reutilizar instrucciones x86 de forma
 incorrecta.
 
@@ -186,7 +186,7 @@ make fastfetch-source
 ```
 
 La política de licencias está en
-[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).
+[`LICENSES/THIRD_PARTY_LICENSES.md`](LICENSES/THIRD_PARTY_LICENSES.md).
 
 ## Compilación y ejecución
 
@@ -254,7 +254,7 @@ make ARCH=aarch64
 make ARCH=armv7
 ```
 
-Consultar [`docs/ARCHITECTURES.md`](docs/ARCHITECTURES.md) para los requisitos
+Consultar [`Documentation/ARCHITECTURES.md`](Documentation/ARCHITECTURES.md) para los requisitos
 de cada arquitectura.
 
 ## Depuración con QEMU
@@ -394,33 +394,42 @@ make ARCH=armv7      # aún no implementado
 ## Estructura del repositorio
 
 ```text
-kernel/
-  arch/x86_64/       Código de arranque y ensamblador x86_64
-  core/              Kernel, VFS, procesos, syscalls y shell
-  drivers/           Drivers de consola, teclado, mouse, PIC y PIT
-  linker.ld          Script de enlace
-config/grub/         Configuración de GRUB e ISO
-rootfs/              Contenido empaquetado como módulo Multiboot
-user/                crt0, libc inicial y pruebas de ABI
-tools/build/         Constructor del rootfs
-tools/installer/      Instalador y componentes Python
-tools/lcp/           Cliente LCP y repositorio principal
-tools/media/         Herramientas de medios extraíbles
-tools/setup/         Instaladores de dependencias
-third_party/         Submódulos externos sin modificar
-docs/                Arquitectura, ports y estado del proyecto
-build/               Artefactos temporales ignorados por Git
-dist/                ISO y sumas ignoradas por Git
+arch/                 Código específico de x86_64, AArch64, ARMv7 e i386
+kernel/               Núcleo común, shell, consola y aplicaciones
+block/                ATA y particiones
+drivers/              Drivers de consola, teclado, mouse, PIC, PIT, PCI y serial
+fs/                   VFS, CRFS, ELF y ext2
+init/                 Inicialización y compatibilidad provisional con OpenRC
+ipc/                  Procesos y syscalls
+mm/                   Memoria física y virtual
+net/                  Red del kernel
+lib/                  Utilidades internas del kernel
+include/              Headers públicos del ABI de usuario
+usr/                  crt0, libc inicial y pruebas de ABI
+rust/                 Módulo Rust del kernel
+config/grub/          Configuración de GRUB e ISO
+rootfs/               Contenido empaquetado como módulo Multiboot
+tools/build/          Constructor del rootfs
+tools/installer/       Instalador y componentes Python
+tools/lcp/            Cliente LCP y repositorio principal
+tools/media/          Herramientas de medios extraíbles
+tools/setup/          Instaladores de dependencias
+Documentation/        Arquitectura, ports y estado del proyecto
+LICENSES/             Avisos y licencias complementarias
+certs/ crypto/ ...    Puntos de extensión del kernel
+third_party/          Submódulos externos sin modificar
+build/                Artefactos temporales ignorados por Git
+dist/                 ISO y sumas ignoradas por Git
 ```
 
 Documentos principales:
 
-- [`docs/ARCHITECTURES.md`](docs/ARCHITECTURES.md)
-- [`docs/USERSPACE_PORT.md`](docs/USERSPACE_PORT.md)
-- [`docs/BASH_PORT.md`](docs/BASH_PORT.md)
-- [`docs/OPENRC_PORT.md`](docs/OPENRC_PORT.md)
-- [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
-- [`docs/PROJECT_LAYOUT.md`](docs/PROJECT_LAYOUT.md)
+- [`Documentation/ARCHITECTURES.md`](Documentation/ARCHITECTURES.md)
+- [`Documentation/USERSPACE_PORT.md`](Documentation/USERSPACE_PORT.md)
+- [`Documentation/BASH_PORT.md`](Documentation/BASH_PORT.md)
+- [`Documentation/OPENRC_PORT.md`](Documentation/OPENRC_PORT.md)
+- [`Documentation/IMPLEMENTATION_PLAN.md`](Documentation/IMPLEMENTATION_PLAN.md)
+- [`Documentation/PROJECT_LAYOUT.md`](Documentation/PROJECT_LAYOUT.md)
 
 ## Limpieza
 
@@ -440,6 +449,6 @@ v3.0. Los componentes externos conservan sus licencias originales:
 - OpenRC: BSD-2-Clause.
 - Fastfetch: MIT.
 
-Consultar [`LICENSE`](LICENSE), [`LICENSE.md`](LICENSE.md),
-[`COPYRIGHT.md`](COPYRIGHT.md) y
-[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) para los avisos completos.
+Consultar [`LICENSE`](LICENSE), [`LICENSES/LICENSE.md`](LICENSES/LICENSE.md),
+[`LICENSES/COPYRIGHT.md`](LICENSES/COPYRIGHT.md) y
+[`LICENSES/THIRD_PARTY_LICENSES.md`](LICENSES/THIRD_PARTY_LICENSES.md) para los avisos completos.
