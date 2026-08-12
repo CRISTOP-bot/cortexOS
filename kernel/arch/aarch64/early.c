@@ -78,6 +78,15 @@ static void uart_puts(const char *text)
 	}
 }
 
+void aarch64_mmu_trace(uint64_t stage, uint64_t value)
+{
+	uart_puts("MMU stage ");
+	uart_puthex(stage);
+	uart_puts(": ");
+	uart_puthex(value);
+	uart_puts("\n");
+}
+
 void aarch64_uart_write(const char *text, uint64_t length)
 {
 	uint64_t i;
