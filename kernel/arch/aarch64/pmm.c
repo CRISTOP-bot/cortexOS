@@ -84,6 +84,9 @@ int aarch64_pmm_init(uint64_t ram_base, uint64_t ram_size,
 		mark_free(i);
 	next_page = 0;
 
+	/* Keep the firmware/load area below the image out of the allocator. */
+	if (kernel_start > ram_base)
+		aarch64_pmm_reserve(ram_base, kernel_start - ram_base);
 	/* The image includes the bitmap, early stack and all static data. */
 	aarch64_pmm_reserve(kernel_start, kernel_end - kernel_start);
 	if (dtb_size)
