@@ -80,7 +80,7 @@ int aarch64_mmu_init(uint64_t ram_base, uint64_t ram_size)
 	ram_limit = ram_base + ram_size;
 	if (ram_block != 0x40000000UL || ram_limit < ram_base)
 		return -1;
-	l1_table[1] = ram_block | BLOCK_DESC | AF | SH_INNER | AP_EL0_RW;
+	l1_table[1] = ram_block | BLOCK_DESC | AF | SH_INNER;
 
 	/* 39-bit VA, 4 KiB granule, inner-shareable WBWA normal memory. */
 	tcr = 25UL | (1UL << 8) | (1UL << 10) | (3UL << 12) | (5UL << 32);
