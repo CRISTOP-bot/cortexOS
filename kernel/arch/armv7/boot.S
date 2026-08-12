@@ -14,8 +14,8 @@ _start:
 	mcr p15, 0, r1, c12, c0, 0
 	isb
 
-	mov r4, r0
-	mov r0, r4
+	/* ARM boot protocol passes the DTB address in r2. */
+	mov r0, r2
 	bl armv7_early_main
 
 1:

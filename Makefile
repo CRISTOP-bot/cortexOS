@@ -246,7 +246,7 @@ $(ARMV7_EARLY): $(ARMV7_BUILD)/boot.o $(ARMV7_BUILD)/early.o $(KERNEL_DIR)/arch/
 
 armv7-run: armv7-early
 	$(QEMU_ARMV7) -machine virt,dumpdtb=$(ARMV7_DTB) -cpu cortex-a15 -m 128M -display none
-	$(QEMU_ARMV7) -machine virt -cpu cortex-a15 -m 128M -nographic -monitor none -serial stdio -no-reboot -device loader,file=$(ARMV7_DTB),addr=$(ARMV7_DTB_ADDRESS) -kernel $(ARMV7_EARLY)
+	$(QEMU_ARMV7) -machine virt -cpu cortex-a15 -m 128M -nographic -monitor none -serial stdio -no-reboot -dtb $(ARMV7_DTB) -device loader,file=$(ARMV7_DTB),addr=$(ARMV7_DTB_ADDRESS) -kernel $(ARMV7_EARLY)
 
 openrc-source:
 	@test -f $(OPENRC_SRC_DIR)/meson.build
