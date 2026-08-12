@@ -217,8 +217,8 @@ $(AARCH64_EARLY): $(AARCH64_OBJECTS) $(KERNEL_DIR)/arch/aarch64/linker.ld
 # provide its generated DTB in x0 when loading an ELF with -kernel, so create
 # the machine DTB explicitly and load it at the documented fallback address.
 aarch64-run: aarch64-early
-	$(QEMU_AARCH64) -machine virt,dumpdtb=$(AARCH64_DTB) -cpu cortex-a57 -m 128M -display none
-	$(QEMU_AARCH64) -machine virt -cpu cortex-a57 -m 128M -nographic -monitor none -serial stdio -no-reboot -device loader,file=$(AARCH64_DTB),addr=$(AARCH64_DTB_ADDRESS) -kernel $(AARCH64_EARLY)
+	$(QEMU_AARCH64) -machine virt,gic-version=2,dumpdtb=$(AARCH64_DTB) -cpu cortex-a57 -m 128M -display none
+	$(QEMU_AARCH64) -machine virt,gic-version=2 -cpu cortex-a57 -m 128M -nographic -monitor none -serial stdio -no-reboot -device loader,file=$(AARCH64_DTB),addr=$(AARCH64_DTB_ADDRESS) -kernel $(AARCH64_EARLY)
 
 openrc-source:
 	@test -f $(OPENRC_SRC_DIR)/meson.build

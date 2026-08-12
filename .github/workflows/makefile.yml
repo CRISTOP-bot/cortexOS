@@ -66,7 +66,7 @@ jobs:
           grep -Fq 'NucleOS AArch64 early boot' aarch64-serial.log
           grep -Fq 'FDT: valid' aarch64-serial.log
           grep -Fq 'MMU: enabled with identity mappings' aarch64-serial.log
-          grep -Fq 'GICv3: initialized; timer PPI enabled' aarch64-serial.log
+          grep -Fq 'GICv2: initialized; timer PPI enabled' aarch64-serial.log
 
       - name: Build kernel
         run: |

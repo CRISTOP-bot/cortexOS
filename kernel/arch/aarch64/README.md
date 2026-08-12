@@ -12,10 +12,10 @@ QEMU y procesadores ARMv8-A.
 - handler común de excepciones con diagnóstico de `ESR_EL1`, `ELR_EL1` y
   `FAR_EL1`;
 - salida por UART PL011 (detectada desde el Device Tree; `0x09000000` en QEMU);
-- parser FDT mínimo para RAM, UART PL011 y GICv3;
+- parser FDT mínimo para RAM, UART PL011 y controlador de interrupciones;
 - lectura de `CurrentEL`, `CNTFRQ_EL0` y `CNTPCT_EL0`;
 - MMU con tablas de 4 KiB, identidad inicial de RAM y dispositivos;
-- configuración inicial de GICv3 y del Generic Timer PPI;
+- configuración inicial de GICv2 y del Generic Timer PPI;
 - IRQ con guardado y restauración del contexto completo de registros;
 - diagnóstico de excepciones síncronas mediante `ESR_EL1`, `ELR_EL1` y `FAR_EL1`;
 - linker script con dirección de carga para QEMU `virt`;

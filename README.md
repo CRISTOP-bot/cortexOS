@@ -68,7 +68,7 @@ La base multi-arquitectura se documenta en
 genera la imagen principal de NucleOS.
 
 El port AArch64 ya tiene una primera imagen independiente para QEMU `virt`:
-configura el stack, analiza el FDT, instala la MMU, prepara el GICv3 y programa
+configura el stack, analiza el FDT, instala la MMU, prepara el GICv2 y programa
 el Generic Timer. Todavía no es el kernel completo ni comparte el build x86_64.
 
 ```bash

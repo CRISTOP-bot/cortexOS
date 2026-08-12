@@ -175,7 +175,8 @@ int aarch64_fdt_parse(uint64_t address, aarch64_fdt_info_t *info)
 			    property[8] == 'l' && property[9] == 'e') {
 				compatible_uart = string_has(value, length, "arm,pl011");
 				compatible_gic = string_has(value, length, "arm,gic-v3") ||
-				                string_has(value, length, "arm,gic-400");
+				                string_has(value, length, "arm,gic-400") ||
+				                string_has(value, length, "arm,cortex-a15-gic");
 				if (pending_reg && compatible_uart) {
 					info->uart_base = pending_reg_base;
 					info->has_uart = 1;
