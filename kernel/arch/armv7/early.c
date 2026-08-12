@@ -53,10 +53,23 @@ static int fdt_valid(uint32_t address)
 	return address && *(volatile uint32_t *)(uintptr_t)address == 0xd00dfeedU;
 }
 
+static uint32_t find_fdt_in_ram(void)
+{
+	uint32_t address;
+	for (address = 0x40000000UL; address < 0x48000000UL; address += 0x1000) {
+		if (fdt_valid(address))
+			return address;
+	}
+	return 0;
+}
+
 void armv7_early_main(uint32_t dtb)
 {
-	if (!dtb)
-		dtb = FALLBACK_DTB;
+	uint32_t discovered;
+	if (!fdt_valid(dtb)) {
+		discovered = find_fdt_in_ram();
+		dtb = discovered ? discovered : FALLBACK_DTB;
+	}
 
 	uart_puts("NucleOS ARMv7 early boot\n");
 	uart_puts("DTB: ");
