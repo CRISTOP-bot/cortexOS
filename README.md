@@ -410,6 +410,7 @@ rust/                 Módulo Rust del kernel
 config/grub/          Configuración de GRUB e ISO
 rootfs/               Contenido empaquetado como módulo Multiboot
 tools/build/          Constructor del rootfs
+tools/archinstall/     Archinstall upstream y adaptador NucleOS
 tools/installer/       Instalador y componentes Python
 tools/lcp/            Cliente LCP y repositorio principal
 tools/media/          Herramientas de medios extraíbles
