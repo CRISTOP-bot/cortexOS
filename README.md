@@ -38,7 +38,8 @@ implica que el componente ya funcione como programa dentro de NucleOS.
 | OpenRC | Fuente integrada; binarios NucleOS pendientes |
 | Fastfetch | Fuente integrada; binario NucleOS pendiente |
 | AArch64 | Boot temprano con FDT, MMU y base de IRQ; no kernel completo |
-| i386 y ARMv7 | Preparados para port; todavía no arrancables |
+| ARMv7 | Boot temprano con vectores y UART; no kernel completo |
+| i386 | Preparado para port; todavía no arrancable |
 
 ### Componentes que aún no están disponibles
 
@@ -80,6 +81,21 @@ make aarch64-run \
   AARCH64_CC=aarch64-linux-gnu-gcc \
   AARCH64_LD=aarch64-linux-gnu-ld \
   QEMU_AARCH64=qemu-system-aarch64
+```
+
+ARMv7 también tiene una imagen independiente de boot temprano para QEMU
+`virt`, con tabla de excepciones, `VBAR`, UART PL011 y validación inicial del
+DTB. Todavía no comparte el kernel completo ni declara soporte de usuario.
+
+```bash
+make armv7-early \
+  ARMV7_CC=arm-linux-gnueabihf-gcc \
+  ARMV7_LD=arm-linux-gnueabihf-ld
+
+make armv7-run \
+  ARMV7_CC=arm-linux-gnueabihf-gcc \
+  ARMV7_LD=arm-linux-gnueabihf-ld \
+  QEMU_ARMV7=qemu-system-arm
 ```
 
 ## Arquitectura del sistema

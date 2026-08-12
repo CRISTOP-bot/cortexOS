@@ -63,6 +63,13 @@ AARCH64_DTB = $(AARCH64_BUILD)/virt.dtb
 AARCH64_DTB_ADDRESS = 0x47f00000
 AARCH64_OBJECTS = $(AARCH64_BUILD)/boot.o $(AARCH64_BUILD)/early.o \
 	$(AARCH64_BUILD)/fdt.o $(AARCH64_BUILD)/mmu.o $(AARCH64_BUILD)/gic.o
+ARMV7_CC ?= arm-linux-gnueabihf-gcc
+ARMV7_LD ?= arm-linux-gnueabihf-ld
+QEMU_ARMV7 ?= qemu-system-arm
+ARMV7_BUILD = $(BUILD_DIR)/armv7
+ARMV7_EARLY = $(ARMV7_BUILD)/early.elf
+ARMV7_DTB = $(ARMV7_BUILD)/virt.dtb
+ARMV7_DTB_ADDRESS = 0x47f00000
 
 CFLAGS  = -ffreestanding -O2 -Wall -Wextra -m64 -nostdlib -std=c99 -I $(CORE_DIR) -fno-stack-protector -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -fno-strict-aliasing -mno-red-zone -mcmodel=kernel -fno-pic -fno-pie
 ASFLAGS = -m64 -ffreestanding
@@ -106,7 +113,7 @@ endif
 arch-list:
 	@echo "Arquitecturas declaradas: x86_64 i386 aarch64 armv7"
 	@echo "Kernel completo arrancable: x86_64"
-	@echo "Etapa de boot independiente: aarch64"
+	@echo "Etapas de boot independientes: aarch64 armv7"
 	@echo "Preparadas para port completo: i386 armv7 aarch64"
 
 $(BUILD_DIR):
@@ -220,6 +227,27 @@ aarch64-run: aarch64-early
 	$(QEMU_AARCH64) -machine virt,gic-version=2,dumpdtb=$(AARCH64_DTB) -cpu cortex-a57 -m 128M -display none
 	$(QEMU_AARCH64) -machine virt,gic-version=2 -cpu cortex-a57 -m 128M -nographic -monitor none -serial stdio -no-reboot -device loader,file=$(AARCH64_DTB),addr=$(AARCH64_DTB_ADDRESS) -kernel $(AARCH64_EARLY)
 
+# First independently buildable ARMv7 stage. This is separate from the
+# AArch64 image and does not yet build kernel/core.
+armv7-early: $(ARMV7_EARLY)
+	@echo "  ARMv7 early image: $(ARMV7_EARLY)"
+
+$(ARMV7_BUILD):
+	mkdir -p $@
+
+$(ARMV7_BUILD)/boot.o: $(KERNEL_DIR)/arch/armv7/boot.S | $(ARMV7_BUILD)
+	$(ARMV7_CC) -c -ffreestanding -nostdlib -marm -march=armv7-a -mfloat-abi=soft $< -o $@
+
+$(ARMV7_BUILD)/early.o: $(KERNEL_DIR)/arch/armv7/early.c | $(ARMV7_BUILD)
+	$(ARMV7_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -marm -march=armv7-a -mfloat-abi=soft $< -o $@
+
+$(ARMV7_EARLY): $(ARMV7_BUILD)/boot.o $(ARMV7_BUILD)/early.o $(KERNEL_DIR)/arch/armv7/linker.ld
+	$(ARMV7_LD) -nostdlib -T $(KERNEL_DIR)/arch/armv7/linker.ld -o $@ $(ARMV7_BUILD)/boot.o $(ARMV7_BUILD)/early.o
+
+armv7-run: armv7-early
+	$(QEMU_ARMV7) -machine virt,dumpdtb=$(ARMV7_DTB) -cpu cortex-a15 -m 128M -display none
+	$(QEMU_ARMV7) -machine virt -cpu cortex-a15 -m 128M -nographic -monitor none -serial stdio -no-reboot -device loader,file=$(ARMV7_DTB),addr=$(ARMV7_DTB_ADDRESS) -kernel $(ARMV7_EARLY)
+
 openrc-source:
 	@test -f $(OPENRC_SRC_DIR)/meson.build
 	@test -d $(OPENRC_SRC_DIR)/src
@@ -243,5 +271,5 @@ fastfetch-source:
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)
 
-.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix aarch64-early aarch64-run openrc-source bash-source fastfetch-source clean installer installer-usb
+.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix aarch64-early aarch64-run armv7-early armv7-run openrc-source bash-source fastfetch-source clean installer installer-usb
 
