@@ -1,58 +1,54 @@
 #!/usr/bin/env python3
-import os
+"""Build the compact CRFS image consumed by NucleOS's VFS."""
+from __future__ import annotations
+
 import struct
 import sys
+from pathlib import Path
 
-MAGIC = b'CRFS'
+HEADER = struct.Struct("<4sIII")
+ENTRY = struct.Struct("<64sII")
+MAGIC = b"CRFS"
 VERSION = 1
-HEADER_FMT = '<4sIII'
-ENTRY_FMT = '<64sII'
-HEADER_SIZE = struct.calcsize(HEADER_FMT)
-ENTRY_SIZE = struct.calcsize(ENTRY_FMT)
 
 
-def pad_name(name):
-    data = name.encode('utf-8')
-    if len(data) > 63:
-        raise ValueError('File name too long: %s' % name)
-    return data + b'\x00' * (64 - len(data))
-
-
-def build_rootfs(rootdir, output_path):
+def collect(root: Path) -> list[tuple[str, bytes]]:
     files = []
-    for root, _, filenames in os.walk(rootdir):
-        for filename in sorted(filenames):
-            path = os.path.join(root, filename)
-            rel_path = os.path.relpath(path, rootdir).replace(os.sep, '/')
-            with open(path, 'rb') as f:
-                data = f.read()
-            files.append((rel_path, data))
+    for path in sorted(root.rglob("*")):
+        if path.is_file():
+            name = "/" + path.relative_to(root).as_posix()
+            if len(name.encode()) >= 64:
+                raise ValueError(f"rootfs path is too long: {name}")
+            files.append((name, path.read_bytes()))
+    return files
 
-    offset = HEADER_SIZE + len(files) * ENTRY_SIZE
-    offset = (offset + 3) & ~3
+
+def build(source: Path, output: Path) -> None:
+    files = collect(source)
+    header_size = HEADER.size + ENTRY.size * len(files)
     entries = []
-    contents = b''
+    payload = bytearray()
+    offset = header_size
     for name, data in files:
-        entries.append((pad_name(name), offset, len(data)))
-        contents += data
-        pad = (-len(data)) & 3
-        if pad:
-            contents += b'\x00' * pad
-        offset += len(data) + pad
-
-    with open(output_path, 'wb') as out:
-        out.write(struct.pack(HEADER_FMT, MAGIC, VERSION, len(files), 0))
-        for name, off, size in entries:
-            out.write(struct.pack(ENTRY_FMT, name, off, size))
-        current = out.tell()
-        pad = (-current) & 3
-        if pad:
-            out.write(b'\x00' * pad)
-        out.write(contents)
+        field = name.encode() + b"\0"
+        entries.append(ENTRY.pack(field.ljust(64, b"\0"), offset, len(data)))
+        payload.extend(data)
+        offset += len(data)
+    image = bytearray(HEADER.pack(MAGIC, VERSION, len(files), 0))
+    image.extend(b"".join(entries))
+    image.extend(payload)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_bytes(image)
+    print(f"  Rootfs CRFS: {output} ({len(files)} files, {len(image)} bytes)")
 
 
-if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print('Usage: build_rootfs.py <rootfs_dir> <output_path>')
-        sys.exit(1)
-    build_rootfs(sys.argv[1], sys.argv[2])
+def main(argv: list[str]) -> int:
+    if len(argv) != 3:
+        print(f"usage: {argv[0]} ROOTFS_DIR OUTPUT", file=sys.stderr)
+        return 2
+    build(Path(argv[1]), Path(argv[2]))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))

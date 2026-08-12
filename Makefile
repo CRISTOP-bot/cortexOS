@@ -35,9 +35,8 @@ BUILD_DIR   = build
 DIST_DIR    = dist
 ISO_DIR     = $(BUILD_DIR)/iso
 KERNEL_DIR  = kernel
-ARCH_DIR    = $(KERNEL_DIR)/arch/$(ARCH)
-CORE_DIR    = $(KERNEL_DIR)/core
-DRIVER_DIR  = $(KERNEL_DIR)/drivers
+ARCH_DIR    = arch/$(ARCH)
+KERNEL_SRC_DIRS = kernel block fs init ipc mm net drivers lib
 CONFIG_DIR  = config
 GRUB_DIR    = $(CONFIG_DIR)/grub
 ROOTFS_DIR  = rootfs
@@ -72,7 +71,8 @@ ARMV7_EARLY = $(ARMV7_BUILD)/early.elf
 ARMV7_DTB = $(ARMV7_BUILD)/virt.dtb
 ARMV7_DTB_ADDRESS = 0x47f00000
 
-CFLAGS  = -ffreestanding -O2 -Wall -Wextra -m64 -nostdlib -std=c99 -I $(CORE_DIR) -fno-stack-protector -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -fno-strict-aliasing -mno-red-zone -mcmodel=kernel -fno-pic -fno-pie
+KERNEL_INCLUDES = $(foreach dir,$(KERNEL_SRC_DIRS),-I $(dir)) -I include -I rust -I $(ARCH_DIR)
+CFLAGS  = -ffreestanding -O2 -Wall -Wextra -m64 -nostdlib -std=c99 $(KERNEL_INCLUDES) -fno-stack-protector -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -fno-strict-aliasing -mno-red-zone -mcmodel=kernel -fno-pic -fno-pie
 ASFLAGS = -m64 -ffreestanding
 LDFLAGS = -m elf_x86_64 -nostdlib
 
@@ -80,18 +80,17 @@ RUSTC       = rustc
 RUST_TARGET = x86_64-unknown-linux-gnu
 RUSTFLAGS   = -C no-redzone=yes -C code-model=kernel -C relocation-model=static
 RUSTFLAGS  += -C panic=abort -C debuginfo=0 -C opt-level=2
-RUST_SRC    = $(CORE_DIR)/rust/rust_kernel.rs
+RUST_SRC    = rust/rust/rust_kernel.rs
 RUST_OBJ    = $(BUILD_DIR)/rust_kernel.o
 
-# Adding a C file to kernel/core or kernel/drivers automatically includes it.
-CORE_SRCS   = $(wildcard $(CORE_DIR)/*.c)
-DRIVER_SRCS = $(wildcard $(DRIVER_DIR)/*.c)
-CORE_OBJS   = $(patsubst $(CORE_DIR)/%.c,$(BUILD_DIR)/core_%.o,$(CORE_SRCS))
-DRIVER_OBJS = $(patsubst $(DRIVER_DIR)/%.c,$(BUILD_DIR)/drv_%.o,$(DRIVER_SRCS))
+# Every top-level kernel subsystem owns its sources. Adding a C file to one of
+# these directories automatically includes it in the x86_64 kernel.
+KERNEL_SRCS = $(foreach dir,$(KERNEL_SRC_DIRS),$(wildcard $(dir)/*.c))
+KERNEL_OBJS = $(patsubst %.c,$(BUILD_DIR)/%.o,$(KERNEL_SRCS))
 ARCH_OBJS   = $(BUILD_DIR)/arch_asm_utils.o \
               $(BUILD_DIR)/arch_math_asm.o \
               $(BUILD_DIR)/arch_ctx_switch.o
-OBJS        = $(CORE_OBJS) $(DRIVER_OBJS) $(ARCH_OBJS) \
+OBJS        = $(KERNEL_OBJS) $(ARCH_OBJS) \
               $(BUILD_DIR)/boot_entry.o $(RUST_OBJ)
 
 INSTALLER_FILES = tools/installer/__init__.py \
@@ -108,7 +107,7 @@ check-arch:
 ifeq ($(ARCH_SUPPORTED),yes)
 	@echo "  Arquitectura seleccionada: $(ARCH)"
 else
-	$(error ARCH=$(ARCH) todavía no tiene un port arrancable; consulta docs/ARCHITECTURES.md)
+	$(error ARCH=$(ARCH) todavía no tiene un port arrancable; consulta Documentation/ARCHITECTURES.md)
 endif
 
 arch-list:
@@ -136,10 +135,8 @@ $(BUILD_DIR)/arch_%.o: $(ARCH_DIR)/%.S | $(BUILD_DIR)
 $(RUST_OBJ): $(RUST_SRC) | $(BUILD_DIR)
 	$(RUSTC) --target $(RUST_TARGET) --crate-type staticlib $(RUSTFLAGS) --emit obj -o $@ $(RUST_SRC)
 
-$(BUILD_DIR)/core_%.o: $(CORE_DIR)/%.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/drv_%.o: $(DRIVER_DIR)/%.c | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
+	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(KERNEL): $(OBJS) $(LINKER) | $(BUILD_DIR)
@@ -187,48 +184,48 @@ installer-usb:
 	@echo ""
 
 user-libc:
-	$(MAKE) -C user CC="$(CC)"
+	$(MAKE) -C usr CC="$(CC)"
 
 user-test-hello:
-	$(MAKE) -C user CC="$(CC)" test-hello
+	$(MAKE) -C usr CC="$(CC)" test-hello
 
 user-test-posix:
-	$(MAKE) -C user CC="$(CC)" test-posix
+	$(MAKE) -C usr CC="$(CC)" test-posix
 
 # First independently buildable AArch64 stage. This does not yet build the
-# x86_64-oriented kernel/core; it validates the ARM64 boot and UART path.
+# x86_64-oriented top-level kernel subsystems; it validates the ARM64 boot and UART path.
 aarch64-early: $(AARCH64_EARLY)
 	@echo "  AArch64 early image: $(AARCH64_EARLY)"
 
 $(AARCH64_BUILD):
 	mkdir -p $@
 
-$(AARCH64_BUILD)/boot.o: $(KERNEL_DIR)/arch/aarch64/boot.S | $(AARCH64_BUILD)
+$(AARCH64_BUILD)/boot.o: arch/aarch64/boot.S | $(AARCH64_BUILD)
 	$(AARCH64_CC) -c -ffreestanding -nostdlib -march=armv8-a $< -o $@
 
-$(AARCH64_BUILD)/early.o: $(KERNEL_DIR)/arch/aarch64/early.c $(KERNEL_DIR)/arch/aarch64/fdt.h $(KERNEL_DIR)/arch/aarch64/mmu.h $(KERNEL_DIR)/arch/aarch64/gic.h $(KERNEL_DIR)/arch/aarch64/pmm.h | $(AARCH64_BUILD)
-	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
+$(AARCH64_BUILD)/early.o: arch/aarch64/early.c arch/aarch64/fdt.h arch/aarch64/mmu.h arch/aarch64/gic.h arch/aarch64/pmm.h | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -Iarch/aarch64 $< -o $@
 
-$(AARCH64_BUILD)/fdt.o: $(KERNEL_DIR)/arch/aarch64/fdt.c $(KERNEL_DIR)/arch/aarch64/fdt.h | $(AARCH64_BUILD)
-	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
+$(AARCH64_BUILD)/fdt.o: arch/aarch64/fdt.c arch/aarch64/fdt.h | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -Iarch/aarch64 $< -o $@
 
-$(AARCH64_BUILD)/mmu.o: $(KERNEL_DIR)/arch/aarch64/mmu.c $(KERNEL_DIR)/arch/aarch64/mmu.h $(KERNEL_DIR)/arch/aarch64/pmm.h | $(AARCH64_BUILD)
-	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
+$(AARCH64_BUILD)/mmu.o: arch/aarch64/mmu.c arch/aarch64/mmu.h arch/aarch64/pmm.h | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -Iarch/aarch64 $< -o $@
 
-$(AARCH64_BUILD)/pmm.o: $(KERNEL_DIR)/arch/aarch64/pmm.c $(KERNEL_DIR)/arch/aarch64/pmm.h | $(AARCH64_BUILD)
-	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
+$(AARCH64_BUILD)/pmm.o: arch/aarch64/pmm.c arch/aarch64/pmm.h | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -Iarch/aarch64 $< -o $@
 
-$(AARCH64_BUILD)/syscall.o: $(KERNEL_DIR)/arch/aarch64/syscall.c $(KERNEL_DIR)/arch/aarch64/gic.h | $(AARCH64_BUILD)
-	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
+$(AARCH64_BUILD)/syscall.o: arch/aarch64/syscall.c arch/aarch64/gic.h | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -Iarch/aarch64 $< -o $@
 
-$(AARCH64_BUILD)/user.o: $(KERNEL_DIR)/arch/aarch64/user.S | $(AARCH64_BUILD)
+$(AARCH64_BUILD)/user.o: arch/aarch64/user.S | $(AARCH64_BUILD)
 	$(AARCH64_CC) -c -ffreestanding -nostdlib -march=armv8-a $< -o $@
 
-$(AARCH64_BUILD)/gic.o: $(KERNEL_DIR)/arch/aarch64/gic.c $(KERNEL_DIR)/arch/aarch64/gic.h | $(AARCH64_BUILD)
-	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -I$(KERNEL_DIR)/arch/aarch64 $< -o $@
+$(AARCH64_BUILD)/gic.o: arch/aarch64/gic.c arch/aarch64/gic.h | $(AARCH64_BUILD)
+	$(AARCH64_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -march=armv8-a -Iarch/aarch64 $< -o $@
 
-$(AARCH64_EARLY): $(AARCH64_OBJECTS) $(KERNEL_DIR)/arch/aarch64/linker.ld
-	$(AARCH64_LD) -nostdlib -T $(KERNEL_DIR)/arch/aarch64/linker.ld -o $@ $(AARCH64_OBJECTS)
+$(AARCH64_EARLY): $(AARCH64_OBJECTS) arch/aarch64/linker.ld
+	$(AARCH64_LD) -nostdlib -T arch/aarch64/linker.ld -o $@ $(AARCH64_OBJECTS)
 
 # QEMU virt exposes the PL011 UART at 0x09000000. QEMU does not always
 # provide its generated DTB in x0 when loading an ELF with -kernel, so create
@@ -238,21 +235,21 @@ aarch64-run: aarch64-early
 	$(QEMU_AARCH64) -machine virt,gic-version=2 -cpu cortex-a57 -m 128M -nographic -monitor none -serial stdio -no-reboot -device loader,file=$(AARCH64_DTB),addr=$(AARCH64_DTB_ADDRESS) -kernel $(AARCH64_EARLY)
 
 # First independently buildable ARMv7 stage. This is separate from the
-# AArch64 image and does not yet build kernel/core.
+# AArch64 image and does not yet build top-level kernel subsystems.
 armv7-early: $(ARMV7_EARLY)
 	@echo "  ARMv7 early image: $(ARMV7_EARLY)"
 
 $(ARMV7_BUILD):
 	mkdir -p $@
 
-$(ARMV7_BUILD)/boot.o: $(KERNEL_DIR)/arch/armv7/boot.S | $(ARMV7_BUILD)
+$(ARMV7_BUILD)/boot.o: arch/armv7/boot.S | $(ARMV7_BUILD)
 	$(ARMV7_CC) -c -ffreestanding -nostdlib -marm -march=armv7-a -mfloat-abi=soft $< -o $@
 
-$(ARMV7_BUILD)/early.o: $(KERNEL_DIR)/arch/armv7/early.c | $(ARMV7_BUILD)
+$(ARMV7_BUILD)/early.o: arch/armv7/early.c | $(ARMV7_BUILD)
 	$(ARMV7_CC) -c -ffreestanding -nostdlib -std=c99 -Wall -Wextra -marm -march=armv7-a -mfloat-abi=soft $< -o $@
 
-$(ARMV7_EARLY): $(ARMV7_BUILD)/boot.o $(ARMV7_BUILD)/early.o $(KERNEL_DIR)/arch/armv7/linker.ld
-	$(ARMV7_LD) -nostdlib -T $(KERNEL_DIR)/arch/armv7/linker.ld -o $@ $(ARMV7_BUILD)/boot.o $(ARMV7_BUILD)/early.o
+$(ARMV7_EARLY): $(ARMV7_BUILD)/boot.o $(ARMV7_BUILD)/early.o arch/armv7/linker.ld
+	$(ARMV7_LD) -nostdlib -T arch/armv7/linker.ld -o $@ $(ARMV7_BUILD)/boot.o $(ARMV7_BUILD)/early.o
 
 armv7-run: armv7-early
 	$(QEMU_ARMV7) -machine virt,dumpdtb=$(ARMV7_DTB) -cpu cortex-a15 -m 128M -display none
@@ -262,7 +259,7 @@ openrc-source:
 	@test -f $(OPENRC_SRC_DIR)/meson.build
 	@test -d $(OPENRC_SRC_DIR)/src
 	@echo "  Fuente oficial de OpenRC disponible en $(OPENRC_SRC_DIR)"
-	@echo "  El submódulo se mantiene fijado al commit oficial documentado en docs/OPENRC_PORT.md"
+	@echo "  El submódulo se mantiene fijado al commit oficial documentado en Documentation/OPENRC_PORT.md"
 
 bash-source:
 	@test -f $(BASH_SRC_DIR)/configure.ac
