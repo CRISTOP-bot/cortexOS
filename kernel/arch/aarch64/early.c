@@ -3,6 +3,12 @@
 #include "fdt.h"
 #include "gic.h"
 #include "mmu.h"
+#include "pmm.h"
+
+extern char __kernel_start[];
+extern char __kernel_end[];
+extern char aarch64_user_program[];
+extern void aarch64_enter_user(uint64_t entry, uint64_t stack) __attribute__((noreturn));
 
 #define PL011_BASE 0x09000000UL
 #define FALLBACK_DTB 0x47f00000UL
@@ -72,6 +78,16 @@ static void uart_puts(const char *text)
 	}
 }
 
+void aarch64_uart_write(const char *text, uint64_t length)
+{
+	uint64_t i;
+	for (i = 0; i < length; i++) {
+		if (text[i] == '\n')
+			uart_putc('\r');
+		uart_putc(text[i]);
+	}
+}
+
 static void uart_puthex(uint64_t value)
 {
 	static const char digits[] = "0123456789abcdef";
@@ -85,6 +101,7 @@ static void uart_puthex(uint64_t value)
 void aarch64_early_main(uint64_t dtb)
 {
 	aarch64_fdt_info_t fdt;
+	uint64_t user_stack;
 	int mmu_ready = 0;
 
 	uart_puts("NucleOS AArch64 early boot\n");
@@ -131,6 +148,17 @@ void aarch64_early_main(uint64_t dtb)
 	}
 	uart_puts("\n");
 
+	if (aarch64_pmm_init(fdt.ram_base, fdt.ram_size,
+	                     (uint64_t)(uintptr_t)__kernel_start,
+	                     (uint64_t)(uintptr_t)__kernel_end,
+	                     dtb, fdt.dtb_size) != 0) {
+		uart_puts("PMM: initialization failed\n");
+		return;
+	}
+	uart_puts("PMM: initialized; free pages: ");
+	uart_puthex(aarch64_pmm_free_pages());
+	uart_puts("\n");
+
 	uart_puts("MMU: initializing\n");
 	if (fdt.has_memory && aarch64_mmu_init(fdt.ram_base, fdt.ram_size) == 0) {
 		mmu_ready = 1;
@@ -145,6 +173,19 @@ void aarch64_early_main(uint64_t dtb)
 		uart_puts("IRQ: unmasked\n");
 	} else {
 		uart_puts("GIC/MMU: not enabled\n");
+		return;
+	}
+
+	user_stack = aarch64_pmm_alloc_page();
+	if (!user_stack) {
+		uart_puts("EL0: user stack allocation failed\n");
+		return;
+	}
+	uart_puts("EL0: entering user program; SVC enabled\n");
+	aarch64_enter_user((uint64_t)(uintptr_t)aarch64_user_program,
+	                   user_stack + AARCH64_PAGE_SIZE);
+	for (;;) {
+		__asm__ volatile("wfe");
 	}
 }
 
