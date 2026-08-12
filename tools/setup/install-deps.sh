@@ -93,6 +93,13 @@ spinner() {
 
 detect_os() {
     OS=""
+    # Termux is Linux-like but has its own package manager and filesystem.
+    # Detect it before /etc/os-release so it is not mistaken for Debian.
+    if [[ -n "${TERMUX_VERSION:-}" ]] || [[ "${PREFIX:-}" == /data/data/com.termux/files/usr* ]]; then
+        OS="termux"
+        DISTRO="termux"
+        return
+    fi
     if [[ -n "${MACOS_DETECTED:-}" ]] || [[ "$(uname)" == "Darwin" ]]; then
         OS="macos"
         DISTRO="macos"
@@ -115,6 +122,8 @@ detect_os() {
 detect_pkg_mgr() {
     PKG_MGR=""
     case "$DISTRO" in
+        termux)
+            PKG_MGR="termux" ;;
         arch|manjaro|endeavouros|garuda)
             PKG_MGR="pacman" ;;
         ubuntu|debian|linuxmint|pop|elementary|zorin|kali|raspbian)
@@ -136,7 +145,9 @@ detect_pkg_mgr() {
         macos)
             PKG_MGR="brew" ;;
         *)
-            if command -v apt &>/dev/null; then
+            if [[ -n "${TERMUX_VERSION:-}" ]] && command -v pkg &>/dev/null; then
+                PKG_MGR="termux"
+            elif command -v apt &>/dev/null; then
                 PKG_MGR="apt"
             elif command -v pacman &>/dev/null; then
                 PKG_MGR="pacman"
@@ -292,6 +303,20 @@ _pkg_names_legacy() {
 pkg_names() {
     local pkg="$1"
     case "$pkg:$PKG_MGR" in
+        gcc:termux) echo "clang" ;;
+        binutils:termux) echo "binutils" ;;
+        make:termux) echo "make" ;;
+        nasm:termux) echo "nasm" ;;
+        xorriso:termux) echo "xorriso" ;;
+        mtools:termux) echo "mtools" ;;
+        qemu:termux) echo "qemu-system-x86-64-headless" ;;
+        python:termux) echo "python" ;;
+        grub:termux) echo "" ;;
+        installer:termux) echo "" ;;
+        rust:termux) echo "rust" ;;
+        qemu_arm:termux) echo "qemu-system-arm-headless qemu-system-aarch64-headless" ;;
+        cross_aarch64:termux|cross_armv7:termux) echo "" ;;
+
         rust:pacman) echo "rust" ;;
         rust:apt) echo "rustc cargo" ;;
         rust:dnf) echo "rust cargo" ;;
@@ -366,13 +391,13 @@ check_cmd() {
     command -v "$1" &>/dev/null
 }
 
-check_gcc()          { check_cmd gcc; }
+check_gcc()          { check_cmd gcc || { [[ "${PKG_MGR:-}" == termux ]] && check_cmd clang; }; }
 check_binutils()     { check_cmd ld && check_cmd as; }
 check_make()         { check_cmd make || check_cmd gmake; }
 check_nasm()         { check_cmd nasm; }
 check_xorriso()      { check_cmd xorriso; }
 check_mtools()       { check_cmd mformat; }
-check_qemu()         { check_cmd qemu-system-x86_64; }
+check_qemu()         { check_cmd qemu-system-x86_64 || check_cmd qemu-system-x86-64; }
 check_qemu_arm()     { check_cmd qemu-system-arm && check_cmd qemu-system-aarch64; }
 check_python()       { check_cmd python3 || check_cmd python; }
 check_rust()         { check_cmd rustc; }
@@ -391,6 +416,20 @@ run_as_root() {
         log_fail "This installation needs root privileges, but sudo is unavailable"
         return 1
     fi
+}
+
+install_with_termux() {
+    local packages=()
+    for p in "$@"; do
+        local names
+        names=$(pkg_names "$p")
+        for n in $names; do
+            [[ -n "$n" ]] && packages+=("$n")
+        done
+    done
+    if [[ ${#packages[@]} -eq 0 ]]; then return 0; fi
+    pkg update -y
+    pkg install -y "${packages[@]}"
 }
 
 install_with_pacman() {
@@ -562,13 +601,24 @@ main() {
 
     echo -e "  ${INFO}  Platform:   ${W}${OS}${RESET} / ${W}${DISTRO}${RESET}"
     echo -e "  ${INFO}  Pkg Manager:${W} ${PKG_MGR:-unknown}${RESET}"
+    if [[ "${PKG_MGR}" == "termux" ]]; then
+        echo -e "  ${WARN}  Termux profile: clang replaces gcc; GRUB ISO and GNU ARM cross tools are not available here."
+        echo -e "  ${INFO}  For the complete build, use Debian/Ubuntu, WSL or CI."
+    fi
     echo ""
 
     # ── Show status of all deps ─────────────────────────────────────────
     section "Checking Dependencies"
 
-    ALL_DEPS=("${DEP_LIST_CORE[@]}" "${DEP_LIST_ISO[@]}" "${DEP_LIST_PY[@]}" "${DEP_LIST_QEMU[@]}" "${DEP_LIST_CROSS[@]}")
-    if [[ "${WITH_INSTALLER:-0}" == "1" ]]; then
+    if [[ "${PKG_MGR}" == "termux" ]]; then
+        # Termux can build/check the freestanding sources and run QEMU, but
+        # it does not provide the GNU ARM Linux cross toolchains or GRUB ISO
+        # stack used by the full Linux build.
+        ALL_DEPS=("${DEP_LIST_CORE[@]}" "${DEP_LIST_PY[@]}" "${DEP_LIST_QEMU[@]}")
+    else
+        ALL_DEPS=("${DEP_LIST_CORE[@]}" "${DEP_LIST_ISO[@]}" "${DEP_LIST_PY[@]}" "${DEP_LIST_QEMU[@]}" "${DEP_LIST_CROSS[@]}")
+    fi
+    if [[ "${WITH_INSTALLER:-0}" == "1" && "${PKG_MGR}" != "termux" ]]; then
         ALL_DEPS+=("${DEP_LIST_INSTALLER[@]}")
     fi
     # Remove duplicates without word-splitting package names.
@@ -711,6 +761,7 @@ if [[ "${SHOW_HELP:-0}" == "1" ]]; then
     echo "  Void Linux, Alpine, Gentoo, NixOS"
     echo "  FreeBSD, macOS (Homebrew)"
     echo "  Windows (MSYS2, Git Bash, WSL)"
+    echo "  Termux (build/QEMU profile; complete ISO build requires Linux/WSL)"
     exit 0
 fi
 

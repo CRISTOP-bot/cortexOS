@@ -157,6 +157,15 @@ En Windows puedes usar `tools\\setup\\install-deps.bat --check` o
 cuando está disponible y ejecuta la copia local del script, sin descargar
 scripts remotos.
 
+Termux también está soportado para un perfil reducido de compilación y QEMU:
+usa `pkg` y detecta `clang` como sustituto de `gcc`. La creación de la ISO
+GRUB y las toolchains GNU ARM completas deben hacerse desde Linux, WSL o CI.
+En Termux, cuando corresponda, puedes invocar el build con:
+
+```bash
+make CC=clang AS=clang
+```
+
 La instalación en disco requiere además herramientas como `grub-install`,
 `blkid`, `partprobe`, `sgdisk`, `wipefs`, `mkfs.ext2` y `mkfs.fat`. El script
 de instalación puede modificar particiones: úsalo únicamente sobre un disco
