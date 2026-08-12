@@ -1,0 +1,253 @@
+#include "syscall.h"
+#include "console.h"
+#include "process.h"
+#include "vfs.h"
+#include "timer.h"
+#include "kstring.h"
+
+typedef int64_t (*syscall_fn)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
+
+static int64_t sys_read(uint64_t fd, uint64_t buf, uint64_t count, uint64_t a4, uint64_t a5)
+{
+	(void)a4; (void)a5;
+	if (!buf || count == 0)
+		return 0;
+	if (fd == 0)
+		return keyboard_readline_user((char *)buf, count);
+	return vfs_read_fd((int)fd, (void *)buf, (size_t)count);
+}
+
+static int64_t sys_write(uint64_t fd, uint64_t buf, uint64_t count, uint64_t a4, uint64_t a5)
+{
+	(void)a4; (void)a5;
+	if (!buf)
+		return -1;
+	if (fd <= 2) {
+		const char *src = (const char *)buf;
+		for (uint64_t i = 0; i < count; ++i)
+			console_putchar(src[i]);
+		return (int64_t)count;
+	}
+	return vfs_write_fd((int)fd, (const void *)buf, (size_t)count);
+}
+
+static int64_t sys_open(uint64_t path, uint64_t flags, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a3; (void)a4; (void)a5;
+	if (!path)
+		return -1;
+	return vfs_open_fd((const char *)path, (int)flags);
+}
+
+static int64_t sys_close(uint64_t fd, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a2; (void)a3; (void)a4; (void)a5;
+	if (fd <= 2)
+		return 0;
+	return vfs_close_fd((int)fd);
+}
+
+static int64_t sys_exit(uint64_t code, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a2; (void)a3; (void)a4; (void)a5;
+	process_exit((int)code);
+	return 0;
+}
+
+static int64_t sys_fork(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a1; (void)a2; (void)a3; (void)a4; (void)a5;
+	return process_fork();
+}
+
+static int64_t sys_exec(uint64_t path, uint64_t argv, uint64_t envp, uint64_t a4, uint64_t a5)
+{
+	(void)a4; (void)a5;
+	if (!path)
+		return -1;
+	return process_exec((const char *)path,
+		(const char *const *)argv, (const char *const *)envp);
+}
+
+static int64_t sys_wait(uint64_t status, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a2; (void)a3; (void)a4; (void)a5;
+	return process_wait((int *)status);
+}
+
+static int64_t sys_waitpid(uint64_t pid, uint64_t status, uint64_t options, uint64_t a4, uint64_t a5)
+{
+	(void)a4; (void)a5;
+	return process_waitpid((int)pid, (int *)status, (int)options);
+}
+
+static int64_t sys_getpid(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a1; (void)a2; (void)a3; (void)a4; (void)a5;
+	struct process *p = process_current();
+	return p ? p->pid : -1;
+}
+
+static int64_t sys_sbrk(uint64_t increment, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a2; (void)a3; (void)a4; (void)a5;
+	struct process *p = process_current();
+	if (!p)
+		return -1;
+	uint64_t old = p->brk;
+	if (p->brk + increment > p->brk_limit)
+		return -1;
+	p->brk += increment;
+	return (int64_t)old;
+}
+
+static int64_t sys_getcwd(uint64_t buf, uint64_t size, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a3; (void)a4; (void)a5;
+	if (!buf || size == 0)
+		return -1;
+	const char *cwd = vfs_pwd();
+	size_t len = kstrlen(cwd);
+	if (len >= size)
+		return -1;
+	kstrcpy((char *)buf, cwd, size);
+	return 0;
+}
+
+static int64_t sys_chdir(uint64_t path, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a2; (void)a3; (void)a4; (void)a5;
+	if (!path)
+		return -1;
+	return vfs_cd((const char *)path) ? 0 : -1;
+}
+
+static int64_t sys_ps(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a1; (void)a2; (void)a3; (void)a4; (void)a5;
+	process_list();
+	return 0;
+}
+
+static int64_t sys_ticks(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a1; (void)a2; (void)a3; (void)a4; (void)a5;
+	return (int64_t)timer_get_ticks();
+}
+
+static int64_t sys_dup2(uint64_t old_fd, uint64_t new_fd, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a3; (void)a4; (void)a5;
+	if (old_fd <= 2 && new_fd <= 2)
+		return old_fd == new_fd ? (int64_t)new_fd : -1;
+	return vfs_dup_fd((int)old_fd, (int)new_fd);
+}
+
+static int64_t sys_isatty(uint64_t fd, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a2; (void)a3; (void)a4; (void)a5;
+	return vfs_isatty_fd((int)fd) ? 1 : 0;
+}
+
+static int64_t sys_pipe(uint64_t pipe_fds, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	int fds[2];
+	(void)a2; (void)a3; (void)a4; (void)a5;
+	if (!pipe_fds || vfs_pipe(fds) < 0)
+		return -1;
+	((int *)pipe_fds)[0] = fds[0];
+	((int *)pipe_fds)[1] = fds[1];
+	return 0;
+}
+
+static int64_t sys_lseek(uint64_t fd, uint64_t offset, uint64_t whence, uint64_t a4, uint64_t a5)
+{
+	(void)a4; (void)a5;
+	return vfs_lseek_fd((int)fd, (long)offset, (int)whence);
+}
+
+/* A deliberately small, fixed-layout stat ABI. Keep this layout identical to
+ * include/sys/stat.h until the user ABI grows a 64-bit time_t layer. */
+struct nucleos_stat {
+	uint64_t st_size;
+	uint32_t st_mode;
+	uint32_t st_nlink;
+	uint32_t st_uid;
+	uint32_t st_gid;
+};
+
+#define NUCLEOS_S_IFREG 0100000U
+#define NUCLEOS_S_IFDIR 0040000U
+
+static int64_t sys_stat(uint64_t path, uint64_t output, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	struct nucleos_stat *st = (struct nucleos_stat *)output;
+	(void)a3; (void)a4; (void)a5;
+	if (!path || !st || !vfs_exists((const char *)path))
+		return -1;
+	st->st_size = vfs_get_size((const char *)path);
+	st->st_mode = vfs_is_dir((const char *)path) ? NUCLEOS_S_IFDIR : NUCLEOS_S_IFREG;
+	st->st_nlink = 1;
+	st->st_uid = 0;
+	st->st_gid = 0;
+	return 0;
+}
+
+#define NUCLEOS_F_GETFL 3
+#define NUCLEOS_F_SETFL 4
+
+static int64_t sys_fcntl(uint64_t fd, uint64_t command, uint64_t value, uint64_t a4, uint64_t a5)
+{
+	int flags;
+	(void)a4; (void)a5;
+	flags = vfs_get_fd_flags((int)fd);
+	if (flags < 0)
+		return -1;
+	if (command == NUCLEOS_F_GETFL)
+		return flags;
+	if (command == NUCLEOS_F_SETFL)
+		return vfs_set_fd_flags((int)fd, (int)value);
+	return -1;
+}
+
+static syscall_fn syscall_table[SYSCALL_MAX] = {
+	sys_read,
+	sys_write,
+	sys_open,
+	sys_close,
+	sys_exit,
+	sys_fork,
+	sys_exec,
+	sys_wait,
+	sys_getpid,
+	sys_sbrk,
+	sys_getcwd,
+	sys_chdir,
+	sys_ps,
+	sys_ticks,
+	sys_dup2,
+	sys_isatty,
+	sys_pipe,
+	sys_lseek,
+	sys_stat,
+	sys_fcntl,
+	sys_waitpid,
+};
+
+void syscall_init(void)
+{
+	console_print("[ OK ] Syscalls initialized (INT 0x80)\n");
+}
+
+int64_t syscall_handler(uint64_t rdi, uint64_t rsi, uint64_t rdx,
+			uint64_t r10, uint64_t r8, uint64_t rax)
+{
+	syscall_fn fn;
+	if (rax >= SYSCALL_MAX)
+		return -1;
+	fn = syscall_table[rax];
+	if (!fn)
+		return -1;
+	return fn(rdi, rsi, rdx, r10, r8);
+}
+
