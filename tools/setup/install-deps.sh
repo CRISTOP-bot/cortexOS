@@ -93,6 +93,13 @@ spinner() {
 
 detect_os() {
     OS=""
+    # Termux is Linux-like but has its own package manager and filesystem.
+    # Detect it before /etc/os-release so it is not mistaken for Debian.
+    if [[ -n "${TERMUX_VERSION:-}" ]] || [[ "${PREFIX:-}" == /data/data/com.termux/files/usr* ]]; then
+        OS="termux"
+        DISTRO="termux"
+        return
+    fi
     if [[ -n "${MACOS_DETECTED:-}" ]] || [[ "$(uname)" == "Darwin" ]]; then
         OS="macos"
         DISTRO="macos"
@@ -115,6 +122,8 @@ detect_os() {
 detect_pkg_mgr() {
     PKG_MGR=""
     case "$DISTRO" in
+        termux)
+            PKG_MGR="termux" ;;
         arch|manjaro|endeavouros|garuda)
             PKG_MGR="pacman" ;;
         ubuntu|debian|linuxmint|pop|elementary|zorin|kali|raspbian)
@@ -136,7 +145,9 @@ detect_pkg_mgr() {
         macos)
             PKG_MGR="brew" ;;
         *)
-            if command -v apt &>/dev/null; then
+            if [[ -n "${TERMUX_VERSION:-}" ]] && command -v pkg &>/dev/null; then
+                PKG_MGR="termux"
+            elif command -v apt &>/dev/null; then
                 PKG_MGR="apt"
             elif command -v pacman &>/dev/null; then
                 PKG_MGR="pacman"
@@ -150,7 +161,7 @@ detect_pkg_mgr() {
 }
 
 # ── Package names per distro ────────────────────────────────────────────────
-pkg_names() {
+_pkg_names_legacy() {
     local pkg="$1"
     case "$PKG_MGR" in
         pacman)
@@ -164,6 +175,7 @@ pkg_names() {
                 qemu)       echo "qemu-full" ;;
                 python)     echo "python" ;;
                 nasm)       echo "nasm" ;;
+                installer)  echo "gptfdisk parted e2fsprogs dosfstools" ;;
             esac ;;
         apt)
             case "$pkg" in
@@ -176,6 +188,7 @@ pkg_names() {
                 qemu)       echo "qemu-system-x86" ;;
                 python)     echo "python3" ;;
                 nasm)       echo "nasm" ;;
+                installer)  echo "gdisk parted e2fsprogs dosfstools" ;;
             esac ;;
         dnf)
             case "$pkg" in
@@ -188,6 +201,7 @@ pkg_names() {
                 qemu)       echo "qemu-system-x86" ;;
                 python)     echo "python3" ;;
                 nasm)       echo "nasm" ;;
+                installer)  echo "gdisk parted e2fsprogs dosfstools" ;;
             esac ;;
         zypper)
             case "$pkg" in
@@ -200,6 +214,7 @@ pkg_names() {
                 qemu)       echo "qemu-x86" ;;
                 python)     echo "python3" ;;
                 nasm)       echo "nasm" ;;
+                installer)  echo "gptfdisk parted e2fsprogs dosfstools" ;;
             esac ;;
         xbps)
             case "$pkg" in
@@ -212,6 +227,7 @@ pkg_names() {
                 qemu)       echo "qemu" ;;
                 python)     echo "python3" ;;
                 nasm)       echo "nasm" ;;
+                installer)  echo "gptfdisk parted e2fsprogs dosfstools" ;;
             esac ;;
         apk)
             case "$pkg" in
@@ -224,6 +240,7 @@ pkg_names() {
                 qemu)       echo "qemu-system-x86_64" ;;
                 python)     echo "python3" ;;
                 nasm)       echo "nasm" ;;
+                installer)  echo "gptfdisk parted e2fsprogs dosfstools" ;;
             esac ;;
         emerge)
             case "$pkg" in
@@ -236,6 +253,7 @@ pkg_names() {
                 qemu)       echo "app-emulation/qemu" ;;
                 python)     echo "dev-lang/python" ;;
                 nasm)       echo "dev-lang/nasm" ;;
+                installer)  echo "sys-apps/util-linux sys-apps/parted sys-fs/e2fsprogs sys-fs/dosfstools" ;;
             esac ;;
         nix)
             case "$pkg" in
@@ -248,6 +266,7 @@ pkg_names() {
                 qemu)       echo "qemu_full" ;;
                 python)     echo "python3" ;;
                 nasm)       echo "nasm" ;;
+                installer)  echo "gptfdisk parted e2fsprogs dosfstools" ;;
             esac ;;
         pkg)
             case "$pkg" in
@@ -260,6 +279,7 @@ pkg_names() {
                 qemu)       echo "qemu" ;;
                 python)     echo "python3" ;;
                 nasm)       echo "nasm" ;;
+                installer)  echo "gptfdisk parted e2fsprogs dosfstools" ;;
             esac ;;
         brew)
             case "$pkg" in
@@ -272,7 +292,70 @@ pkg_names() {
                 qemu)       echo "qemu" ;;
                 python)     echo "python3" ;;
                 nasm)       echo "nasm" ;;
+                installer)  echo "gptfdisk e2fsprogs dosfstools" ;;
             esac ;;
+    esac
+}
+
+# Names which are not identical across distributions.  These are kept
+# separate from the legacy native-package table above so adding a target
+# architecture cannot accidentally change the x86_64 package set.
+pkg_names() {
+    local pkg="$1"
+    case "$pkg:$PKG_MGR" in
+        gcc:termux) echo "clang" ;;
+        binutils:termux) echo "binutils" ;;
+        make:termux) echo "make" ;;
+        nasm:termux) echo "nasm" ;;
+        xorriso:termux) echo "xorriso" ;;
+        mtools:termux) echo "mtools" ;;
+        qemu:termux) echo "qemu-system-x86-64-headless" ;;
+        python:termux) echo "python" ;;
+        grub:termux) echo "" ;;
+        installer:termux) echo "" ;;
+        rust:termux) echo "rust" ;;
+        qemu_arm:termux) echo "qemu-system-arm-headless qemu-system-aarch64-headless" ;;
+        cross_aarch64:termux|cross_armv7:termux) echo "" ;;
+
+        rust:pacman) echo "rust" ;;
+        rust:apt) echo "rustc cargo" ;;
+        rust:dnf) echo "rust cargo" ;;
+        rust:zypper) echo "rust cargo" ;;
+        rust:xbps) echo "rust cargo" ;;
+        rust:apk) echo "rust cargo" ;;
+        rust:emerge) echo "dev-lang/rust" ;;
+        rust:nix) echo "rustc cargo" ;;
+        rust:pkg) echo "rust" ;;
+        rust:brew) echo "rust" ;;
+
+        cross_aarch64:apt) echo "gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu" ;;
+        cross_armv7:apt) echo "gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf" ;;
+        qemu_arm:apt) echo "qemu-system-arm" ;;
+
+        cross_aarch64:dnf) echo "gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu" ;;
+        cross_armv7:dnf) echo "gcc-arm-linux-gnueabihf binutils-arm-linux-gnu" ;;
+        qemu_arm:dnf) echo "qemu-system-arm" ;;
+
+        cross_aarch64:zypper) echo "cross-aarch64-gcc cross-aarch64-binutils" ;;
+        cross_armv7:zypper) echo "cross-arm-linux-gnueabihf-gcc cross-arm-linux-gnueabihf-binutils" ;;
+        qemu_arm:zypper) echo "qemu-arm" ;;
+
+        cross_aarch64:pacman) echo "aarch64-linux-gnu-gcc aarch64-linux-gnu-binutils" ;;
+        cross_armv7:pacman) echo "arm-linux-gnueabihf-gcc arm-linux-gnueabihf-binutils" ;;
+        qemu_arm:pacman) echo "qemu-full" ;;
+        cross_aarch64:xbps|cross_armv7:xbps) echo "aarch64-linux-gnu-gcc arm-linux-gnueabihf-gcc" ;;
+        qemu_arm:xbps) echo "qemu" ;;
+        cross_aarch64:apk|cross_armv7:apk) echo "gcc-aarch64-linux-gnu gcc-arm-none-eabi" ;;
+        qemu_arm:apk) echo "qemu-system-aarch64 qemu-system-arm" ;;
+        cross_aarch64:brew|cross_armv7:brew) echo "aarch64-elf-gcc arm-none-eabi-gcc" ;;
+        qemu_arm:brew) echo "qemu" ;;
+        cross_aarch64:emerge|cross_armv7:emerge) echo "crossdev" ;;
+        qemu_arm:emerge) echo "app-emulation/qemu" ;;
+        cross_aarch64:nix|cross_armv7:nix) echo "pkgsCross.aarch64-multiplatform.stdenv.cc" ;;
+        qemu_arm:nix) echo "qemu_full" ;;
+        cross_aarch64:pkg|cross_armv7:pkg) echo "" ;;
+        qemu_arm:pkg) echo "qemu" ;;
+        *) _pkg_names_legacy "$pkg" ;;
     esac
 }
 
@@ -288,30 +371,67 @@ DEP_NAMES=(
     [qemu]="QEMU x86_64 System Emulator"
     [python]="Python 3 (rootfs builder)"
     [nasm]="Netwide Assembler (nasm)"
+    [rust]="Rust compiler (rustc)"
+    [qemu_arm]="QEMU ARM emulators (qemu-system-arm/aarch64)"
+    [cross_aarch64]="AArch64 cross compiler and binutils"
+    [cross_armv7]="ARMv7 cross compiler and binutils"
+    [installer]="Disk installer tools (sgdisk, partprobe, mkfs.ext2, mkfs.fat)"
 )
 
 # Dependencies are categorized for clarity
-DEP_LIST_CORE=(gcc binutils make nasm)
-DEP_LIST_ISO=(xorriso mtools)
-DEP_LIST_QEMU=(qemu)
+DEP_LIST_CORE=(gcc binutils make nasm rust)
+DEP_LIST_ISO=(grub xorriso mtools)
+DEP_LIST_QEMU=(qemu qemu_arm)
+DEP_LIST_CROSS=(cross_aarch64 cross_armv7)
 DEP_LIST_PY=(python)
+DEP_LIST_INSTALLER=(installer)
 
 # ── Check functions ─────────────────────────────────────────────────────────
 check_cmd() {
     command -v "$1" &>/dev/null
 }
 
-check_gcc()          { check_cmd gcc; }
+check_gcc()          { check_cmd gcc || { [[ "${PKG_MGR:-}" == termux ]] && check_cmd clang; }; }
 check_binutils()     { check_cmd ld && check_cmd as; }
 check_make()         { check_cmd make || check_cmd gmake; }
 check_nasm()         { check_cmd nasm; }
 check_xorriso()      { check_cmd xorriso; }
 check_mtools()       { check_cmd mformat; }
-check_qemu()         { check_cmd qemu-system-x86_64; }
+check_qemu()         { check_cmd qemu-system-x86_64 || check_cmd qemu-system-x86-64; }
+check_qemu_arm()     { check_cmd qemu-system-arm && check_cmd qemu-system-aarch64; }
 check_python()       { check_cmd python3 || check_cmd python; }
-check_grub()         { check_cmd grub-mkrescue; }
+check_rust()         { check_cmd rustc; }
+check_grub()         { check_cmd grub-mkrescue && check_cmd grub-file; }
+check_cross_aarch64(){ check_cmd aarch64-linux-gnu-gcc && check_cmd aarch64-linux-gnu-ld; }
+check_cross_armv7()  { check_cmd arm-linux-gnueabihf-gcc && check_cmd arm-linux-gnueabihf-ld; }
+check_installer()    { check_cmd blkid && check_cmd grub-install && check_cmd mkfs.ext2 && check_cmd mkfs.fat && check_cmd partprobe && check_cmd sgdisk && check_cmd wipefs; }
 
 # ── Install functions ───────────────────────────────────────────────────────
+run_as_root() {
+    if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+        "$@"
+    elif check_cmd sudo; then
+        sudo "$@"
+    else
+        log_fail "This installation needs root privileges, but sudo is unavailable"
+        return 1
+    fi
+}
+
+install_with_termux() {
+    local packages=()
+    for p in "$@"; do
+        local names
+        names=$(pkg_names "$p")
+        for n in $names; do
+            [[ -n "$n" ]] && packages+=("$n")
+        done
+    done
+    if [[ ${#packages[@]} -eq 0 ]]; then return 0; fi
+    pkg update -y
+    pkg install -y "${packages[@]}"
+}
+
 install_with_pacman() {
     local packages=()
     for p in "$@"; do
@@ -322,7 +442,7 @@ install_with_pacman() {
         done
     done
     if [[ ${#packages[@]} -eq 0 ]]; then return 0; fi
-    sudo pacman -S --noconfirm --needed "${packages[@]}"
+    run_as_root pacman -S --noconfirm --needed "${packages[@]}"
 }
 
 install_with_apt() {
@@ -335,8 +455,8 @@ install_with_apt() {
         done
     done
     if [[ ${#packages[@]} -eq 0 ]]; then return 0; fi
-    sudo apt-get update -qq
-    sudo apt-get install -y "${packages[@]}"
+    run_as_root apt-get update -qq
+    run_as_root apt-get install -y "${packages[@]}"
 }
 
 install_with_dnf() {
@@ -349,7 +469,7 @@ install_with_dnf() {
         done
     done
     if [[ ${#packages[@]} -eq 0 ]]; then return 0; fi
-    sudo dnf install -y "${packages[@]}"
+    run_as_root dnf install -y "${packages[@]}"
 }
 
 install_with_zypper() {
@@ -362,7 +482,7 @@ install_with_zypper() {
         done
     done
     if [[ ${#packages[@]} -eq 0 ]]; then return 0; fi
-    sudo zypper --non-interactive install "${packages[@]}"
+    run_as_root zypper --non-interactive install "${packages[@]}"
 }
 
 install_with_xbps() {
@@ -375,7 +495,7 @@ install_with_xbps() {
         done
     done
     if [[ ${#packages[@]} -eq 0 ]]; then return 0; fi
-    sudo xbps-install -Sy "${packages[@]}"
+    run_as_root xbps-install -Sy "${packages[@]}"
 }
 
 install_with_apk() {
@@ -388,7 +508,7 @@ install_with_apk() {
         done
     done
     if [[ ${#packages[@]} -eq 0 ]]; then return 0; fi
-    sudo apk add "${packages[@]}"
+    run_as_root apk add "${packages[@]}"
 }
 
 install_with_emerge() {
@@ -401,7 +521,7 @@ install_with_emerge() {
         done
     done
     if [[ ${#packages[@]} -eq 0 ]]; then return 0; fi
-    sudo emerge -av "${packages[@]}"
+    run_as_root emerge -av "${packages[@]}"
 }
 
 install_with_nix() {
@@ -427,7 +547,7 @@ install_with_pkg() {
         done
     done
     if [[ ${#packages[@]} -eq 0 ]]; then return 0; fi
-    sudo pkg install -y "${packages[@]}"
+    run_as_root pkg install -y "${packages[@]}"
 }
 
 install_with_brew() {
@@ -481,21 +601,41 @@ main() {
 
     echo -e "  ${INFO}  Platform:   ${W}${OS}${RESET} / ${W}${DISTRO}${RESET}"
     echo -e "  ${INFO}  Pkg Manager:${W} ${PKG_MGR:-unknown}${RESET}"
+    if [[ "${PKG_MGR}" == "termux" ]]; then
+        echo -e "  ${WARN}  Termux profile: clang replaces gcc; GRUB ISO and GNU ARM cross tools are not available here."
+        echo -e "  ${INFO}  For the complete build, use Debian/Ubuntu, WSL or CI."
+    fi
     echo ""
 
     # ── Show status of all deps ─────────────────────────────────────────
     section "Checking Dependencies"
 
-    ALL_DEPS=("${DEP_LIST_CORE[@]}" "${DEP_LIST_ISO[@]}" "${DEP_LIST_PY[@]}" "${DEP_LIST_QEMU[@]}" "${DEP_LIST_NASM[@]:-}")
-    # Remove duplicates
-    ALL_DEPS=($(echo "${ALL_DEPS[@]}" | tr ' ' '\n' | sort -u))
+    if [[ "${PKG_MGR}" == "termux" ]]; then
+        # Termux can build/check the freestanding sources and run QEMU, but
+        # it does not provide the GNU ARM Linux cross toolchains or GRUB ISO
+        # stack used by the full Linux build.
+        ALL_DEPS=("${DEP_LIST_CORE[@]}" "${DEP_LIST_PY[@]}" "${DEP_LIST_QEMU[@]}")
+    else
+        ALL_DEPS=("${DEP_LIST_CORE[@]}" "${DEP_LIST_ISO[@]}" "${DEP_LIST_PY[@]}" "${DEP_LIST_QEMU[@]}" "${DEP_LIST_CROSS[@]}")
+    fi
+    if [[ "${WITH_INSTALLER:-0}" == "1" && "${PKG_MGR}" != "termux" ]]; then
+        ALL_DEPS+=("${DEP_LIST_INSTALLER[@]}")
+    fi
+    # Remove duplicates without word-splitting package names.
+    declare -A seen=()
+    UNIQUE_DEPS=()
+    for dep in "${ALL_DEPS[@]}"; do
+        [[ -n "${seen[$dep]:-}" ]] && continue
+        seen[$dep]=1
+        UNIQUE_DEPS+=("$dep")
+    done
+    ALL_DEPS=("${UNIQUE_DEPS[@]}")
 
     for dep in "${ALL_DEPS[@]}"; do
         show_dep_status "$dep"
     done
 
     # ── Find missing ────────────────────────────────────────────────────
-    ALL_DEPS=(gcc binutils make xorriso mtools python qemu nasm)
     MISSING=()
     for dep in "${ALL_DEPS[@]}"; do
         local func="check_${dep}"
@@ -505,6 +645,14 @@ main() {
     done
 
     echo ""
+    if [[ "${CHECK_ONLY:-0}" == "1" ]]; then
+        if [[ ${#MISSING[@]} -eq 0 ]]; then
+            log_ok "Dependency check passed"
+            return 0
+        fi
+        log_fail "${#MISSING[@]} dependency group(s) missing"
+        return 1
+    fi
     if [[ ${#MISSING[@]} -eq 0 ]]; then
         echo -e "  ${CHECK}  ${G}${BOLD}All dependencies are installed!${RESET}"
         echo ""
@@ -526,7 +674,7 @@ main() {
     if [[ -z "$PKG_MGR" ]]; then
         echo -e "  ${FAIL}  ${R}Could not detect a supported package manager.${RESET}"
         echo -e "  ${INFO}  Install manually:"
-        echo -e "      ${W}gcc${RESET}  ${W}binutils${RESET}  ${W}make${RESET}  ${W}xorriso${RESET}  ${W}mtools${RESET}  ${W}python3${RESET}  ${W}qemu-system-x86_64${RESET}  ${W}nasm${RESET}"
+        echo -e "      ${W}gcc${RESET}  ${W}binutils${RESET}  ${W}make${RESET}  ${W}xorriso${RESET}  ${W}mtools${RESET}  ${W}python3${RESET}  ${W}qemu-system-x86_64${RESET}  ${W}nasm${RESET}  ${W}gdisk${RESET}  ${W}parted${RESET}  ${W}e2fsprogs${RESET}  ${W}dosfstools${RESET}"
         echo ""
         return 1
     fi
@@ -544,17 +692,14 @@ main() {
     # ── Install ─────────────────────────────────────────────────────────
     section "Installing Packages"
 
-    for dep in "${MISSING[@]}"; do
-        local name="${DEP_NAMES[$dep]:-$dep}"
-        echo -e "  ${ARROW}  Installing ${W}${name}${RESET}..."
-        if do_install "$dep" 2>&1 | while IFS= read -r line; do
-            echo -e "     ${DIM}${line}${RESET}"
-        done; then
-            log_ok "$name"
-        else
-            log_fail "$name"
-        fi
-    done
+    echo -e "  ${ARROW}  Installing all missing dependency groups in one transaction..."
+    if do_install "${MISSING[@]}" 2>&1 | while IFS= read -r line; do
+        echo -e "     ${DIM}${line}${RESET}"
+    done; then
+        log_ok "Package installation finished"
+    else
+        log_fail "Package installation failed"
+    fi
 
     # ── Post-install verify ─────────────────────────────────────────────
     section "Verification"
@@ -576,8 +721,7 @@ main() {
         echo -e "  ${CHECK}  ${G}${BOLD}All dependencies installed successfully!${RESET}"
     else
         echo -e "  ${WARN}  ${Y}Some packages failed. Check errors above.${RESET}"
-        echo -e "  ${INFO}  Try installing manually or visit:"
-        echo -e "      ${C}https://github.com/NucleOS/cris-os-v2${RESET}"
+        echo -e "  ${INFO}  Revisa los nombres de paquete de tu distribución y vuelve a ejecutar --check."
     fi
     echo ""
     echo -e "  ${INFO}  Build NucleOS:"
@@ -587,17 +731,28 @@ main() {
     echo ""
 }
 
-# ── Unattended mode ─────────────────────────────────────────────────────────
-if [[ "${1:-}" == "-y" ]] || [[ "${1:-}" == "--yes" ]]; then
-    AUTO_YES=1
-fi
+# ── Options ─────────────────────────────────────────────────────────────────
+AUTO_YES=0
+CHECK_ONLY=0
+WITH_INSTALLER=0
+for arg in "$@"; do
+    case "$arg" in
+        -y|--yes) AUTO_YES=1 ;;
+        --check) CHECK_ONLY=1 ;;
+        --with-installer) WITH_INSTALLER=1 ;;
+        -h|--help) SHOW_HELP=1 ;;
+        *) echo "Unknown option: $arg" >&2; exit 2 ;;
+    esac
+done
 
-if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
-    echo "Usage: $0 [-y|--yes] [-h|--help]"
+if [[ "${SHOW_HELP:-0}" == "1" ]]; then
+    echo "Usage: $0 [--yes] [--check] [--with-installer] [--help]"
     echo ""
     echo "Options:"
-    echo "  -y, --yes     Skip prompts, install everything"
-    echo "  -h, --help    Show this help"
+    echo "  -y, --yes          Skip prompts and install missing build dependencies"
+    echo "  --check            Only check dependencies; exit 1 when something is missing"
+    echo "  --with-installer   Include disk/partition tools (not needed for a normal build)"
+    echo "  -h, --help         Show this help"
     echo ""
     echo "Supported platforms:"
     echo "  Arch, Manjaro, EndeavourOS, Garuda"
@@ -606,6 +761,7 @@ if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
     echo "  Void Linux, Alpine, Gentoo, NixOS"
     echo "  FreeBSD, macOS (Homebrew)"
     echo "  Windows (MSYS2, Git Bash, WSL)"
+    echo "  Termux (build/QEMU profile; complete ISO build requires Linux/WSL)"
     exit 0
 fi
 

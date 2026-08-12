@@ -142,7 +142,28 @@ Para compilar y ejecutar la ISO x86_64 se necesitan, como mínimo:
 Para instalar dependencias en sistemas compatibles:
 
 ```bash
+# Dependencias de build x86_64 + AArch64 + ARMv7
 bash tools/setup/install-deps.sh
+
+# Comprobar sin instalar; devuelve código 1 si falta algo
+bash tools/setup/install-deps.sh --check
+
+# Incluir además las herramientas para instalar NucleOS en un disco
+bash tools/setup/install-deps.sh --with-installer
+```
+
+En Windows puedes usar `tools\\setup\\install-deps.bat --check` o
+`tools\\setup\\install-deps.bat --yes`. Para ARM, el instalador prioriza WSL
+cuando está disponible y ejecuta la copia local del script, sin descargar
+scripts remotos.
+
+Termux también está soportado para un perfil reducido de compilación y QEMU:
+usa `pkg` y detecta `clang` como sustituto de `gcc`. La creación de la ISO
+GRUB y las toolchains GNU ARM completas deben hacerse desde Linux, WSL o CI.
+En Termux, cuando corresponda, puedes invocar el build con:
+
+```bash
+make CC=clang AS=clang
 ```
 
 La instalación en disco requiere además herramientas como `grub-install`,
