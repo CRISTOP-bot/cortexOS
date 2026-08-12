@@ -1,8 +1,6 @@
 #include "mmu.h"
 #include "pmm.h"
 
-extern void aarch64_mmu_trace(uint64_t stage, uint64_t value);
-
 #define PAGE_SIZE       4096UL
 #define TABLE_DESC      0x3UL
 #define BLOCK_DESC      0x1UL
@@ -16,9 +14,12 @@ extern void aarch64_mmu_trace(uint64_t stage, uint64_t value);
 #define SCTLR_C         (1UL << 2)
 #define SCTLR_I         (1UL << 12)
 
-/* Page-table pages come from the physical allocator, not static fallbacks. */
-static uint64_t *l1_table;
-static uint64_t *l2_table;
+/* These early tables live inside the reserved kernel image. The PMM owns all
+ * other pages; replacing these with PMM pages is a later multi-level VMM step. */
+static uint64_t l1_storage[512] __attribute__((aligned(PAGE_SIZE)));
+static uint64_t l2_storage[512] __attribute__((aligned(PAGE_SIZE)));
+static uint64_t *l1_table = l1_storage;
+static uint64_t *l2_table = l2_storage;
 
 static inline void write_ttbr0(uint64_t value)
 {
@@ -55,14 +56,6 @@ static void clear_tables(void)
 	}
 }
 
-static void clean_table(const uint64_t *table)
-{
-	for (unsigned int offset = 0; offset < PAGE_SIZE; offset += 64) {
-		uint64_t address = (uint64_t)(uintptr_t)((const uint8_t *)table + offset);
-		__asm__ volatile("dc cvac, %0" : : "r"(address) : "memory");
-	}
-}
-
 int aarch64_mmu_init(uint64_t ram_base, uint64_t ram_size)
 {
 	uint64_t ram_block;
@@ -73,12 +66,6 @@ int aarch64_mmu_init(uint64_t ram_base, uint64_t ram_size)
 	if (ram_base != 0x40000000UL || ram_size < 0x04000000UL)
 		return -1;
 
-	l1_table = (uint64_t *)(uintptr_t)aarch64_pmm_alloc_page();
-	l2_table = (uint64_t *)(uintptr_t)aarch64_pmm_alloc_page();
-	aarch64_mmu_trace(1, (uint64_t)(uintptr_t)l1_table);
-	aarch64_mmu_trace(2, (uint64_t)(uintptr_t)l2_table);
-	if (!l1_table || !l2_table)
-		return -1;
 	clear_tables();
 
 	/* The first 1 GiB is split into 2 MiB device blocks. This covers the
@@ -97,20 +84,14 @@ int aarch64_mmu_init(uint64_t ram_base, uint64_t ram_size)
 
 	/* 39-bit VA, 4 KiB granule, inner-shareable WBWA normal memory. */
 	tcr = 25UL | (1UL << 8) | (1UL << 10) | (3UL << 12) | (5UL << 32);
-	clean_table(l1_table);
-	clean_table(l2_table);
-	__asm__ volatile("dsb sy" ::: "memory");
 	write_mair(0x00000000000004ffUL);
 	/* T0SZ=25 selects a 39-bit VA space, whose root is level 1. */
-	aarch64_mmu_trace(3, tcr);
 	write_ttbr0((uint64_t)(uintptr_t)l1_table);
 	write_tcr(tcr);
-	aarch64_mmu_trace(4, 0);
 	__asm__ volatile("dsb ish\n\ttlbi vmalle1\n\tdsb ish\n\tisb" ::: "memory");
 
 	sctlr = read_sctlr();
 	sctlr |= SCTLR_M | SCTLR_C | SCTLR_I;
-	aarch64_mmu_trace(5, sctlr);
 	write_sctlr(sctlr);
 	__asm__ volatile("isb" ::: "memory");
 	return 0;

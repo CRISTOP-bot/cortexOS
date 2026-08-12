@@ -17,7 +17,8 @@ QEMU y procesadores ARMv8-A.
 - MMU con tablas de 4 KiB, identidad inicial de RAM y dispositivos;
 - allocator físico PMM basado en RAM del FDT, con reservas para kernel, stack,
   tablas de páginas y DTB;
-- tablas de páginas asignadas por el PMM en lugar de buffers estáticos;
+- tablas de páginas tempranas estáticas, reservadas dentro de la imagen para
+  evitar que el allocator las reutilice;
 - configuración inicial de GICv2 y del Generic Timer PPI;
 - IRQ con guardado y restauración del contexto completo de registros;
 - entrada EL0 con `SP_EL0`, `ELR_EL1`, `SPSR_EL1` y retorno mediante `ERET`;
