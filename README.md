@@ -4,291 +4,237 @@
   <img src="assets/branding/nucleos-logo.png" alt="NucleOS" width="280">
 </p>
 
-![Arquitectura](https://img.shields.io/badge/arquitectura-x86__64-blue?style=flat-square)
-![Estado](https://img.shields.io/badge/estado-experimental-orange?style=flat-square)
+![Architecture](https://img.shields.io/badge/architecture-x86__64-blue?style=flat-square)
+![Status](https://img.shields.io/badge/status-experimental-orange?style=flat-square)
 ![Boot](https://img.shields.io/badge/boot-GRUB%20Multiboot-purple?style=flat-square)
-![Licencia](https://img.shields.io/badge/licencia-GPLv3-green?style=flat-square)
+![License](https://img.shields.io/badge/license-GPLv3-green?style=flat-square)
 
-NucleOS es un sistema operativo experimental para x86_64, escrito
-principalmente en C y ensamblador. El proyecto estudia la implementación de un
-kernel, un sistema de archivos, procesos, una ABI de usuario y herramientas
-POSIX sobre una plataforma controlada y reproducible.
+NucleOS is an experimental operating-system project for x86_64, written
+primarily in C and assembly. It is a small, freestanding environment for
+studying kernel design, memory management, filesystems, processes, system
+calls, userspace ABIs, and the tooling required to build a bootable system.
 
-El proyecto arranca mediante GRUB Multiboot v1 y se ejecuta actualmente en
-QEMU x86_64. No debe considerarse todavía un sistema operativo de uso general.
+The main image boots through GRUB Multiboot v1 and is exercised primarily in
+QEMU x86_64. NucleOS is not a general-purpose or daily-use operating system.
 
-> El proyecto se conocía anteriormente como [cris-os-v2](https://github.com/CRISTOP-bot/cris-os-v2).
+> The project was previously known as [cris-os-v2](https://github.com/CRISTOP-bot/cris-os-v2).
 
-## Estado del proyecto
+## Current status
 
-La siguiente tabla distingue entre código verificado, código integrado como
-fuente y trabajo pendiente. La presencia de una fuente o de una interfaz no
-implica que el componente ya funcione como programa dentro de NucleOS.
+The table below separates verified paths from experimental code, source-only
+integrations, and planned work. A component being present in the tree does not
+mean that it is a usable NucleOS binary or a completed subsystem.
 
-| Área | Estado |
-|---|---|
-| Arranque GRUB Multiboot v1 en x86_64 | Implementado y compilado en CI |
-| Consola VGA, puerto serie, teclado y mouse PS/2 | Implementación experimental |
-| PMM, VMM inicial y heap | Implementación experimental |
-| VFS y rootfs cargado como módulo Multiboot | Implementación experimental |
-| Shell integrado y aplicaciones TUI | Implementación experimental |
-| ELF estático y libc inicial | Parcial; apto únicamente para pruebas pequeñas |
-| `stat`, `fcntl` y `waitpid` | ABI inicial con smoke test de compilación |
-| Bash 5.3 | Fuente integrada; binario NucleOS pendiente |
-| OpenRC | Fuente integrada; binarios NucleOS pendientes |
-| Fastfetch | Fuente integrada; binario NucleOS pendiente |
-| AArch64 | Boot con FDT, MMU, PMM, IRQ, EL0 y SVC smoke; no kernel completo |
-| ARMv7 | Boot temprano con vectores y UART; no kernel completo |
-| i386 | Preparado para port; todavía no arrancable |
+| Area | Status |
+| --- | --- |
+| x86_64 boot through GRUB Multiboot v1 | **Implemented; built and checked in CI** |
+| VGA, serial, PS/2 keyboard and mouse | **Experimental implementation** |
+| Physical memory manager, initial virtual memory and heap | **Experimental implementation** |
+| VFS and CRFS rootfs module | **Experimental; live rootfs is copied to RAM at boot** |
+| Kernel shell and TUI applications | **Experimental** |
+| Static ELF support and initial libc | **Partial; suitable for small tests only** |
+| `stat`, `fcntl` and `waitpid` ABI surface | **Initial ABI; compile/link smoke test** |
+| Bash 5.3 | **Source integrated; NucleOS binary not available** |
+| OpenRC | **Source integrated; NucleOS binary not available** |
+| Fastfetch | **Source integrated; NucleOS binary not available** |
+| AArch64 | **QEMU `virt` boot and PMM/MMU/GIC/EL0/SVC smoke tests; not a complete kernel** |
+| ARMv7 | **Early boot smoke test; not a complete port** |
+| i386 | **Port preparation only; not bootable** |
+| Archinstall sources | **Upstream package vendored; NucleOS adapter is experimental** |
 
-### Componentes que aún no están disponibles
+Major missing pieces include robust per-process address spaces, a complete
+scheduler and process model, a full ELF loader, broader POSIX compatibility,
+TTYs, signals, job control, dynamic linking, and a complete userspace runtime.
+Bash, OpenRC, and Fastfetch are therefore not presented as working NucleOS
+programs.
 
-Todavía faltan memoria aislada por proceso, herencia completa de descriptores,
-TTY, señales, job control, un loader ELF completo, librerías dinámicas y una
-libc POSIX suficientemente amplia. Por tanto, Bash, OpenRC y Fastfetch no se
-instalan todavía como binarios ejecutables en el rootfs.
+## Quick start
 
-No se incluyen binarios compilados para Linux haciéndolos pasar por binarios de
-NucleOS.
-
-## Perfil técnico actual
-
-- Arquitectura arrancable: x86_64.
-- Bootloader: GRUB Multiboot v1.
-- Kernel: freestanding C/ASM, sin libc del host.
-- Entrada: `arch/x86_64/boot.S`.
-- Linker script: `kernel/linker.ld`.
-- Rootfs: módulo Multiboot generado desde `rootfs/` y copiado a RAM durante el
-  arranque live para permitir retirar el USB después de la inicialización.
-- Build: Make y artefactos separados en `build/` y `dist/`.
-- Emulador de referencia: `qemu-system-x86_64`.
-- CI: compilación del kernel, validación Multiboot, generación de ISO y
-  smoke test diagnóstico.
-
-La base multi-arquitectura se documenta en
-[`Documentation/ARCHITECTURES.md`](Documentation/ARCHITECTURES.md). Actualmente solo x86_64
-genera la imagen principal de NucleOS.
-
-El port AArch64 ya tiene una imagen independiente para QEMU `virt`: configura
-el stack, analiza el FDT, inicializa el PMM, instala la MMU, prepara el GICv2,
-programa el Generic Timer y ejecuta un smoke test EL0/SVC. Todavía no es el
-kernel completo ni comparte el build x86_64: faltan aislamiento por proceso,
-scheduler y rootfs integrado.
+The supported development path is Linux or a Linux environment such as WSL.
+For the main x86_64 build you need GCC, binutils, GNU Make, Rust, GRUB tools,
+Python 3, xorriso, mtools, and QEMU.
 
 ```bash
-make aarch64-early \
-  AARCH64_CC=aarch64-linux-gnu-gcc \
-  AARCH64_LD=aarch64-linux-gnu-ld
-
-make aarch64-run \
-  AARCH64_CC=aarch64-linux-gnu-gcc \
-  AARCH64_LD=aarch64-linux-gnu-ld \
-  QEMU_AARCH64=qemu-system-aarch64
-```
-
-ARMv7 también tiene una imagen independiente de boot temprano para QEMU
-`virt`, con tabla de excepciones, `VBAR`, UART PL011 y validación inicial del
-DTB. Todavía no comparte el kernel completo ni declara soporte de usuario.
-
-```bash
-make armv7-early \
-  ARMV7_CC=arm-linux-gnueabihf-gcc \
-  ARMV7_LD=arm-linux-gnueabihf-ld
-
-make armv7-run \
-  ARMV7_CC=arm-linux-gnueabihf-gcc \
-  ARMV7_LD=arm-linux-gnueabihf-ld \
-  QEMU_ARMV7=qemu-system-arm
-```
-
-## Arquitectura del sistema
-
-```text
-GRUB Multiboot v1
-        |
-        v
-arch/x86_64/boot.S
-  32 bits -> long mode -> page tables iniciales
-        |
-        v
-kmain()
-  +-- GDT / IDT
-  +-- PIC / PIT
-  +-- PMM / VMM / heap
-  +-- PCI y drivers PS/2
-  +-- rootfs y VFS
-  +-- procesos, syscalls y ELF inicial
-  +-- shell y servicios provisionales
-```
-
-El código común está en `kernel/`. El código específico de arquitectura
-se encuentra en `arch/`. Esta separación es necesaria para incorporar
-posteriormente i386, ARMv7 y AArch64 sin reutilizar instrucciones x86 de forma
-incorrecta.
-
-## Requisitos
-
-Para compilar y ejecutar la ISO x86_64 se necesitan, como mínimo:
-
-| Herramienta | Uso |
-|---|---|
-| `gcc` | Compilación C freestanding |
-| `binutils` (`ld`) | Ensamblado y enlace |
-| `make` | Automatización del build |
-| `rustc` | Módulo Rust freestanding |
-| `grub-file` | Validación Multiboot |
-| `grub-mkrescue` | Creación de la ISO |
-| `xorriso` y `mtools` | Dependencias de GRUB |
-| `python3` | Construcción del rootfs |
-| `qemu-system-x86_64` | Emulación y smoke tests |
-
-Para instalar dependencias en sistemas compatibles:
-
-```bash
-# Dependencias de build x86_64 + AArch64 + ARMv7
-bash tools/setup/install-deps.sh
-
-# Comprobar sin instalar; devuelve código 1 si falta algo
-bash tools/setup/install-deps.sh --check
-
-# Incluir además las herramientas para instalar NucleOS en un disco
-bash tools/setup/install-deps.sh --with-installer
-```
-
-En Windows puedes usar `tools\\setup\\install-deps.bat --check` o
-`tools\\setup\\install-deps.bat --yes`. Para ARM, el instalador prioriza WSL
-cuando está disponible y ejecuta la copia local del script, sin descargar
-scripts remotos.
-
-También hay comandos nativos para PowerShell y CMD:
-
-```bat
-scripts\\nucleos.bat check
-scripts\\nucleos.bat iso
-scripts\\nucleos.bat qemu
-scripts\\nucleos.bat virtualbox -Build
-```
-
-`virtualbox` crea una VM BIOS con la ISO de NucleOS. Requiere Oracle
-VirtualBox y `VBoxManage.exe`; si no existe `make` en Windows, el comando usa
-WSL automáticamente para construir la ISO.
-
-Termux también está soportado para un perfil reducido de compilación y QEMU:
-usa `pkg` y detecta `clang` como sustituto de `gcc`. La creación de la ISO
-GRUB y las toolchains GNU ARM completas deben hacerse desde Linux, WSL o CI.
-En Termux, cuando corresponda, puedes invocar el build con:
-
-```bash
-make CC=clang AS=clang
-```
-
-La instalación en disco requiere además herramientas como `grub-install`,
-`blkid`, `partprobe`, `sgdisk`, `wipefs`, `mkfs.ext2` y `mkfs.fat`. El script
-de instalación puede modificar particiones: úsalo únicamente sobre un disco
-de prueba y después de verificar el dispositivo seleccionado.
-
-## Preparación del repositorio
-
-Los componentes externos se mantienen como submódulos y conservan sus
-licencias originales:
-
-```bash
+git clone https://github.com/CRISTOP-bot/nucleos.git
+cd nucleos
 git submodule update --init --recursive
-make bash-source
-make openrc-source
-make fastfetch-source
-```
-
-La política de licencias está en
-[`LICENSES/THIRD_PARTY_LICENSES.md`](LICENSES/THIRD_PARTY_LICENSES.md).
-
-## Compilación y ejecución
-
-### Kernel e ISO
-
-```bash
-# Mostrar los ports declarados
-make arch-list
-
-# Validar el port arrancable actual
-make check-arch ARCH=x86_64
-
-# Limpiar artefactos anteriores
-make ARCH=x86_64 clean
-
-# Compilar el kernel
-make ARCH=x86_64 -j"$(nproc)"
-
-# Construir kernel, rootfs e instalador en build/iso/
-make ARCH=x86_64 iso
-
-# Generar la ISO final en dist/os.iso
+bash tools/setup/install-deps.sh --check
+make ARCH=x86_64
 make ARCH=x86_64 echo-iso
-
-# Generar la ISO y ejecutarla en QEMU
 make ARCH=x86_64 run
 ```
 
-La ISO generada se encuentra en:
+The generated ISO is:
 
 ```text
 dist/os.iso
 ```
 
-Para ejecutarla manualmente:
+On Windows, the repository provides CMD/PowerShell entry points. Full builds
+use a native MSYS2 environment or WSL when the required GNU and GRUB tools are
+not installed natively:
+
+```bat
+tools\setup\install-deps.bat --check
+scripts\nucleos.bat iso
+scripts\nucleos.bat virtualbox -Build
+```
+
+The VirtualBox command requires Oracle VirtualBox and `VBoxManage.exe`.
+
+## Essential documentation
+
+Use the README for orientation and the documents below for subsystem details.
+
+### Architecture and layout
+
+- [Architecture matrix](Documentation/ARCHITECTURES.md)
+- [Project layout](Documentation/PROJECT_LAYOUT.md)
+- [Live USB and RAM rootfs](Documentation/LIVE_RAM.md)
+
+### Development and planning
+
+- [Implementation plan](Documentation/IMPLEMENTATION_PLAN.md)
+- [Userspace and ABI work](Documentation/USERSPACE_PORT.md)
+
+### Ports and integrated projects
+
+- [Bash port](Documentation/BASH_PORT.md)
+- [OpenRC port](Documentation/OPENRC_PORT.md)
+- [Fastfetch port](Documentation/FASTFETCH_PORT.md)
+
+### Licensing
+
+- [Canonical GPLv3 text](LICENSE)
+- [NucleOS licensing notes](LICENSES/LICENSE.md)
+- [Copyright notices](LICENSES/COPYRIGHT.md)
+- [Third-party license inventory](LICENSES/THIRD_PARTY_LICENSES.md)
+
+## Who this is for
+
+### Trying the system
+
+Start with the [Quick start](#quick-start), build the ISO, and run it in QEMU.
+The [live RAM notes](Documentation/LIVE_RAM.md) explain when the USB can be
+removed after boot.
+
+### Studying operating systems
+
+Read the [architecture overview](#architecture-overview), then follow the
+[project layout](Documentation/PROJECT_LAYOUT.md) and the
+[implementation plan](Documentation/IMPLEMENTATION_PLAN.md).
+
+### Kernel development
+
+The common kernel is in `kernel/`. Memory, filesystem, IPC, initialization,
+networking, and block code have their own top-level subsystems. Start with the
+architecture matrix before changing boot or memory code.
+
+### Driver development
+
+Hardware-facing code belongs in `drivers/`, with block-device code in
+`block/`. The current x86_64 path includes serial, console, PS/2, PCI, PIC, and
+timer code, but these interfaces remain experimental.
+
+### Memory, filesystems, processes, and syscalls
+
+Use `mm/`, `fs/`, and `ipc/` as the starting points. The existing
+implementation is useful for study and smoke tests, but it does not yet
+provide complete process isolation or a production filesystem stack.
+
+### Userspace, libc, and ELF
+
+Userspace headers are in `include/`; the initial libc, `crt0`, and ABI tests
+are in `usr/`. The [userspace port document](Documentation/USERSPACE_PORT.md)
+describes the current boundary and its limitations.
+
+### Architecture ports
+
+Architecture-specific code is under `arch/`. AArch64 and ARMv7 currently have
+independent early images and QEMU smoke tests; they must not be described as
+complete NucleOS ports. See [ARCHITECTURES.md](Documentation/ARCHITECTURES.md).
+
+### Build, installer, and tooling
+
+Build and host setup code is under `tools/`; maintenance and validation helpers
+are under `scripts/`. The NucleOS installer is in `tools/installer/`, while the
+Archinstall-derived adapter and its upstream sources are in
+`tools/archinstall/`.
+
+### New contributors
+
+Read the layout and implementation documents first, choose one bounded change,
+run the relevant smoke tests, and document any new subsystem or architecture.
+Do not turn a compile-only result into a support claim.
+
+## Architecture overview
+
+```text
+Firmware
+   |
+   v
+GRUB
+   |
+   |-- loads kernel.bin and rootfs.bin as Multiboot v1 objects into RAM
+   v
+arch/x86_64/boot.S
+   |-- enters protected mode and long mode
+   |-- installs initial page tables and stack
+   v
+kmain()
+   |-- GDT / IDT / PIC / PIT
+   |-- PMM / VMM / heap
+   |-- serial, VGA, PS/2, PCI and other drivers
+   |-- copy CRFS rootfs module to PMM-owned RAM
+   |-- initialize VFS and experimental process/syscall/ELF paths
+   v
+kernel shell and experimental userspace boundary
+```
+
+`rootfs/` is the source directory containing files packaged for the live
+system. `tools/build/rootfs.py` converts it into `rootfs.bin`, a compact CRFS
+image. CRFS is the image format parsed by `fs/`; the VFS provides the kernel's
+file and directory interface over that image. During a Multiboot live boot,
+NucleOS copies the rootfs module into RAM before initializing the VFS, so normal
+operation no longer depends on reading the USB.
+
+A persistent ext2 path also exists for disk-oriented code and installation.
+It is separate from the live CRFS module: ext2 is a block-backed filesystem,
+whereas CRFS is the boot-time image consumed by the current VFS.
+
+## Build, run, and test
+
+### Build the kernel and ISO
 
 ```bash
+make check-arch ARCH=x86_64
+make ARCH=x86_64 clean
+make ARCH=x86_64 -j"$(nproc)"
+make ARCH=x86_64 iso
+make ARCH=x86_64 echo-iso
+```
+
+`all` builds `build/kernel.bin`; `iso` prepares the kernel, rootfs, and
+installer under `build/iso/`; `echo-iso` creates `dist/os.iso`.
+
+### Run with QEMU
+
+```bash
+make ARCH=x86_64 run
+
+# Or run an existing ISO directly
 qemu-system-x86_64 -cdrom dist/os.iso -m 512M
 ```
 
-### ABI y programas de usuario
+### Serial output and debug logs
 
 ```bash
-# Compilar la libc inicial y crt0
-make user-libc
-
-# Compilar el ELF de prueba básico
-make user-test-hello
-
-# Compilar el smoke test de stat, fcntl y waitpid
-make user-test-posix
-```
-
-Estos targets verifican compilación y enlace. No significan que todos los
-programas ya puedan ejecutarse de forma segura dentro de NucleOS.
-
-### Arquitecturas no disponibles todavía
-
-Los siguientes comandos deben fallar de forma explícita hasta que se complete
-cada port:
-
-```bash
-make ARCH=i386
-make ARCH=aarch64
-make ARCH=armv7
-```
-
-Consultar [`Documentation/ARCHITECTURES.md`](Documentation/ARCHITECTURES.md) para los requisitos
-de cada arquitectura.
-
-## Depuración con QEMU
-
-```bash
-# Ver la salida del puerto serie en la terminal
-qemu-system-x86_64 \
-  -cdrom dist/os.iso \
-  -m 512M \
-  -serial stdio
-
-# Registrar interrupciones y evitar reinicios automáticos
 qemu-system-x86_64 \
   -cdrom dist/os.iso \
   -m 512M \
   -serial stdio \
-  -d int \
   -no-reboot
 
-# Smoke test con logs separados
 mkdir -p build
 timeout --foreground 35s \
   qemu-system-x86_64 \
@@ -306,164 +252,211 @@ cat build/qemu-serial.log
 cat build/qemu-debug.log
 ```
 
-La CI conserva los logs del smoke test. Mientras el kernel no tenga una
-instrucción de apagado para QEMU, el timeout puede ser normal; el marcador de
-arranque serial se usa únicamente como diagnóstico y todavía no bloquea el
-workflow.
+The kernel currently has no normal QEMU shutdown path, so a timeout can be
+expected. It is only meaningful together with the serial marker and debug
+logs. To verify the live rootfs marker separately:
 
-## Instalación en USB o disco
+```bash
+python3 scripts/check-live-ram.py build/qemu-serial.log
+```
 
-Para consultar las instrucciones sin modificar ningún dispositivo:
+### Validation and smoke tests
+
+```bash
+make check-layout
+make verify-crfs
+make user-libc
+make user-test-hello
+make user-test-posix
+make bash-source
+make openrc-source
+make fastfetch-source
+```
+
+The userspace targets validate small builds and ABI pieces. They do not prove
+that a general POSIX application can run inside NucleOS.
+
+### Experimental architecture images
+
+AArch64 and ARMv7 are independent early images, not builds of the complete
+x86_64 kernel:
+
+```bash
+make aarch64-early \
+  AARCH64_CC=aarch64-linux-gnu-gcc \
+  AARCH64_LD=aarch64-linux-gnu-ld
+
+make aarch64-run \
+  AARCH64_CC=aarch64-linux-gnu-gcc \
+  AARCH64_LD=aarch64-linux-gnu-ld \
+  QEMU_AARCH64=qemu-system-aarch64
+
+make armv7-early \
+  ARMV7_CC=arm-linux-gnueabihf-gcc \
+  ARMV7_LD=arm-linux-gnueabihf-ld
+
+make armv7-run \
+  ARMV7_CC=arm-linux-gnueabihf-gcc \
+  ARMV7_LD=arm-linux-gnueabihf-ld \
+  QEMU_ARMV7=qemu-system-arm
+```
+
+`make ARCH=i386`, `make ARCH=aarch64`, and `make ARCH=armv7` intentionally
+remain unavailable for the complete kernel until their ports meet the
+requirements in [ARCHITECTURES.md](Documentation/ARCHITECTURES.md).
+
+### Maintenance scripts
+
+```bash
+python3 scripts/check-layout.py
+python3 scripts/check-python.py
+python3 scripts/verify-crfs.py build/iso/boot/rootfs.bin
+```
+
+The vendored Archinstall sources target their own Arch Linux environment. The
+NucleOS adapter is invoked separately:
+
+```bash
+python3 tools/archinstall/nucleos.py --help
+make archinstall-source
+```
+
+## Installation
+
+Installation to a disk is experimental and destructive. Test it in a VM or on
+a disposable disk before using real hardware. The installer may repartition,
+format, mount, and install GRUB on the selected device.
 
 ```bash
 make installer
 make installer-usb
-```
 
-Para crear un USB se debe proporcionar el dispositivo correcto. El comando
-puede borrar todos sus datos:
-
-```bash
+# Create a bootable USB; verify /dev/sdX first.
 sudo bash tools/media/make-usb.sh /dev/sdX
-```
 
-Para ejecutar el instalador desde un USB o ISO montado:
-
-```bash
+# Run from a mounted ISO or USB.
 sudo python3 /mnt/installer/nucleos-install
-```
 
-Para ejecutarlo desde el repositorio:
-
-```bash
+# Run from the repository.
 sudo tools/installer/nucleos-install
 ```
 
-Realiza una copia de seguridad y confirma siempre la ruta del dispositivo antes
-de usar estas operaciones.
+BIOS and UEFI are firmware boot paths. In both cases, GRUB remains the
+bootloader and uses Multiboot v1 to load NucleOS. The installation code should
+not be confused with a distribution installer for daily use.
 
-## Comandos del shell
+## Troubleshooting
 
-El shell actual es una interfaz integrada en el kernel; no es Bash. La lista
-incluye comandos experimentales y funciones que todavía pueden ser parciales.
+### The kernel does not compile
 
-| Comando | Función |
-|---|---|
-| `help` | Muestra la ayuda del shell |
-| `fastfetch` | Muestra información básica del sistema; implementación provisional |
-| `gui` | Inicia la interfaz gráfica experimental |
-| `ls`, `tree` | Lista archivos y directorios |
-| `pwd`, `cd` | Consulta y cambia el directorio actual |
-| `mkdir`, `rmdir`, `touch` | Operaciones básicas de directorios y archivos |
-| `rm`, `cp`, `mv` | Elimina, copia y mueve archivos |
-| `cat`, `grep`, `echo` | Consulta y procesa texto |
-| `stat`, `df` | Muestra metadatos y uso del sistema de archivos |
-| `clear`, `uname`, `whoami` | Información y control básico de la consola |
-| `kblayout`, `mouse` | Configuración y estado de dispositivos de entrada |
-| `hexdump`, `wc`, `head`, `tail` | Herramientas de texto y diagnóstico |
-| `calc`, `calc-tui`, `asm` | Calculadoras y pruebas de ensamblador |
-| `openrc` | Gestor de servicios provisional |
-| `lcp` | Gestor de paquetes experimental |
-| `proc`, `ps`, `meminfo`, `uptime` | Información de procesos, memoria y tiempo |
-| `persist` | Almacenamiento persistente experimental |
-| `net` | Estado y pruebas de red experimentales |
-| `lspci` | Enumeración de dispositivos PCI |
-| `games` | Menú de juegos experimentales |
-| `nano`, `hexview`, `files`, `htop`, `sysinfo` | Aplicaciones TUI |
-| `reboot` | Reinicia la máquina virtual |
-| `panic` | Provoca un kernel panic para depuración |
-
-## Referencia del Makefile
-
-| Target | Descripción |
-|---|---|
-| `all` | Compila `build/kernel.bin`. |
-| `check-arch` | Verifica que `ARCH` tenga un port implementado. |
-| `arch-list` | Muestra las arquitecturas declaradas y su estado. |
-| `iso` | Compila kernel, rootfs e instalador en `build/iso/`. |
-| `echo-iso` | Construye `dist/os.iso` mediante `grub-mkrescue`. |
-| `run` | Construye la ISO y la ejecuta con QEMU. |
-| `user-libc` | Compila la libc inicial y `crt0`. |
-| `user-test-hello` | Compila el ELF de prueba básico. |
-| `user-test-posix` | Compila el smoke test de la ABI POSIX inicial. |
-| `aarch64-early` | Compila la imagen independiente de boot temprano AArch64. |
-| `aarch64-run` | Ejecuta la imagen temprana AArch64 en QEMU `virt`. |
-| `bash-source` | Valida el submódulo de Bash 5.3. |
-| `openrc-source` | Valida el submódulo oficial de OpenRC. |
-| `fastfetch-source` | Valida el submódulo oficial de Fastfetch. |
-| `installer` | Muestra instrucciones del instalador. |
-| `installer-usb` | Muestra instrucciones para crear un USB. |
-| `clean` | Elimina `build/` y `dist/`. |
-
-Ejemplos con selección explícita de arquitectura:
+Run the dependency check and verify that the selected architecture is the
+intended one:
 
 ```bash
-make ARCH=x86_64
+bash tools/setup/install-deps.sh --check
+make check-arch ARCH=x86_64
+```
+
+On Windows, use `tools\setup\install-deps.bat --check` and build through MSYS2
+or WSL if native GNU and GRUB tools are unavailable.
+
+### The ISO is not generated
+
+Check `grub-mkrescue`, `xorriso`, and `mtools`, then run the stages separately:
+
+```bash
+make ARCH=x86_64 iso
 make ARCH=x86_64 echo-iso
-make ARCH=i386       # aún no implementado
-make ARCH=aarch64    # aún no implementado
-make ARCH=armv7      # aún no implementado
 ```
 
-## Estructura del repositorio
+### QEMU shows no output
 
-```text
-arch/                 Código específico de x86_64, AArch64, ARMv7 e i386
-kernel/               Núcleo común, shell, consola y aplicaciones
-block/                ATA y particiones
-drivers/              Drivers de consola, teclado, mouse, PIC, PIT, PCI y serial
-fs/                   VFS, CRFS, ELF y ext2
-init/                 Inicialización y compatibilidad provisional con OpenRC
-ipc/                  Procesos y syscalls
-mm/                   Memoria física y virtual
-net/                  Red del kernel
-lib/                  Utilidades internas del kernel
-include/              Headers públicos del ABI de usuario
-usr/                  crt0, libc inicial y pruebas de ABI
-rust/                 Módulo Rust del kernel
-config/grub/          Configuración de GRUB e ISO
-rootfs/               Contenido empaquetado como módulo Multiboot
-tools/build/          Constructor del rootfs
-tools/archinstall/     Archinstall upstream y adaptador NucleOS
-tools/installer/       Instalador y componentes Python
-tools/lcp/            Cliente LCP y repositorio principal
-tools/media/          Herramientas de medios extraíbles
-tools/setup/          Instaladores de dependencias
-Documentation/        Arquitectura, ports y estado del proyecto
-LICENSES/             Avisos y licencias complementarias
-certs/ crypto/ ...    Puntos de extensión del kernel
-third_party/          Submódulos externos sin modificar
-build/                Artefactos temporales ignorados por Git
-dist/                 ISO y sumas ignoradas por Git
-```
-
-Documentos principales:
-
-- [`Documentation/ARCHITECTURES.md`](Documentation/ARCHITECTURES.md)
-- [`Documentation/USERSPACE_PORT.md`](Documentation/USERSPACE_PORT.md)
-- [`Documentation/BASH_PORT.md`](Documentation/BASH_PORT.md)
-- [`Documentation/OPENRC_PORT.md`](Documentation/OPENRC_PORT.md)
-- [`Documentation/IMPLEMENTATION_PLAN.md`](Documentation/IMPLEMENTATION_PLAN.md)
-- [`Documentation/PROJECT_LAYOUT.md`](Documentation/PROJECT_LAYOUT.md)
-
-## Limpieza
+Use `-serial stdio`, make sure the ISO exists, and preserve the debug logs:
 
 ```bash
-make clean
+qemu-system-x86_64 -cdrom dist/os.iso -m 512M -serial stdio -no-reboot
 ```
 
-El comando elimina únicamente `build/` y `dist/`. Los submódulos y el código
-fuente no se modifican.
+### The smoke test ends by timeout
 
-## Licencia
+The kernel is designed to continue running and currently has no standard QEMU
+exit instruction. Inspect `qemu-serial.log` and `qemu-debug.log`; a timeout is
+not by itself proof of a boot failure.
 
-El código propio de NucleOS se distribuye bajo la GNU General Public License
-v3.0. Los componentes externos conservan sus licencias originales:
+### Submodules are missing
 
-- GNU Bash: GPL-3.0.
-- OpenRC: BSD-2-Clause.
-- Fastfetch: MIT.
+Initialize them before running the source validation targets:
 
-Consultar [`LICENSE`](LICENSE), [`LICENSES/LICENSE.md`](LICENSES/LICENSE.md),
-[`LICENSES/COPYRIGHT.md`](LICENSES/COPYRIGHT.md) y
-[`LICENSES/THIRD_PARTY_LICENSES.md`](LICENSES/THIRD_PARTY_LICENSES.md) para los avisos completos.
+```bash
+git submodule update --init --recursive
+```
+
+## Development
+
+The source tree is organized by responsibility:
+
+- `kernel/`: common kernel code, shell, console, applications, and boot logic.
+- `arch/`: architecture-specific entry code and early ports.
+- `drivers/` and `block/`: hardware and block-device support.
+- `mm/`, `fs/`, `ipc/`, `init/`, and `net/`: kernel subsystems.
+- `include/` and `usr/`: userspace headers, libc, `crt0`, and ABI tests.
+- `tools/`: build, installer, Archinstall adapter, setup, LCP, and media tools.
+- `scripts/`: layout, CRFS, Python, and live-RAM validation helpers.
+
+Keep changes focused, run the smallest relevant validation target, and update
+the appropriate document when adding an architecture, subsystem, or build
+path. `make clean` removes only generated `build/` and `dist/` directories.
+
+## Contributing
+
+NucleOS is an experimental infrastructure project. A useful contribution is
+small, reproducible, and explicit about its verification level.
+
+1. Read [PROJECT_LAYOUT.md](Documentation/PROJECT_LAYOUT.md) and the relevant
+   architecture or subsystem document.
+2. Keep unrelated refactors out of a feature or port change.
+3. Build and run the relevant smoke test before submitting a change.
+4. Document new ports, hardware assumptions, or file formats.
+5. Distinguish compilation, emulation, smoke testing, and actual support.
+6. Preserve copyright and third-party license notices.
+
+## Bugs, installation problems, and security
+
+Report reproducible build failures, kernel faults, QEMU boot problems, and
+installer issues through the project's
+[issue tracker](https://github.com/CRISTOP-bot/nucleos/issues). Include the
+architecture, host environment, command used, and relevant serial/debug logs.
+
+There is currently no separate security-advisory or private disclosure process
+documented for this project. Avoid publishing unnecessary exploit details in a
+public issue; provide the smallest useful reproduction and identify the
+security impact clearly so it can be triaged.
+
+## Project resources
+
+- [Repository](https://github.com/CRISTOP-bot/nucleos)
+- [Architecture matrix](Documentation/ARCHITECTURES.md)
+- [Implementation plan](Documentation/IMPLEMENTATION_PLAN.md)
+- [Project layout](Documentation/PROJECT_LAYOUT.md)
+- [Userspace and ABI](Documentation/USERSPACE_PORT.md)
+- [Bash port](Documentation/BASH_PORT.md)
+- [OpenRC port](Documentation/OPENRC_PORT.md)
+- [Fastfetch port](Documentation/FASTFETCH_PORT.md)
+- [Live RAM boot](Documentation/LIVE_RAM.md)
+- [Issues](https://github.com/CRISTOP-bot/nucleos/issues)
+- [License and third-party notices](LICENSES/THIRD_PARTY_LICENSES.md)
+
+## License and third-party components
+
+Original NucleOS code, documentation, and build tooling are distributed under
+the GNU General Public License version 3.0. The canonical text is in
+[`LICENSE`](LICENSE), with project notes in
+[`LICENSES/LICENSE.md`](LICENSES/LICENSE.md) and copyright information in
+[`LICENSES/COPYRIGHT.md`](LICENSES/COPYRIGHT.md).
+
+External components retain their own licenses and are not relicensed by
+NucleOS. The current inventory is maintained in
+[`LICENSES/THIRD_PARTY_LICENSES.md`](LICENSES/THIRD_PARTY_LICENSES.md). It
+covers the Bash, OpenRC, Fastfetch, and Archinstall sources, as well as the
+submodules under `third_party/`. Preserve the relevant notices when copying,
+building, or redistributing combined artifacts.
