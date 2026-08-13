@@ -58,7 +58,8 @@ NucleOS.
 - Kernel: freestanding C/ASM, sin libc del host.
 - Entrada: `arch/x86_64/boot.S`.
 - Linker script: `kernel/linker.ld`.
-- Rootfs: módulo Multiboot generado desde `rootfs/`.
+- Rootfs: módulo Multiboot generado desde `rootfs/` y copiado a RAM durante el
+  arranque live para permitir retirar el USB después de la inicialización.
 - Build: Make y artefactos separados en `build/` y `dist/`.
 - Emulador de referencia: `qemu-system-x86_64`.
 - CI: compilación del kernel, validación Multiboot, generación de ISO y

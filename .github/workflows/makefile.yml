@@ -132,6 +132,13 @@ jobs:
             exit 1
           fi
 
+          if grep -aFq 'Rootfs copied to RAM' qemu-serial.log; then
+            echo 'Rootfs live confirmado en RAM.'
+          else
+            echo 'No se confirmó la copia del rootfs a RAM.'
+            exit 1
+          fi
+
       - name: Report QEMU smoke-test diagnostics
         if: steps.qemu-smoke.outcome == 'failure'
         shell: bash
