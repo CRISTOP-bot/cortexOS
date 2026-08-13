@@ -397,8 +397,11 @@ The source tree is organized by responsibility:
 - `kernel/`: common kernel code, organized into `core/`, `apps/`, `console/`,
   `graphics/`, `system/`, `services/`, and `include/`.
 - `arch/`: architecture-specific entry code and early ports.
-- `drivers/` and `block/`: hardware and block-device support.
-- `mm/`, `fs/`, `ipc/`, `init/`, and `net/`: kernel subsystems.
+- `drivers/`: `console/`, `input/`, `interrupts/`, `pci/`, and `serial/`.
+- `block/`: `ata/` and `partition/` block-device support.
+- `mm/`, `fs/`, `ipc/`, `init/`, and `net/`: grouped kernel subsystems.
+- `lib/`: `core/` and `string/` kernel utilities; `rust/` contains Rust code
+  and its C interface.
 - `include/` and `usr/`: userspace headers, libc, `crt0`, and ABI tests.
 - `tools/`: build, installer, Archinstall adapter, setup, LCP, and media tools.
 - `scripts/`: layout, CRFS, Python, and live-RAM validation helpers.
