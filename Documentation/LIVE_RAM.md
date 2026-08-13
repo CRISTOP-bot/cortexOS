@@ -26,4 +26,4 @@ de inicializar el VFS.
 - El instalador sigue necesitando el medio y el disco destino hasta completar
   la instalación.
 
-El código de reserva y copia está en `mm/pmm.c` y `kernel/kernel.c`.
+El código de reserva y copia está en `mm/physical/pmm.c` y `kernel/core/kernel.c`.

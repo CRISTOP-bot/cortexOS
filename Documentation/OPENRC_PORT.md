@@ -13,7 +13,7 @@ environment`.
 
 ## Importante
 
-`init/openrc.c` sigue siendo el gestor provisional de respaldo que NucleOS usa
+`init/openrc/openrc.c` sigue siendo el gestor provisional de respaldo que NucleOS usa
 si no encuentra el binario real. La fuente de `third_party/openrc` es el OpenRC
 real y el kernel ya tiene el punto de entrada para entregarle el control como
 primer proceso de usuario: busca `/sbin/openrc-init`, le construye
