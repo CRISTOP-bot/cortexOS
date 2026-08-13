@@ -160,6 +160,19 @@ En Windows puedes usar `tools\\setup\\install-deps.bat --check` o
 cuando está disponible y ejecuta la copia local del script, sin descargar
 scripts remotos.
 
+También hay comandos nativos para PowerShell y CMD:
+
+```bat
+scripts\\nucleos.bat check
+scripts\\nucleos.bat iso
+scripts\\nucleos.bat qemu
+scripts\\nucleos.bat virtualbox -Build
+```
+
+`virtualbox` crea una VM BIOS con la ISO de NucleOS. Requiere Oracle
+VirtualBox y `VBoxManage.exe`; si no existe `make` en Windows, el comando usa
+WSL automáticamente para construir la ISO.
+
 Termux también está soportado para un perfil reducido de compilación y QEMU:
 usa `pkg` y detecta `clang` como sustituto de `gcc`. La creación de la ISO
 GRUB y las toolchains GNU ARM completas deben hacerse desde Linux, WSL o CI.
