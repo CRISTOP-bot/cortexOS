@@ -11,7 +11,16 @@ activa; los artefactos generados nunca se guardan en el árbol fuente.
   `i386`).
 - `kernel/`: código común organizado en `core/`, `apps/`, `console/`,
   `graphics/`, `system/`, `services/` e `include/`.
-- `drivers/`: consola, teclado, mouse, serial, PIC, timer y PCI.
+- `drivers/`: drivers agrupados en `console/`, `input/`, `interrupts/`,
+  `pci/` y `serial/`.
+- `block/`: `ata/` y `partition/` para almacenamiento de bloques.
+- `fs/`: `core/`, `crfs/`, `elf/` y `ext2/`.
+- `mm/`: `physical/`, `virtual/` y `heap/`.
+- `ipc/`: `process/` y `syscall/`.
+- `init/`: `core/` y `openrc/`.
+- `net/core/`: red del kernel.
+- `lib/`: `core/` para headers internos y `string/` para utilidades de strings.
+- `rust/kernel/` y `rust/include/`: módulo Rust y su interfaz C.
 - `kernel/core/`: entrada común del kernel y arranque de alto nivel.
 - `kernel/apps/`: aplicaciones TUI, calculadora y juegos experimentales.
 - `kernel/console/`: consola y shell integrado.

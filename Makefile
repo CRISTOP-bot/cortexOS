@@ -36,7 +36,7 @@ DIST_DIR    = dist
 ISO_DIR     = $(BUILD_DIR)/iso
 KERNEL_DIR  = kernel
 ARCH_DIR    = arch/$(ARCH)
-KERNEL_SRC_DIRS = kernel/core kernel/apps kernel/console kernel/graphics kernel/system kernel/services block fs init ipc mm net drivers lib
+KERNEL_SRC_DIRS = kernel/core kernel/apps kernel/console kernel/graphics kernel/system kernel/services block/ata block/partition fs/core fs/crfs fs/elf fs/ext2 init/core init/openrc ipc/process ipc/syscall mm/physical mm/virtual mm/heap net/core drivers/console drivers/input drivers/interrupts drivers/pci drivers/serial lib/core lib/string
 CONFIG_DIR  = config
 GRUB_DIR    = $(CONFIG_DIR)/grub
 ROOTFS_DIR  = rootfs
@@ -71,7 +71,7 @@ ARMV7_EARLY = $(ARMV7_BUILD)/early.elf
 ARMV7_DTB = $(ARMV7_BUILD)/virt.dtb
 ARMV7_DTB_ADDRESS = 0x47f00000
 
-KERNEL_INCLUDES = $(foreach dir,$(KERNEL_SRC_DIRS),-I $(dir)) -I kernel/include -I include -I rust -I $(ARCH_DIR)
+KERNEL_INCLUDES = $(foreach dir,$(KERNEL_SRC_DIRS),-I $(dir)) -I kernel/include -I include -I rust/include -I $(ARCH_DIR)
 CFLAGS  = -ffreestanding -O2 -Wall -Wextra -m64 -nostdlib -std=c99 $(KERNEL_INCLUDES) -fno-stack-protector -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -fno-strict-aliasing -mno-red-zone -mcmodel=kernel -fno-pic -fno-pie
 ASFLAGS = -m64 -ffreestanding
 LDFLAGS = -m elf_x86_64 -nostdlib
@@ -80,7 +80,7 @@ RUSTC       = rustc
 RUST_TARGET = x86_64-unknown-linux-gnu
 RUSTFLAGS   = -C no-redzone=yes -C code-model=kernel -C relocation-model=static
 RUSTFLAGS  += -C panic=abort -C debuginfo=0 -C opt-level=2
-RUST_SRC    = rust/rust/rust_kernel.rs
+RUST_SRC    = rust/kernel/rust_kernel.rs
 RUST_OBJ    = $(BUILD_DIR)/rust_kernel.o
 
 # Every top-level kernel subsystem owns its sources. Adding a C file to one of
