@@ -123,9 +123,11 @@ Read the [architecture overview](#architecture-overview), then follow the
 
 ### Kernel development
 
-The common kernel is in `kernel/`. Memory, filesystem, IPC, initialization,
-networking, and block code have their own top-level subsystems. Start with the
-architecture matrix before changing boot or memory code.
+The common kernel is in `kernel/`, organized by responsibility under `core/`,
+`apps/`, `console/`, `graphics/`, `system/`, `services/`, and `include/`.
+Memory, filesystem, IPC, initialization, networking, and block code have their
+own top-level subsystems. Start with the architecture matrix before changing
+boot or memory code.
 
 ### Driver development
 
@@ -392,7 +394,8 @@ git submodule update --init --recursive
 
 The source tree is organized by responsibility:
 
-- `kernel/`: common kernel code, shell, console, applications, and boot logic.
+- `kernel/`: common kernel code, organized into `core/`, `apps/`, `console/`,
+  `graphics/`, `system/`, `services/`, and `include/`.
 - `arch/`: architecture-specific entry code and early ports.
 - `drivers/` and `block/`: hardware and block-device support.
 - `mm/`, `fs/`, `ipc/`, `init/`, and `net/`: kernel subsystems.
