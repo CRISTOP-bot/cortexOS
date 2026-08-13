@@ -73,8 +73,8 @@ not installed natively:
 
 ```bat
 tools\setup\install-deps.bat --check
-scripts\nucleos.bat iso
-scripts\nucleos.bat virtualbox -Build
+scripts\win\nucleos.bat iso
+scripts\win\nucleos.bat virtualbox -Build
 ```
 
 The VirtualBox command requires Oracle VirtualBox and `VBoxManage.exe`.
@@ -256,7 +256,7 @@ expected. It is only meaningful together with the serial marker and debug
 logs. To verify the live rootfs marker separately:
 
 ```bash
-python3 scripts/check-live-ram.py build/qemu-serial.log
+python3 scripts/linux/check-live-ram.py build/qemu-serial.log
 ```
 
 ### Validation and smoke tests
@@ -307,9 +307,9 @@ requirements in [ARCHITECTURES.md](Documentation/ARCHITECTURES.md).
 ### Maintenance scripts
 
 ```bash
-python3 scripts/check-layout.py
-python3 scripts/check-python.py
-python3 scripts/verify-crfs.py build/iso/boot/rootfs.bin
+python3 scripts/linux/check-layout.py
+python3 scripts/linux/check-python.py
+python3 scripts/linux/verify-crfs.py build/iso/boot/rootfs.bin
 ```
 
 The vendored Archinstall sources target their own Arch Linux environment. The

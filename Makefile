@@ -277,16 +277,16 @@ nucleos-archinstall:
 	python3 tools/archinstall/nucleos.py --help
 
 check-layout:
-	$(PYTHON) scripts/check-layout.py
+	$(PYTHON) scripts/linux/check-layout.py
 
 check-python:
-	$(PYTHON) scripts/check-python.py
+	$(PYTHON) scripts/linux/check-python.py
 
 verify-crfs: $(ROOTFS)
-	$(PYTHON) scripts/verify-crfs.py $(ROOTFS)
+	$(PYTHON) scripts/linux/verify-crfs.py $(ROOTFS)
 
 check-live-ram:
-	$(PYTHON) scripts/check-live-ram.py qemu-serial.log
+	$(PYTHON) scripts/linux/check-live-ram.py qemu-serial.log
 
 fastfetch-source:
 	@test -f $(FASTFETCH_SRC_DIR)/CMakeLists.txt

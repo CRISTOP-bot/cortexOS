@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 REQUIRED = (
     "Documentation",
     "arch",
@@ -68,6 +68,9 @@ def main() -> int:
         "lib/string",
         "rust/kernel",
         "rust/include",
+        "scripts/linux",
+        "scripts/mac",
+        "scripts/win",
     )
     missing = [p for p in required if not (ROOT / p).is_dir()]
     stale = [p for p in FORBIDDEN if (ROOT / p).exists()]
