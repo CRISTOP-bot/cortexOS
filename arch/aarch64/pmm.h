@@ -1,5 +1,5 @@
-#ifndef NUCLEOS_AARCH64_PMM_H
-#define NUCLEOS_AARCH64_PMM_H
+#ifndef CORTEXOS_AARCH64_PMM_H
+#define CORTEXOS_AARCH64_PMM_H
 
 #include <stdint.h>
 

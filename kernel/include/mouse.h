@@ -1,5 +1,5 @@
-#ifndef NUCLEOS_MOUSE_H
-#define NUCLEOS_MOUSE_H
+#ifndef CORTEXOS_MOUSE_H
+#define CORTEXOS_MOUSE_H
 
 #include <stdbool.h>
 

@@ -49,7 +49,7 @@ compartir accidentalmente su stack o código.
 
 - [x] Fuente oficial fijada como submódulo.
 - [x] Handoff del kernel a `/sbin/openrc-init`.
-- [ ] Compilar OpenRC estáticamente contra la libc de NucleOS.
+- [ ] Compilar OpenRC estáticamente contra la libc de CortexOS.
 - [ ] Instalar `openrc-init`, `rc-service`, `rc-status` y `rc-update`.
 - [ ] Implementar runlevels y servicios en `/etc/init.d`.
 
@@ -58,8 +58,8 @@ compartir accidentalmente su stack o código.
 ## Etapa 6 — Bash real
 
 - [ ] Completar las interfaces detectadas por `configure`.
-- [ ] Compilar Bash estático contra la libc de NucleOS.
+- [ ] Compilar Bash estático contra la libc de CortexOS.
 - [ ] Instalarlo como `/bin/bash` y usarlo como shell por defecto.
 
 **Aceptación:** Bash ejecuta comandos, scripts, pipes, redirecciones y
-programas externos dentro de NucleOS.
+programas externos dentro de CortexOS.

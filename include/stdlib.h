@@ -1,5 +1,5 @@
-#ifndef NUCLEOS_STDLIB_H
-#define NUCLEOS_STDLIB_H
+#ifndef CORTEXOS_STDLIB_H
+#define CORTEXOS_STDLIB_H
 #include <stddef.h>
 
 void *malloc(size_t size);

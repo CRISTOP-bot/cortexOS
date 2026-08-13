@@ -1,6 +1,6 @@
 #!/sbin/openrc-run
 
-description="NucleOS console"
+description="CortexOS console"
 command="/bin/console-init"
 command_background="yes"
 pidfile="/run/${RC_SVCNAME}.pid"

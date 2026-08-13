@@ -1,4 +1,4 @@
-NucleOS v3 rootfs
+CortexOS v3 rootfs
 
 Standard Linux directory layout:
   /bin     - System binaries

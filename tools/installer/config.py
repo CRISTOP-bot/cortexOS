@@ -12,7 +12,7 @@ class UserConfig:
 class PartitionConfig:
     device: str = ""
     fstype: str = "ext2"
-    mountpoint: str = "/mnt/nucleos"
+    mountpoint: str = "/mnt/cortexos"
     boot_device: str = ""
     disk_device: str = ""
     uefi: bool = False
@@ -20,10 +20,10 @@ class PartitionConfig:
 
 
 @dataclass
-class NucleOSConfig:
+class CortexOSConfig:
     kernel_source: str = ""
     rootfs_source: str = ""
-    hostname: str = "nucleos"
+    hostname: str = "cortexos"
     root_password: str = ""
     users: list[UserConfig] | None = None
     install_lcp_repos: bool = True

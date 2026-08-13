@@ -1,4 +1,4 @@
-name: NucleOS CI
+name: CortexOS CI
 
 on:
   push:
@@ -68,20 +68,20 @@ jobs:
           make aarch64-early
           timeout --foreground 5s make aarch64-run > aarch64-serial.log 2>&1 || test $? -eq 124
           cat aarch64-serial.log
-          grep -Fq 'NucleOS AArch64 early boot' aarch64-serial.log
+          grep -Fq 'CortexOS AArch64 early boot' aarch64-serial.log
           grep -Fq 'FDT: valid' aarch64-serial.log
           grep -Fq 'MMU: enabled with identity mappings' aarch64-serial.log
           grep -Fq 'GICv2: initialized; timer PPI enabled' aarch64-serial.log
           grep -Fq 'PMM: initialized; free pages:' aarch64-serial.log
           grep -Fq 'EL0: entering user program; SVC enabled' aarch64-serial.log
-          grep -Fq 'NucleOS EL0 online' aarch64-serial.log
+          grep -Fq 'CortexOS EL0 online' aarch64-serial.log
 
       - name: Build and boot ARMv7 early stage
         run: |
           make armv7-early
           timeout --foreground 5s make armv7-run > armv7-serial.log 2>&1 || test $? -eq 124
           cat armv7-serial.log
-          grep -Fq 'NucleOS ARMv7 early boot' armv7-serial.log
+          grep -Fq 'CortexOS ARMv7 early boot' armv7-serial.log
           grep -Fq 'FDT: valid' armv7-serial.log
 
       - name: Build kernel
@@ -129,7 +129,7 @@ jobs:
             exit "$qemu_status"
           fi
 
-          if grep -aFq '[Rust] NucleOS Rust kernel module loaded' qemu-serial.log; then
+          if grep -aFq '[Rust] CortexOS Rust kernel module loaded' qemu-serial.log; then
             echo 'Marcador de arranque encontrado en COM1.'
           else
             echo 'Aviso: no apareció el marcador serial; se conservan los logs para diagnóstico.'
@@ -187,7 +187,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: nucleos-${{ github.run_number }}
-          name: NucleOS build ${{ github.run_number }}
+          name: CortexOS build ${{ github.run_number }}
           generate_release_notes: true
           body: |
             Release automático generado después de un cambio en `main`.

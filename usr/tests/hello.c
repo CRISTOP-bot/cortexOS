@@ -9,7 +9,7 @@ int main(int argc, char **argv, char **envp)
 	char buffer[32];
 	int fd;
 	(void)envp;
-	printf("hello from NucleOS (argc=%d)\n", argc);
+	printf("hello from CortexOS (argc=%d)\n", argc);
 	if (argc > 1)
 		printf("argv[1]=%s\n", argv[1]);
 	fd = open("/etc/hostname", 0);

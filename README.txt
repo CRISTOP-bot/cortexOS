@@ -1,12 +1,12 @@
-NucleOS
+CortexOS
 =======
 
-NucleOS is an experimental operating-system project written primarily in C and
+CortexOS is an experimental operating-system project written primarily in C and
 assembly. It is designed for studying kernel design, boot processes, memory
 management, filesystems, processes, system calls, userspace ABIs, drivers, and
 the tooling required to build a bootable system.
 
-The primary bootable path is x86_64 through GRUB Multiboot v1 and QEMU. NucleOS
+The primary bootable path is x86_64 through GRUB Multiboot v1 and QEMU. CortexOS
 is not a general-purpose or daily-use operating system.
 
 Project repository: https://github.com/CRISTOP-bot/nucleos
@@ -18,7 +18,7 @@ Project Status
 
 The following status describes the implementation honestly. A component being
 present in the source tree does not mean that it is complete or available as a
-working NucleOS binary.
+working CortexOS binary.
 
 Implemented or verified at the current level:
 
@@ -42,14 +42,14 @@ Not complete:
 * A complete scheduler, context switching, and process model.
 * A full ELF loader and broad POSIX compatibility.
 * TTYs, signals, job control, dynamic linking, and a complete userspace runtime.
-* Bash, OpenRC, and Fastfetch as working NucleOS binaries.
-* An integrated ARM64 NucleOS kernel and rootfs image.
+* Bash, OpenRC, and Fastfetch as working CortexOS binaries.
+* An integrated ARM64 CortexOS kernel and rootfs image.
 * Complete ARMv7 and i386 ports.
 
 AArch64 currently provides an independent QEMU virt early image with FDT, MMU,
 PMM, GICv2, Generic Timer, IRQ, EL0, and SVC smoke coverage. ARMv7 provides an
 early boot image with vectors, VBAR, UART PL011, and initial FDT validation.
-Neither is a complete NucleOS port. i386 remains port preparation only.
+Neither is a complete CortexOS port. i386 remains port preparation only.
 
 Quick Start
 ===========
@@ -132,7 +132,7 @@ Integrated projects:
 
 Licensing:
 
-* LICENSE - GPLv3 license for NucleOS code and original project files.
+* LICENSE - GPLv3 license for CortexOS code and original project files.
 * LICENSES/LICENSE.md - project licensing notes.
 * LICENSES/COPYRIGHT.md - copyright notices.
 * LICENSES/THIRD_PARTY_LICENSES.md - external component license inventory.
@@ -140,7 +140,7 @@ Licensing:
 Who Are You?
 ============
 
-Find the section below that best matches your work with NucleOS:
+Find the section below that best matches your work with CortexOS:
 
 * New OS Developer - learning how kernels, bootloaders, memory, and userspace
   fit together.
@@ -248,7 +248,7 @@ Architecture Ports
 
 Architecture-specific code is under arch/. The main bootable path is:
 
-* x86_64 - primary NucleOS kernel image through GRUB Multiboot v1.
+* x86_64 - primary CortexOS kernel image through GRUB Multiboot v1.
 * aarch64 - independent QEMU virt early image, not a complete kernel.
 * armv7 - independent early boot image, not a complete port.
 * i386 - port preparation only, not bootable.
@@ -308,7 +308,7 @@ Architecture Overview
 
 rootfs/ contains the files packaged into the live system. tools/build/rootfs.py
 converts them into rootfs.bin, a compact CRFS image. During a live Multiboot
-boot, NucleOS copies the rootfs module into RAM before initializing the VFS.
+boot, CortexOS copies the rootfs module into RAM before initializing the VFS.
 Changes made to the live rootfs are temporary and are lost at shutdown unless a
 separate persistence mechanism is used.
 
@@ -365,7 +365,7 @@ disk.
     sudo python3 /mnt/installer/nucleos-install
     sudo tools/installer/nucleos-install
 
-BIOS and UEFI are firmware paths. GRUB remains responsible for loading NucleOS
+BIOS and UEFI are firmware paths. GRUB remains responsible for loading CortexOS
 through Multiboot v1.
 
 Communication and Support
@@ -384,7 +384,7 @@ observation.
 License
 =======
 
-NucleOS code, documentation, build scripts, and original files are licensed
+CortexOS code, documentation, build scripts, and original files are licensed
 under GPLv3. Third-party components retain their original licenses. See:
 
 * LICENSE

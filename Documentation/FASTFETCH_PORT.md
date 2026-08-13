@@ -1,6 +1,6 @@
-# Port de Fastfetch a NucleOS
+# Port de Fastfetch a CortexOS
 
-NucleOS integra el repositorio oficial de Fastfetch como submódulo Git:
+CortexOS integra el repositorio oficial de Fastfetch como submódulo Git:
 
 ```text
 https://github.com/fastfetch-cli/fastfetch
@@ -12,7 +12,7 @@ La fuente está fijada al commit:
 a0452b8323aaa9d3b5b6ded435ed6660cee2bbb9
 ```
 
-Fastfetch conserva su licencia MIT original. NucleOS no copia ni modifica su
+Fastfetch conserva su licencia MIT original. CortexOS no copia ni modifica su
 fuente dentro del repositorio principal.
 
 ## Estado actual
@@ -22,7 +22,7 @@ fuente dentro del repositorio principal.
 - [x] Validación CI de que el submódulo existe y contiene `CMakeLists.txt` y
       `LICENSE`.
 - [ ] Implementar las interfaces POSIX que requiere Fastfetch.
-- [ ] Añadir una toolchain/sysroot de NucleOS para CMake.
+- [ ] Añadir una toolchain/sysroot de CortexOS para CMake.
 - [ ] Desactivar módulos que dependen de Linux, `/proc`, `/sys`, DBus, Wayland
       u otras APIs ausentes.
 - [ ] Compilar un binario estático compatible.
@@ -31,7 +31,7 @@ fuente dentro del repositorio principal.
 ## Por qué no se copia todavía al rootfs
 
 El repositorio oficial es código fuente para sistemas POSIX completos. Copiarlo
-como si fuera un ejecutable no funcionaría: NucleOS todavía no ofrece toda la
+como si fuera un ejecutable no funcionaría: CortexOS todavía no ofrece toda la
 libc, el ABI POSIX, `/proc`, `/sys`, terminales y APIs necesarias. El comando
 `fastfetch` actual del shell es una implementación informativa provisional,
 separada del Fastfetch upstream.

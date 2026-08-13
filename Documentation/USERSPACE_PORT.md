@@ -1,7 +1,7 @@
 # Port de espacio de usuario
 
 Este documento marca la primera base para ejecutar programas POSIX pequeños en
-NucleOS. No pretende afirmar todavía que Bash sea ejecutable.
+CortexOS. No pretende afirmar todavía que Bash sea ejecutable.
 
 ## Implementado en esta etapa
 
@@ -30,6 +30,6 @@ NucleOS. No pretende afirmar todavía que Bash sea ejecutable.
 
 El smoke test de compilación `make user-test-posix` cubre los headers y
 wrappers de `stat`, `fcntl` y `waitpid`; todavía falta ejecutar el ELF dentro
-de NucleOS y validar el comportamiento con procesos reales. Cada capacidad
+de CortexOS y validar el comportamiento con procesos reales. Cada capacidad
 debe tener además una prueba de usuario en QEMU antes de considerarse
 terminada.

@@ -17,4 +17,4 @@ aarch64_user_program:
 
 .section .rodata.user, "a"
 aarch64_user_message:
-	.asciz "NucleOS EL0 online\n"
+	.asciz "CortexOS EL0 online\n"

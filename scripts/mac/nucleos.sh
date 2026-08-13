@@ -10,7 +10,7 @@ elif command -v make >/dev/null 2>&1
 then
   MAKE=make
 else
-  echo "No se encontró GNU Make. Instálalo antes de compilar NucleOS." >&2
+  echo "No se encontró GNU Make. Instálalo antes de compilar CortexOS." >&2
   exit 1
 fi
 case "$command_name" in

@@ -41,7 +41,7 @@ def clear() -> None:
 
 def banner() -> None:
     clear()
-    nucleos = f"""{CYAN}{BOLD}
+    cortexos = f"""{CYAN}{BOLD}
      ╔═══════════════════════════════════════════════════════════╗
      ║                                                          ║
      ║       {WHITE}███╗   ██╗██╗   ██╗ ██████╗███████╗██╗      {CYAN}║
@@ -54,7 +54,7 @@ def banner() -> None:
      ║              {GREEN}v3.0.0 — x86_64 — Installer{CYAN}                ║
      ╚═══════════════════════════════════════════════════════════╝
 {R}"""
-    print(nucleos)
+    print(cortexos)
 
 
 def _line(ch: str = "─") -> str:

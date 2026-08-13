@@ -1,5 +1,5 @@
-#ifndef NUCLEOS_STDIO_H
-#define NUCLEOS_STDIO_H
+#ifndef CORTEXOS_STDIO_H
+#define CORTEXOS_STDIO_H
 #include <stddef.h>
 
 typedef struct { int fd; } FILE;

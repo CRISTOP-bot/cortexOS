@@ -168,7 +168,7 @@ static int64_t sys_lseek(uint64_t fd, uint64_t offset, uint64_t whence, uint64_t
 
 /* A deliberately small, fixed-layout stat ABI. Keep this layout identical to
  * include/sys/stat.h until the user ABI grows a 64-bit time_t layer. */
-struct nucleos_stat {
+struct cortexos_stat {
 	uint64_t st_size;
 	uint32_t st_mode;
 	uint32_t st_nlink;
@@ -176,25 +176,25 @@ struct nucleos_stat {
 	uint32_t st_gid;
 };
 
-#define NUCLEOS_S_IFREG 0100000U
-#define NUCLEOS_S_IFDIR 0040000U
+#define CORTEXOS_S_IFREG 0100000U
+#define CORTEXOS_S_IFDIR 0040000U
 
 static int64_t sys_stat(uint64_t path, uint64_t output, uint64_t a3, uint64_t a4, uint64_t a5)
 {
-	struct nucleos_stat *st = (struct nucleos_stat *)output;
+	struct cortexos_stat *st = (struct cortexos_stat *)output;
 	(void)a3; (void)a4; (void)a5;
 	if (!path || !st || !vfs_exists((const char *)path))
 		return -1;
 	st->st_size = vfs_get_size((const char *)path);
-	st->st_mode = vfs_is_dir((const char *)path) ? NUCLEOS_S_IFDIR : NUCLEOS_S_IFREG;
+	st->st_mode = vfs_is_dir((const char *)path) ? CORTEXOS_S_IFDIR : CORTEXOS_S_IFREG;
 	st->st_nlink = 1;
 	st->st_uid = 0;
 	st->st_gid = 0;
 	return 0;
 }
 
-#define NUCLEOS_F_GETFL 3
-#define NUCLEOS_F_SETFL 4
+#define CORTEXOS_F_GETFL 3
+#define CORTEXOS_F_SETFL 4
 
 static int64_t sys_fcntl(uint64_t fd, uint64_t command, uint64_t value, uint64_t a4, uint64_t a5)
 {
@@ -203,9 +203,9 @@ static int64_t sys_fcntl(uint64_t fd, uint64_t command, uint64_t value, uint64_t
 	flags = vfs_get_fd_flags((int)fd);
 	if (flags < 0)
 		return -1;
-	if (command == NUCLEOS_F_GETFL)
+	if (command == CORTEXOS_F_GETFL)
 		return flags;
-	if (command == NUCLEOS_F_SETFL)
+	if (command == CORTEXOS_F_SETFL)
 		return vfs_set_fd_flags((int)fd, (int)value);
 	return -1;
 }

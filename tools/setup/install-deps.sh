@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-#  NucleOS - Dependency Installer
+#  CortexOS - Dependency Installer
 #  Multi-platform: Linux (Arch, Debian, Fedora, SUSE, Void, Alpine, Gentoo,
 #                   NixOS, FreeBSD), macOS, Windows (MSYS2/Git Bash/WSL)
 # ============================================================================
@@ -656,7 +656,7 @@ main() {
     if [[ ${#MISSING[@]} -eq 0 ]]; then
         echo -e "  ${CHECK}  ${G}${BOLD}All dependencies are installed!${RESET}"
         echo ""
-        echo -e "  ${INFO}  You can now build NucleOS:"
+        echo -e "  ${INFO}  You can now build CortexOS:"
         echo -e "      ${C}make clean && make${RESET}"
         echo -e "      ${C}make iso${RESET}"
         echo -e "      ${C}make run${RESET}"
@@ -724,7 +724,7 @@ main() {
         echo -e "  ${INFO}  Revisa los nombres de paquete de tu distribución y vuelve a ejecutar --check."
     fi
     echo ""
-    echo -e "  ${INFO}  Build NucleOS:"
+    echo -e "  ${INFO}  Build CortexOS:"
     echo -e "      ${C}make clean && make${RESET}"
     echo -e "      ${C}make iso${RESET}"
     echo -e "      ${C}make run${RESET}"

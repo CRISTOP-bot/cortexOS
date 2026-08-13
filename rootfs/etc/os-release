@@ -1,5 +1,5 @@
-NAME="NucleOS"
+NAME="CortexOS"
 VERSION="3.0.0"
-ID=nucleos
-PRETTY_NAME="NucleOS v3"
-HOME_URL="https://github.com/nucleos/nucleos"
+ID=cortexos
+PRETTY_NAME="CortexOS v3"
+HOME_URL="https://github.com/CRISTOP-bot/nucleos"

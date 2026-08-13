@@ -1,4 +1,4 @@
-NucleOS v3.0.0 rootfs
+CortexOS v3.0.0 rootfs
 Architecture: i386
-Kernel: NucleOS v3
-Filesystem: NRFS (NucleOS Root File System)
+Kernel: CortexOS v3
+Filesystem: NRFS (CortexOS Root File System)

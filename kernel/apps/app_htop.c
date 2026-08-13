@@ -65,7 +65,7 @@ void app_htop(void)
 		ui_clear();
 
 		ui_fill(0, 0, SCREEN_W, 1, ' ', COLOR_TITLE);
-		ui_title_bar(0, 0, SCREEN_W, " NucleOS System Monitor ", COLOR_TITLE);
+		ui_title_bar(0, 0, SCREEN_W, " CortexOS System Monitor ", COLOR_TITLE);
 
 		ui_put_str(1, 1, "Memory Total: ", COLOR_CYAN);
 		draw_number(15, 1, total_kb, COLOR_WHITE);
@@ -129,7 +129,7 @@ void app_htop(void)
 		ui_put_str(13, 22, " running: ", COLOR_DIM);
 		draw_number(23, 22, NUM_TASKS, COLOR_GREEN);
 
-		ui_status_bar(23, "NucleOS htop", "PID 1-12", COLOR_STATUS);
+		ui_status_bar(23, "CortexOS htop", "PID 1-12", COLOR_STATUS);
 
 		ui_status_bar(24, "Q: Return  F5: Refresh", 0, COLOR_BORDER);
 

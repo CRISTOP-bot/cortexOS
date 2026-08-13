@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a NucleOS CRFS image without mounting or modifying anything."""
+"""Validate a CortexOS CRFS image without mounting or modifying anything."""
 from __future__ import annotations
 
 import struct

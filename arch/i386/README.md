@@ -1,4 +1,4 @@
-# Port i386 / x86 de NucleOS
+# Port i386 / x86 de CortexOS
 
 Este directorio reserva el código específico del port de 32 bits.
 

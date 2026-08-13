@@ -111,7 +111,7 @@ static void draw_system_panel(void)
 {
 	draw_panel(1, 1, 38, 5);
 	draw_panel_title(1, 1, 38, " System ");
-	draw_label_value(3, 2, "OS Name:  ", "NucleOS");
+	draw_label_value(3, 2, "OS Name:  ", "CortexOS");
 	draw_label_value(3, 3, "Kernel:   ", "3.0 (i386)");
 	draw_label_value(3, 4, "Arch:     ", "x86_64");
 }
@@ -236,8 +236,8 @@ static void draw_all(void)
 {
 	ui_clear();
 	ui_double_box(0, 0, SCREEN_W, SCREEN_H, COLOR_CYAN);
-	ui_title_bar(0, 0, SCREEN_W, " NucleOS System Information ", COLOR_TITLE);
-	ui_status_bar(23, " NucleOS SysInfo ", "v3.0", COLOR_STATUS);
+	ui_title_bar(0, 0, SCREEN_W, " CortexOS System Information ", COLOR_TITLE);
+	ui_status_bar(23, " CortexOS SysInfo ", "v3.0", COLOR_STATUS);
 	ui_fill(0, 24, SCREEN_W, 1, ' ', COLOR_STATUS);
 	ui_put_str(SCREEN_W - 12, 24, "Q: Return", COLOR_STATUS);
 

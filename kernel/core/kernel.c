@@ -115,7 +115,7 @@ static void print_banner(void)
 	console_print_color("========================================\n", VGA_ATTR(VGA_CYAN, VGA_BLACK));
 	console_print_color("      Open Source Operating System\n", VGA_ATTR(VGA_DARK_GREY, VGA_BLACK));
 	console_print("\n");
-	boot_info("Booting NucleOS v3 x86_64...\n");
+	boot_info("Booting CortexOS v3 x86_64...\n");
 	boot_delay();
 }
 

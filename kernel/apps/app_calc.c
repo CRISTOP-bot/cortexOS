@@ -156,13 +156,13 @@ void app_calc_tui(void)
     bool has_result = false;
 
     ui_clear();
-    ui_title_bar(0, 0, SCREEN_W, " NucleOS Calculator ", COLOR_TITLE);
+    ui_title_bar(0, 0, SCREEN_W, " CortexOS Calculator ", COLOR_TITLE);
     ui_hline(0, 4, SCREEN_W, COLOR_BORDER);
     draw_grid(sel_row, sel_col);
     ui_hline(0, 12, SCREEN_W, COLOR_BORDER);
     ui_hline(0, 13, SCREEN_W, COLOR_BORDER);
     draw_hist(history, history_count);
-    ui_status_bar(23, "NucleOS Calculator", "INT MODE", COLOR_STATUS);
+    ui_status_bar(23, "CortexOS Calculator", "INT MODE", COLOR_STATUS);
     ui_fill(0, 24, SCREEN_W, 1, ' ', COLOR_STATUS);
     ui_put_str(1, 24, "Type expression Enter:= Bksp:Del C:Clear Q:Quit",
                COLOR_STATUS);

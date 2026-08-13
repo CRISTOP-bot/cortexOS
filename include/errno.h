@@ -1,5 +1,5 @@
-#ifndef NUCLEOS_ERRNO_H
-#define NUCLEOS_ERRNO_H
+#ifndef CORTEXOS_ERRNO_H
+#define CORTEXOS_ERRNO_H
 extern int errno;
 #define ENOENT 2
 #define EBADF 9

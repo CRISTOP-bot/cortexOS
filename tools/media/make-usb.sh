@@ -2,7 +2,7 @@
 set -euo pipefail
 
 #
-# make-usb.sh — Crea un USB booteable con NucleOS + instalador Python
+# make-usb.sh — Crea un USB booteable con CortexOS + instalador Python
 #
 # Modo de uso:
 #   sudo bash tools/media/make-usb.sh /dev/sdX
@@ -121,7 +121,7 @@ sgdisk --new=1:2048:+2M --typecode=1:EF02 --change-name=1:"GRUB" "${DEVICE}"
 sgdisk --new=2:0:+512M --typecode=2:EF00 --change-name=2:"EFI" "${DEVICE}"
 
 # Data partition (kernel + rootfs + installer)
-sgdisk --new=3:0:0 --typecode=3:8300 --change-name=3:"NUCLEOS" "${DEVICE}"
+sgdisk --new=3:0:0 --typecode=3:8300 --change-name=3:"CORTEXOS" "${DEVICE}"
 
 partprobe "${DEVICE}"
 sleep 1
@@ -148,10 +148,10 @@ ok "Particiones creadas: ${PART1} (BIOS), ${PART2} (EFI), ${PART3} (Datos)"
 info "Formateando particiones..."
 # BIOS boot: no se formatea, solo se usa para GRUB core.img
 # EFI: FAT32
-mkfs.fat -F32 -n "NUCLEOS_EFI" "${PART2}" >/dev/null
+mkfs.fat -F32 -n "CORTEXOS_EFI" "${PART2}" >/dev/null
 ok "EFI partición formateada: ${PART2} (FAT32)"
 # Data: ext4
-mkfs.ext4 -F -L "NUCLEOS_DATA" "${PART3}" >/dev/null
+mkfs.ext4 -F -L "CORTEXOS_DATA" "${PART3}" >/dev/null
 ok "Datos partición formateada: ${PART3} (ext4)"
 
 # --- Copiar archivos ---
@@ -170,7 +170,7 @@ grub-install \
     --target=x86_64-efi \
     --efi-directory="${MOUNT_DIR}" \
     --boot-directory="${MOUNT_DIR}/boot" \
-    --bootloader-id="NucleOS" \
+    --bootloader-id="CortexOS" \
     --recheck \
     --removable >/dev/null 2>&1 || warn "GRUB EFI instalación falló (puede ignorarse si usas BIOS)"
 
@@ -193,23 +193,23 @@ if [[ -d "${TOOLS_DIR}/installer" ]]; then
     # README en la raíz
     cat > "${MOUNT_DIR}/LEEME.txt" << 'EOF'
 ╔═══════════════════════════════════════════════════════════╗
-║                    NucleOS v3.0.0                        ║
+║                    CortexOS v3.0.0                        ║
 ║           USB Booteable + Instalador                     ║
 ╚═══════════════════════════════════════════════════════════╝
 
-Para INSTALAR NucleOS en tu disco duro:
+Para INSTALAR CortexOS en tu disco duro:
 
   1. Arranca un Linux Live USB (Arch Linux, Ubuntu, etc.)
   2. Conecta este USB y verifica el dispositivo:
        lsblk
-  3. Monta la partición de datos (NUCLEOS_DATA):
+  3. Monta la partición de datos (CORTEXOS_DATA):
        sudo mount /dev/sdX3 /mnt
   4. Ejecuta el instalador:
        sudo python /mnt/installer/nucleos-install
 
-Para ARRANCAR NucleOS directamente:
+Para ARRANCAR CortexOS directamente:
   - Simplemente bootea desde este USB
-  - Selecciona "NucleOS v3 (Boot)" en GRUB
+  - Selecciona "CortexOS v3 (Boot)" en GRUB
 
 Requisitos del instalador:
   - python3
@@ -238,7 +238,7 @@ if loadfont $prefix/fonts/unicode.pf2; then
   terminal_output gfxterm
 fi
 
-menuentry "NucleOS v3 (Boot)" {
+menuentry "CortexOS v3 (Boot)" {
     insmod ext2
     set root=(hd0,msdos3)
     multiboot /boot/kernel.bin
@@ -246,12 +246,12 @@ menuentry "NucleOS v3 (Boot)" {
     boot
 }
 
-menuentry "NucleOS v3 (Install — información)" {
+menuentry "CortexOS v3 (Install — información)" {
     echo "────────────────────────────────────────────────"
-    echo "  Para INSTALAR NucleOS en tu disco duro:"
+    echo "  Para INSTALAR CortexOS en tu disco duro:"
     echo ""
     echo "  1. Arranca desde un Linux Live USB"
-    echo "  2. Monta la partición NUCLEOS_DATA:"
+    echo "  2. Monta la partición CORTEXOS_DATA:"
     echo "       sudo mount /dev/sdX3 /mnt"
     echo "  3. Ejecuta el instalador:"
     echo "       sudo python /mnt/installer/nucleos-install"
@@ -290,6 +290,6 @@ echo -e "  ${BOLD}Kernel:${RESET}       ${KERNEL}"
 echo -e "  ${BOLD}Rootfs:${RESET}       ${ROOTFS}"
 echo -e "  ${BOLD}Instalador:${RESET}   /installer/nucleos-install (en el USB)"
 echo ""
-echo -e "  ${YELLOW}Para instalar NucleOS en otro disco:${RESET}"
+echo -e "  ${YELLOW}Para instalar CortexOS en otro disco:${RESET}"
 echo -e "    sudo python ${MOUNT_DIR}/installer/nucleos-install"
 echo ""

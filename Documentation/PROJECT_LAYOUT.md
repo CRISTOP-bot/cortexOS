@@ -1,6 +1,6 @@
 # Organización del proyecto
 
-NucleOS sigue una distribución por subsistemas, inspirada en la estructura de
+CortexOS sigue una distribución por subsistemas, inspirada en la estructura de
 un kernel tradicional. Cada directorio contiene código fuente o documentación
 activa; los artefactos generados nunca se guardan en el árbol fuente.
 

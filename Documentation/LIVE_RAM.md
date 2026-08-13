@@ -2,7 +2,7 @@
 
 La entrada normal de GRUB carga `kernel.bin` y `rootfs.bin` como módulos
 Multiboot. GRUB los copia a memoria antes de entregar el control al kernel.
-Durante el arranque, NucleOS reserva el rango del módulo para que el PMM no lo
+Durante el arranque, CortexOS reserva el rango del módulo para que el PMM no lo
 reutilice y copia el CRFS a páginas propias del PMM.
 
 El arranque muestra:

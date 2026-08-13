@@ -266,12 +266,12 @@ bash-source:
 	@grep -q 'version 5.3' $(BASH_SRC_DIR)/README
 	@echo "  Fuente de GNU Bash disponible en $(BASH_SRC_DIR)"
 	@echo "  Si falta, ejecuta: git submodule update --init --recursive"
-	@echo "  Pendiente: libc/ABI POSIX y cargador ELF para compilarlo para NucleOS"
+	@echo "  Pendiente: libc/ABI POSIX y cargador ELF para compilarlo para CortexOS"
 
 archinstall-source:
 	@test -f tools/archinstall/upstream/archinstall/main.py
 	@test -f tools/archinstall/nucleos.py
-	@echo "  Archinstall upstream y adaptador NucleOS disponibles"
+	@echo "  Archinstall upstream y adaptador CortexOS disponibles"
 
 nucleos-archinstall:
 	python3 tools/archinstall/nucleos.py --help
@@ -293,7 +293,7 @@ fastfetch-source:
 	@test -f $(FASTFETCH_SRC_DIR)/LICENSE
 	@echo "  Fuente oficial de Fastfetch disponible en $(FASTFETCH_SRC_DIR)"
 	@echo "  Commit fijado: $(FASTFETCH_COMMIT)"
-	@echo "  Pendiente: portar libc/POSIX y compilar el binario para NucleOS"
+	@echo "  Pendiente: portar libc/POSIX y compilar el binario para CortexOS"
 
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)

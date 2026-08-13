@@ -1,7 +1,7 @@
-# Archinstall adaptado para NucleOS
+# Archinstall adaptado para CortexOS
 
 Este directorio contiene una copia del paquete funcional de Archinstall y una
-capa de adaptación para NucleOS.
+capa de adaptación para CortexOS.
 
 ## Contenido
 
@@ -9,23 +9,23 @@ capa de adaptación para NucleOS.
   conservadas para reutilizar modelos, TUI, perfiles, traducciones y lógica de
   configuración.
 - `upstream/LICENSE`: licencia GPL-3.0 del proyecto original.
-- `nucleos.py`: entrada adaptada de NucleOS.
+- `nucleos.py`: entrada adaptada de CortexOS.
 
 ## Diferencia importante
 
 Archinstall está diseñado para Arch Linux y depende de `pacman`, `systemd`,
-`arch-chroot`, `pyparted` y otras piezas que no existen en NucleOS. Por eso no
+`arch-chroot`, `pyparted` y otras piezas que no existen en CortexOS. Por eso no
 se sustituyeron esas operaciones con comandos falsos. La adaptación usa el
-backend existente de NucleOS:
+backend existente de CortexOS:
 
 - particionado y montaje controlados por `tools/installer`;
 - GRUB para el arranque;
 - kernel `build/kernel.bin`;
 - rootfs CRFS generado desde `rootfs/`;
-- configuración de `/etc`, usuarios y hostname propia de NucleOS.
+- configuración de `/etc`, usuarios y hostname propia de CortexOS.
 
 La copia upstream permanece identificable y separada para conservar sus avisos
-legales y facilitar futuras actualizaciones. La interfaz NucleOS no debe
+legales y facilitar futuras actualizaciones. La interfaz CortexOS no debe
 llamarse `archinstall` en una ISO de Arch: su comando es
 `nucleos-archinstall`.
 
@@ -56,4 +56,4 @@ nombres de dispositivo.
 
 Fuente: `archlinux/archinstall`, rama `master`, commit de referencia
 `5ebdd27cebbde03705cd11b5c82f0acdaeee9102`, GPL-3.0-only. La copia se importa
-como código de terceros y no cambia la licencia de NucleOS.
+como código de terceros y no cambia la licencia de CortexOS.

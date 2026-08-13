@@ -493,6 +493,6 @@ pub extern "C" fn rust_to_lowercase(s: *mut u8, len: usize) {
 
 #[no_mangle]
 pub extern "C" fn rust_info() {
-    let msg: *const u8 = b"\r\n[Rust] NucleOS Rust kernel module loaded\r\n[Rust] Version 1.0.0-x86_64\r\n[Rust] Built with rustc 1.97.1\r\n\0" as *const u8;
+    let msg: *const u8 = b"\r\n[Rust] CortexOS Rust kernel module loaded\r\n[Rust] Version 1.0.0-x86_64\r\n[Rust] Built with rustc 1.97.1\r\n\0" as *const u8;
     rust_serial_print(msg);
 }
