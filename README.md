@@ -4,10 +4,7 @@
   <img src="assets/branding/nucleos-logo.png" alt="NucleOS" width="280">
 </p>
 
-![Architecture](https://img.shields.io/badge/architecture-x86__64-blue?style=flat-square)
-![Status](https://img.shields.io/badge/status-experimental-orange?style=flat-square)
-![Boot](https://img.shields.io/badge/boot-GRUB%20Multiboot-purple?style=flat-square)
-![License](https://img.shields.io/badge/license-GPLv3-green?style=flat-square)
+**Architecture:** x86_64 · **Status:** experimental · **Boot:** GRUB Multiboot v1 · **License:** GPLv3
 
 NucleOS is an experimental operating-system project for x86_64, written
 primarily in C and assembly. It is a small, freestanding environment for
@@ -17,7 +14,7 @@ calls, userspace ABIs, and the tooling required to build a bootable system.
 The main image boots through GRUB Multiboot v1 and is exercised primarily in
 QEMU x86_64. NucleOS is not a general-purpose or daily-use operating system.
 
-> The project was previously known as [cris-os-v2](https://github.com/CRISTOP-bot/cris-os-v2).
+> The project was previously known as `cris-os-v2`.
 
 ## Current status
 
