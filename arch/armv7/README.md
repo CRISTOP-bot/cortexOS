@@ -1,4 +1,4 @@
-# Port ARMv7 / ARM32 de NucleOS
+# Port ARMv7 / ARM32 de CortexOS
 
 Este directorio contiene la primera etapa del port ARMv7 para la máquina
 `virt` de QEMU y un procesador Cortex-A15:
@@ -10,7 +10,7 @@ Este directorio contiene la primera etapa del port ARMv7 para la máquina
 - lectura inicial del DTB, `MIDR` y `SCTLR`;
 - linker script con dirección de carga ARM32.
 
-Esta etapa todavía no es el kernel completo de NucleOS. Falta implementar el
+Esta etapa todavía no es el kernel completo de CortexOS. Falta implementar el
 parser FDT, MMU de ARMv7, GIC, Generic Timer, PMM, VMM, cambio de contexto,
 EL0, syscalls, procesos y drivers.
 

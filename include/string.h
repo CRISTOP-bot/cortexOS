@@ -1,5 +1,5 @@
-#ifndef NUCLEOS_STRING_H
-#define NUCLEOS_STRING_H
+#ifndef CORTEXOS_STRING_H
+#define CORTEXOS_STRING_H
 #include <stddef.h>
 
 void *memcpy(void *dst, const void *src, size_t count);

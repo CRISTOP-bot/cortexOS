@@ -106,7 +106,7 @@ void aarch64_early_main(uint64_t dtb)
 	uint64_t user_stack;
 	int mmu_ready = 0;
 
-	uart_puts("NucleOS AArch64 early boot\n");
+	uart_puts("CortexOS AArch64 early boot\n");
 	uart_puts("EL: ");
 	uart_puthex((read_currentel() >> 2) & 0x3);
 	if (!dtb) {
@@ -193,7 +193,7 @@ void aarch64_early_main(uint64_t dtb)
 
 __attribute__((noreturn)) void aarch64_exception_c(uint64_t vector)
 {
-	uart_puts("\nNucleOS AArch64 exception\n");
+	uart_puts("\nCortexOS AArch64 exception\n");
 	uart_puts("Vector: ");
 	uart_puthex(vector);
 	uart_puts("\nESR_EL1: ");

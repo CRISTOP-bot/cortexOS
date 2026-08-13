@@ -1,4 +1,4 @@
-# Port AArch64 / ARM64 de NucleOS
+# Port AArch64 / ARM64 de CortexOS
 
 Este directorio contiene una primera etapa de un port para la máquina `virt` de
 QEMU y procesadores ARMv8-A.
@@ -28,7 +28,7 @@ QEMU y procesadores ARMv8-A.
 - bucle de espera mediante `wfe`.
 
 Esta etapa ya valida PMM, MMU, IRQ, EL0 y SVC, pero todavía no es el kernel
-completo de NucleOS: falta aislamiento por proceso con `TTBR0_EL1` propio,
+completo de CortexOS: falta aislamiento por proceso con `TTBR0_EL1` propio,
 `fork`, scheduler/context switch, drivers completos, VFS/rootfs y una imagen
 ARM64 integrada. El syscall smoke no debe confundirse con una ABI POSIX
 terminada.

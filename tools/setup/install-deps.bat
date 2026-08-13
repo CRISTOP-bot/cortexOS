@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 chcp 65001 >nul 2>&1
 
-rem NucleOS dependency installer for Windows.
+rem CortexOS dependency installer for Windows.
 rem MSYS2 and WSL are the supported full-build environments. Native
 rem Chocolatey/winget installation is intentionally only a partial fallback.
 
@@ -65,7 +65,7 @@ exit /b 1
 :print_banner
  echo.
  echo ================================================================
- echo   NucleOS dependency installer - Windows
+ echo   CortexOS dependency installer - Windows
  echo ================================================================
  echo   MSYS2 and WSL provide the complete toolchain.
  echo.
@@ -209,7 +209,7 @@ echo [*] Installing the available native tools through Chocolatey...
 choco install -y make python3 qemu nasm
 if errorlevel 1 echo [!] Chocolatey reported an error.
 echo [~] Chocolatey does not provide the complete GNU/GRUB/ARM environment.
-echo     Use MSYS2 or WSL for a full NucleOS build.
+echo     Use MSYS2 or WSL for a full CortexOS build.
 exit /b 0
 
 :install_winget

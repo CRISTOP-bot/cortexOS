@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the compact CRFS image consumed by NucleOS's VFS."""
+"""Build the compact CRFS image consumed by CortexOS's VFS."""
 from __future__ import annotations
 
 import struct

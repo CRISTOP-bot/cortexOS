@@ -1,6 +1,6 @@
-# Arquitecturas de NucleOS
+# Arquitecturas de CortexOS
 
-NucleOS está separando el código común del kernel (`kernel/`) del código
+CortexOS está separando el código común del kernel (`kernel/`) del código
 específico de cada arquitectura (`arch/<arquitectura>/`). No se marca
 una arquitectura como compatible hasta que pueda compilar, arrancar y pasar un
 smoke test.

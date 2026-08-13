@@ -162,7 +162,7 @@ FS_MAP = {
 
 def format_partition(part: str, fstype: str, label: str = "") -> None:
     if fstype not in FS_MAP:
-        raise ValueError(f"Sistema de archivos no soportado por NucleOS: {fstype}")
+        raise ValueError(f"Sistema de archivos no soportado por CortexOS: {fstype}")
     cmd, flag = FS_MAP[fstype]
     if label and flag:
         cmd = [*cmd, *flag, label]

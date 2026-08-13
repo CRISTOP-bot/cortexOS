@@ -20,7 +20,7 @@ void *malloc(size_t size)
 
 void free(void *ptr)
 {
-	/* NucleOS starts with a monotonic heap; individual blocks are retained. */
+	/* CortexOS starts with a monotonic heap; individual blocks are retained. */
 	(void)ptr;
 }
 

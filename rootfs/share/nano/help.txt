@@ -1,1 +1,1 @@
-nano help text for NucleOS.
+nano help text for CortexOS.

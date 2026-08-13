@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from installer.config import NucleOSConfig
+from installer.config import CortexOSConfig
 from installer.disk import (
     create_partitions,
     device_type,
@@ -81,7 +81,7 @@ def _password_hash(password: str) -> str:
     return f"$nucleos-pbkdf2-sha256${iterations}${salt}${digest}"
 
 
-def _validate_config(config: NucleOSConfig) -> None:
+def _validate_config(config: CortexOSConfig) -> None:
     if not HOSTNAME_RE.fullmatch(config.hostname):
         raise ValueError("Hostname inválido: usa letras, números, puntos y guiones")
     if not config.partition:
@@ -97,7 +97,7 @@ def _validate_config(config: NucleOSConfig) -> None:
             raise ValueError(f"Contraseña inválida para {user.username}")
 
 
-def _required_commands(config: NucleOSConfig) -> list[str]:
+def _required_commands(config: CortexOSConfig) -> list[str]:
     p = config.partition
     assert p is not None
     commands = ["blkid", "grub-install", "mount", "partprobe", "umount"]
@@ -138,7 +138,7 @@ set default=0
 
 {root_line}
 
-menuentry \"NucleOS\" {{
+menuentry \"CortexOS\" {{
     multiboot {prefix}/kernel.bin
     module {prefix}/rootfs.bin rootfs
     boot
@@ -166,7 +166,7 @@ def _grub_install(target: str, disk: str, boot_device: str, uefi: bool, files_in
             *common,
             "--target=x86_64-efi",
             f"--efi-directory={boot_dir}",
-            "--bootloader-id=NucleOS",
+            "--bootloader-id=CortexOS",
         ]
         # Avoid requiring firmware NVRAM when installing from a Live USB.
         if not Path("/sys/firmware/efi").is_dir():
@@ -183,19 +183,19 @@ def _grub_install(target: str, disk: str, boot_device: str, uefi: bool, files_in
     ok("GRUB instalado")
 
 
-def _configure(target: str, config: NucleOSConfig) -> None:
+def _configure(target: str, config: CortexOSConfig) -> None:
     etc = Path(target) / "etc"
     etc.mkdir(parents=True, exist_ok=True)
 
     (etc / "hostname").write_text(f"{config.hostname}\n", encoding="utf-8")
     (etc / "os-release").write_text(
-        'NAME="NucleOS"\nVERSION="3.0.0"\nID=nucleos\n'
-        'PRETTY_NAME="NucleOS v3"\n'
+        'NAME="CortexOS"\nVERSION="3.0.0"\nID=cortexos\n'
+        'PRETTY_NAME="CortexOS v3"\n'
         'HOME_URL="https://github.com/CRISTOP-bot/nucleos"\n',
         encoding="utf-8",
     )
     (etc / "issue").write_text(
-        f"NucleOS v3.0.0 \\n \\l ({config.hostname})\n", encoding="utf-8"
+        f"CortexOS v3.0.0 \\n \\l ({config.hostname})\n", encoding="utf-8"
     )
 
     users = config.users or []
@@ -235,8 +235,8 @@ def _setup(partition) -> dict[str, str]:
         parts = create_partitions(partition.device, partition.uefi)
         boot_part = parts["part0"]
         root_part = parts["part1"]
-        format_partition(boot_part, "vfat" if partition.uefi else "ext2", "NUCLEOS_BOOT")
-        format_partition(root_part, partition.fstype, "NUCLEOS_ROOT")
+        format_partition(boot_part, "vfat" if partition.uefi else "ext2", "CORTEXOS_BOOT")
+        format_partition(root_part, partition.fstype, "CORTEXOS_ROOT")
         return {"disk": partition.device, "boot": boot_part, "root": root_part}
 
     disk = partition.disk_device or parent_disk(partition.device)
@@ -253,7 +253,7 @@ def _setup(partition) -> dict[str, str]:
     return {"disk": disk, "boot": partition.boot_device, "root": partition.device}
 
 
-def install(config: NucleOSConfig) -> bool:
+def install(config: CortexOSConfig) -> bool:
     try:
         _validate_config(config)
         _check_commands(_required_commands(config))

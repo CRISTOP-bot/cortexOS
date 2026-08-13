@@ -8,7 +8,7 @@ INSTALLER_DIR = os.path.dirname(os.path.abspath(__file__))
 TOOLS_DIR = os.path.dirname(INSTALLER_DIR)
 sys.path.insert(0, TOOLS_DIR)
 
-from installer.config import NucleOSConfig, PartitionConfig, UserConfig
+from installer.config import CortexOSConfig, PartitionConfig, UserConfig
 from installer.disk import detect_disks, format_size, is_efi
 from installer.install import HOSTNAME_RE, USERNAME_RE, install
 from installer.ui import banner, section, info, ok, warn, error, dim, confirm, prompt, password, menu
@@ -58,13 +58,13 @@ def pick_scheme() -> tuple[bool, bool] | None:
 
 def pick_fs() -> str:
     section("Sistema de archivos")
-    info("El kernel actual de NucleOS implementa ext2 para el almacenamiento del sistema")
+    info("El kernel actual de CortexOS implementa ext2 para el almacenamiento del sistema")
     return "ext2"
 
 
 def ask_hostname() -> str:
     while True:
-        hostname = prompt("Hostname", default="nucleos")
+        hostname = prompt("Hostname", default="cortexos")
         if HOSTNAME_RE.fullmatch(hostname):
             return hostname
         warn("Hostname inválido: usa letras, números, puntos y guiones")
@@ -146,7 +146,7 @@ def main() -> int:
             error("Ejecutar como root: sudo tools/installer/nucleos-install")
             return 1
 
-        info("Instalador de NucleOS v3")
+        info("Instalador de CortexOS v3")
         dim("Ctrl+C para cancelar\n")
 
         if not confirm("¿Iniciar instalación?"):
@@ -194,7 +194,7 @@ def main() -> int:
             uefi=uefi,
             auto_partition=auto_part,
         )
-        cfg = NucleOSConfig(
+        cfg = CortexOSConfig(
             kernel_source=ks,
             rootfs_source=rs,
             hostname=hostname,
@@ -216,7 +216,7 @@ def main() -> int:
         ok("Instalando...")
         if install(cfg):
             section("Completado")
-            ok("NucleOS instalado")
+            ok("CortexOS instalado")
             if confirm("¿Reiniciar ahora?", default=False):
                 subprocess.run(["reboot"], check=False)
             return 0

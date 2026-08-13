@@ -207,7 +207,7 @@ static void draw_panel(void)
 	fill_area_safe(0, PANEL_ROW, 8, 1, PANEL_ALT);
 	draw_text_safe(0, PANEL_ROW, " *NIX  ", PANEL_ALT);
 	safe_putxy(8, PANEL_ROW, 0xB3, PANEL_BG);
-	draw_text_safe(10, PANEL_ROW, "  NucleOS Desktop  ", VGA_ATTR(VGA_LIGHT_GREY, VGA_DARK_GREY));
+	draw_text_safe(10, PANEL_ROW, "  CortexOS Desktop  ", VGA_ATTR(VGA_LIGHT_GREY, VGA_DARK_GREY));
 
 	unsigned long ticks = timer_get_ticks();
 	int minute = (ticks / 100 / 60) % 60;
@@ -266,7 +266,7 @@ static void run_start_menu_item(int idx)
 		break;
 	case 2: {
 		console_print_color("System Status\n\n", VGA_ATTR(VGA_CYAN, VGA_BLACK));
-		console_print("Kernel: NucleOS v3 x86_64\n");
+		console_print("Kernel: CortexOS v3 x86_64\n");
 		unsigned long t = timer_get_ticks();
 		char buf[16];
 		kitoa(t / 100, buf, sizeof(buf));

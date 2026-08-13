@@ -2,7 +2,7 @@
 param(
     [ValidateSet('start', 'create', 'stop', 'status', 'delete')]
     [string]$Action = 'start',
-    [string]$VmName = 'NucleOS',
+    [string]$VmName = 'CortexOS',
     [string]$IsoPath = '',
     [int]$MemoryMB = 1024,
     [int]$CPUs = 2,
@@ -66,11 +66,11 @@ function Create-Vm {
     if (VmExists) { return }
     VBox @('createvm', '--name', $VmName, '--ostype', 'Other_64', '--register')
     VBox @('modifyvm', $VmName, '--memory', "$MemoryMB", '--cpus', "$CPUs", '--firmware', 'bios', '--boot1', 'dvd', '--boot2', 'disk', '--boot3', 'none', '--nic1', 'nat', '--audio-driver', 'none')
-    VBox @('storagectl', $VmName, '--name', 'NucleOS SATA', '--add', 'sata', '--controller', 'IntelAhci')
+    VBox @('storagectl', $VmName, '--name', 'CortexOS SATA', '--add', 'sata', '--controller', 'IntelAhci')
 }
 
 function Attach-Iso {
-    VBox @('storageattach', $VmName, '--storagectl', 'NucleOS SATA', '--port', '0', '--device', '0', '--type', 'dvddrive', '--medium', $IsoPath)
+    VBox @('storageattach', $VmName, '--storagectl', 'CortexOS SATA', '--port', '0', '--device', '0', '--type', 'dvddrive', '--medium', $IsoPath)
 }
 
 switch ($Action) {

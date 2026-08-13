@@ -191,9 +191,9 @@ static void show_mouse_state(void)
 
 static void print_prompt(void)
 {
-	console_print_color("nucleos", VGA_ATTR(VGA_GREEN, VGA_BLACK));
+	console_print_color("cortexos", VGA_ATTR(VGA_GREEN, VGA_BLACK));
 	console_print_color("@", VGA_DEFAULT_ATTR);
-	console_print_color("nucleos", VGA_ATTR(VGA_CYAN, VGA_BLACK));
+	console_print_color("cortexos", VGA_ATTR(VGA_CYAN, VGA_BLACK));
 	console_print_color(":", VGA_DEFAULT_ATTR);
 	console_print_color(vfs_pwd(), VGA_ATTR(VGA_LIGHT_BLUE, VGA_BLACK));
 	console_print_color("$ ", VGA_ATTR(VGA_WHITE, VGA_BLACK));
@@ -281,7 +281,7 @@ static void print_help(void)
 	console_print("  net ping       Ping loopback\n");
 	console_print("  net setip      Set interface IP\n");
 	console_print_color("\n-- Storage --\n", VGA_ATTR(VGA_YELLOW, VGA_BLACK));
-	console_print("  install        Install NucleOS to a hard disk\n");
+	console_print("  install        Install CortexOS to a hard disk\n");
 	console_print("  serial send    Send data via serial\n");
 	console_print("  serial recv    Receive serial data\n");
 	console_print("  serial status  Show serial port status\n");
@@ -336,9 +336,9 @@ static void fastfetch(void)
 
 	console_print_color("\n", attr_sep);
 	console_print_color("   _   _            _   _  ____   ", VGA_ATTR(VGA_CYAN, VGA_BLACK));
-	console_print_color("OS:      ", attr_label); console_print_color("NucleOS v3 x86_64\n", attr_val);
+	console_print_color("OS:      ", attr_label); console_print_color("CortexOS v3 x86_64\n", attr_val);
 	console_print_color("  | \\ | | ___  _ __| | | |/ ___| ", VGA_ATTR(VGA_CYAN, VGA_BLACK));
-	console_print_color("Kernel:  ", attr_label); console_print_color("NucleOS v3\n", attr_val);
+	console_print_color("Kernel:  ", attr_label); console_print_color("CortexOS v3\n", attr_val);
 	console_print_color("  |  \\| |/ _ \\| '__| | | | |  _  ", VGA_ATTR(VGA_CYAN, VGA_BLACK));
 	console_print_color("CPU:     ", attr_label);
 	console_print_color(cpu_vendor[0] ? cpu_vendor : "x86_64 (no CPUID)", attr_val);
@@ -359,9 +359,9 @@ static void fastfetch(void)
 	} else {
 		console_print_color("not detected\n", VGA_ATTR(VGA_DARK_GREY, VGA_BLACK));
 	}
-	console_print_color("                                  ", attr_label); console_print_color("Shell:   ", attr_label); console_print_color("NucleOS Shell\n", attr_val);
+	console_print_color("                                  ", attr_label); console_print_color("Shell:   ", attr_label); console_print_color("CortexOS Shell\n", attr_val);
 	console_print_color("                                  ", attr_label); console_print_color("Term:    ", attr_label); console_print_color("VGA 80x25\n", attr_val);
-	console_print_color("                                  ", attr_label); console_print_color("User:    ", attr_label); console_print_color("nucleos\n", attr_val);
+	console_print_color("                                  ", attr_label); console_print_color("User:    ", attr_label); console_print_color("cortexos\n", attr_val);
 	console_print_color("                                  ", attr_label); console_print_color("Layout:  ", attr_label);
 	console_print_color(layout_name(keyboard_get_layout()), attr_val);
 	console_print("\n");
@@ -394,7 +394,7 @@ static void ls_long(const char *path)
 		} else {
 			console_print_color("-", VGA_DEFAULT_ATTR);
 		}
-		console_print("rwxrwxrwx  1 nucleos nucleos  ");
+		console_print("rwxrwxrwx  1 cortexos cortexos  ");
 
 		size_t sz = vfs_get_size(full);
 		char num[16];
@@ -494,8 +494,8 @@ static void cmd_mv(const char *rest, const char *a1, const char *a2) { (void)res
 static void cmd_cat(const char *rest, const char *a1, const char *a2) { (void)rest; (void)a2; if(a1[0]=='\0') console_print("Usage: cat <file>\n"); else if(!vfs_cat(a1)) console_print_color("cat: file not found or is a directory\n",VGA_ATTR(VGA_RED,VGA_BLACK)); }
 static void cmd_grep(const char *rest, const char *a1, const char *a2) { (void)rest; if(a1[0]=='\0'||a2[0]=='\0') console_print("Usage: grep <pattern> <file>\n"); else if(!grep_file(a2,a1)) console_print_color("grep: pattern not found\n",VGA_ATTR(VGA_RED,VGA_BLACK)); }
 static void cmd_echo(const char *rest, const char *a1, const char *a2) { (void)a1; (void)a2; shell_echo(rest); }
-static void cmd_uname(const char *rest, const char *a1, const char *a2) { (void)rest;(void)a1;(void)a2; console_print_color("NucleOS",VGA_ATTR(VGA_CYAN,VGA_BLACK));console_print_color(" x86_64 ",VGA_DEFAULT_ATTR);console_print_color("v3\n",VGA_ATTR(VGA_GREEN,VGA_BLACK)); }
-static void cmd_whoami(const char *rest, const char *a1, const char *a2) { (void)rest;(void)a1;(void)a2; console_print_color("nucleos\n",VGA_ATTR(VGA_GREEN,VGA_BLACK)); }
+static void cmd_uname(const char *rest, const char *a1, const char *a2) { (void)rest;(void)a1;(void)a2; console_print_color("CortexOS",VGA_ATTR(VGA_CYAN,VGA_BLACK));console_print_color(" x86_64 ",VGA_DEFAULT_ATTR);console_print_color("v3\n",VGA_ATTR(VGA_GREEN,VGA_BLACK)); }
+static void cmd_whoami(const char *rest, const char *a1, const char *a2) { (void)rest;(void)a1;(void)a2; console_print_color("cortexos\n",VGA_ATTR(VGA_GREEN,VGA_BLACK)); }
 static void cmd_chmod(const char *rest, const char *a1, const char *a2) { (void)rest; if(a1[0]=='\0'||a2[0]=='\0') console_print("Usage: chmod <mode> <file>\n"); else console_print("chmod: permissions changed (simulated)\n"); }
 static void cmd_df(const char *rest, const char *a1, const char *a2) { (void)rest;(void)a1;(void)a2; console_print_color("Filesystem  ",VGA_ATTR(VGA_YELLOW,VGA_BLACK));console_print_color("1K-blocks  ",VGA_ATTR(VGA_YELLOW,VGA_BLACK));console_print_color("Used  ",VGA_ATTR(VGA_YELLOW,VGA_BLACK));console_print_color("Avail  ",VGA_ATTR(VGA_YELLOW,VGA_BLACK));console_print_color("Mounted on\n",VGA_ATTR(VGA_YELLOW,VGA_BLACK));console_print_color("rootfs      64        8     56     /\n",VGA_ATTR(VGA_LIGHT_GREY,VGA_BLACK)); }
 static void cmd_stat(const char *rest, const char *a1, const char *a2) { (void)rest;(void)a2; if(a1[0]=='\0') console_print("Usage: stat <file>\n"); else if(!vfs_exists(a1)){console_print_color("stat: ",VGA_ATTR(VGA_RED,VGA_BLACK));console_print(a1);console_print(": no such file or directory\n");}else vfs_stat(a1); }
@@ -745,7 +745,7 @@ void shell_run(void)
 			}
 		}
 		if (!found) {
-			console_print_color("nucleos: command not found: ", VGA_ATTR(VGA_RED, VGA_BLACK));
+			console_print_color("cortexos: command not found: ", VGA_ATTR(VGA_RED, VGA_BLACK));
 			console_print_color(cmd, VGA_ATTR(VGA_WHITE, VGA_BLACK));
 			console_print("\n");
 		}

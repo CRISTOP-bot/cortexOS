@@ -1,5 +1,5 @@
-#ifndef NUCLEOS_AARCH64_FDT_H
-#define NUCLEOS_AARCH64_FDT_H
+#ifndef CORTEXOS_AARCH64_FDT_H
+#define CORTEXOS_AARCH64_FDT_H
 
 #include <stdint.h>
 

@@ -1,5 +1,5 @@
-#ifndef NUCLEOS_FCNTL_H
-#define NUCLEOS_FCNTL_H
+#ifndef CORTEXOS_FCNTL_H
+#define CORTEXOS_FCNTL_H
 
 #define O_RDONLY 0
 #define O_WRONLY 1

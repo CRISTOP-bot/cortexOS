@@ -1,5 +1,5 @@
-#ifndef NUCLEOS_AARCH64_GIC_H
-#define NUCLEOS_AARCH64_GIC_H
+#ifndef CORTEXOS_AARCH64_GIC_H
+#define CORTEXOS_AARCH64_GIC_H
 
 #include <stdint.h>
 

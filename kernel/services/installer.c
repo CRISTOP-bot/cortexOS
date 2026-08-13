@@ -249,7 +249,7 @@ static int ext2_mkfile(uint8_t drive, uint32_t start_lba, uint32_t next_block,
 
 void handle_install_command(const char *args)
 {
-	console_print_color("\n======== NucleOS Installer ========\n", VGA_ATTR(VGA_CYAN, VGA_BLACK));
+	console_print_color("\n======== CortexOS Installer ========\n", VGA_ATTR(VGA_CYAN, VGA_BLACK));
 
 	uint8_t drive = 0;
 	if (args && args[0]) {

@@ -1,5 +1,5 @@
-#ifndef NUCLEOS_AARCH64_MMU_H
-#define NUCLEOS_AARCH64_MMU_H
+#ifndef CORTEXOS_AARCH64_MMU_H
+#define CORTEXOS_AARCH64_MMU_H
 
 #include <stdint.h>
 

@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* ELF64 constants needed by the NucleOS user-program loader. */
+/* ELF64 constants needed by the CortexOS user-program loader. */
 #define ELF_IDENT_SIZE 16
 #define ELF_CLASS_64 2
 #define ELF_DATA_LSB 1

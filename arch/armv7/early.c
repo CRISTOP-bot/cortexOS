@@ -73,7 +73,7 @@ void armv7_early_main(uint32_t dtb)
 		dtb = discovered ? discovered : FALLBACK_DTB;
 	}
 
-	uart_puts("NucleOS ARMv7 early boot\n");
+	uart_puts("CortexOS ARMv7 early boot\n");
 	uart_puts("DTB: ");
 	uart_puthex(dtb);
 	uart_puts("\nMIDR: ");
@@ -90,7 +90,7 @@ void armv7_early_main(uint32_t dtb)
 
 __attribute__((noreturn)) void armv7_exception_c(uint32_t vector)
 {
-	uart_puts("\nNucleOS ARMv7 exception\nVector: ");
+	uart_puts("\nCortexOS ARMv7 exception\nVector: ");
 	uart_puthex(vector);
 	uart_puts("\n");
 	for (;;)

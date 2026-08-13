@@ -1,5 +1,5 @@
-#ifndef NUCLEOS_SYSCALL_H
-#define NUCLEOS_SYSCALL_H
+#ifndef CORTEXOS_SYSCALL_H
+#define CORTEXOS_SYSCALL_H
 
 #define N_SYS_READ 0
 #define N_SYS_WRITE 1
@@ -21,7 +21,7 @@
 #define N_SYS_FCNTL 19
 #define N_SYS_WAITPID 20
 
-static inline long __nucleos_syscall5(long number, long a1, long a2,
+static inline long __cortexos_syscall5(long number, long a1, long a2,
 				      long a3, long a4, long a5)
 {
 	register long r10 __asm__("r10") = a4;
@@ -33,10 +33,10 @@ static inline long __nucleos_syscall5(long number, long a1, long a2,
 	return number;
 }
 
-#define __nucleos_syscall0(n) __nucleos_syscall5((n), 0, 0, 0, 0, 0)
-#define __nucleos_syscall1(n,a) __nucleos_syscall5((n), (long)(a), 0, 0, 0, 0)
-#define __nucleos_syscall2(n,a,b) __nucleos_syscall5((n), (long)(a), (long)(b), 0, 0, 0)
-#define __nucleos_syscall3(n,a,b,c) __nucleos_syscall5((n), (long)(a), (long)(b), (long)(c), 0, 0)
+#define __cortexos_syscall0(n) __cortexos_syscall5((n), 0, 0, 0, 0, 0)
+#define __cortexos_syscall1(n,a) __cortexos_syscall5((n), (long)(a), 0, 0, 0, 0)
+#define __cortexos_syscall2(n,a,b) __cortexos_syscall5((n), (long)(a), (long)(b), 0, 0, 0)
+#define __cortexos_syscall3(n,a,b,c) __cortexos_syscall5((n), (long)(a), (long)(b), (long)(c), 0, 0)
 
 #endif
 

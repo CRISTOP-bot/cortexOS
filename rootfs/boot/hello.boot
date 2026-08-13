@@ -1,5 +1,5 @@
 [Unit]
-Description=Boot hello unit for NucleOS
+Description=Boot hello unit for CortexOS
 WantedBy=boot.target
 
 [Service]

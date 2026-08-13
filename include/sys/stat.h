@@ -1,5 +1,5 @@
-#ifndef NUCLEOS_SYS_STAT_H
-#define NUCLEOS_SYS_STAT_H
+#ifndef CORTEXOS_SYS_STAT_H
+#define CORTEXOS_SYS_STAT_H
 
 #include <stdint.h>
 

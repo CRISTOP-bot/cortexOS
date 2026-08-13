@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""NucleOS installer adapter.
+"""CortexOS installer adapter.
 
 The upstream Archinstall sources are vendored under ``upstream/`` for reuse of
 its UI and configuration ideas, but Arch Linux operations (pacman, systemd,
 arch-chroot and Arch package databases) are intentionally not called here.
-NucleOS uses its own CRFS, GRUB and ext2 installer backend instead.
+CortexOS uses its own CRFS, GRUB and ext2 installer backend instead.
 """
 from __future__ import annotations
 
@@ -18,23 +18,23 @@ ROOT = Path(__file__).resolve().parents[2]
 TOOLS = ROOT / "tools"
 sys.path.insert(0, str(TOOLS))
 
-from installer.config import NucleOSConfig, PartitionConfig, UserConfig  # noqa: E402
+from installer.config import CortexOSConfig, PartitionConfig, UserConfig  # noqa: E402
 from installer.install import install  # noqa: E402
 
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="nucleos-archinstall",
-        description="Instalador declarativo de NucleOS basado en CRFS y GRUB.",
+        description="Instalador declarativo de CortexOS basado en CRFS y GRUB.",
     )
     p.add_argument("--device", help="Disco completo para particionado automático")
     p.add_argument("--root", dest="root_device", help="Partición root existente")
     p.add_argument("--boot", dest="boot_device", help="Partición boot/EFI existente")
-    p.add_argument("--mountpoint", default="/mnt/nucleos")
+    p.add_argument("--mountpoint", default="/mnt/cortexos")
     p.add_argument("--fstype", choices=("ext2",), default="ext2")
     p.add_argument("--uefi", action="store_true")
     p.add_argument("--existing", action="store_true", help="Usar particiones existentes")
-    p.add_argument("--hostname", default="nucleos")
+    p.add_argument("--hostname", default="cortexos")
     p.add_argument("--kernel", default=str(ROOT / "build/kernel.bin"))
     p.add_argument("--rootfs", default=str(ROOT / "rootfs"))
     p.add_argument("--root-password-file")
@@ -54,7 +54,7 @@ def read_password(path: str | None, label: str) -> str:
     return value
 
 
-def make_config(args: argparse.Namespace) -> NucleOSConfig:
+def make_config(args: argparse.Namespace) -> CortexOSConfig:
     automatic = not args.existing
     device = args.device or args.root_device or ""
     if automatic and not args.device:
@@ -79,7 +79,7 @@ def make_config(args: argparse.Namespace) -> NucleOSConfig:
         uefi=args.uefi,
         auto_partition=automatic,
     )
-    return NucleOSConfig(
+    return CortexOSConfig(
         kernel_source=args.kernel,
         rootfs_source=args.rootfs,
         hostname=args.hostname,
@@ -96,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     try:
         config = make_config(args)
-        print("Plan de instalación NucleOS:")
+        print("Plan de instalación CortexOS:")
         print("\n".join(f"  {line}" for line in config.summary_lines()))
         if args.plan:
             print("Modo plan: no se modificaron discos.")

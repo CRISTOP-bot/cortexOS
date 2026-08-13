@@ -1,4 +1,4 @@
-# Bash en NucleOS
+# Bash en CortexOS
 
 El código fuente de GNU Bash se incorpora como submódulo Git en
 `third_party/bash/`.
@@ -7,7 +7,7 @@ El submódulo apunta al espejo público de Bash mantenido por Tianon, que se
 identifica como espejo de `git.savannah.gnu.org/cgit/bash.git`. El commit
 fijado corresponde a Bash 5.3 y conserva su licencia GPL-3.0.
 
-Después de clonar NucleOS, inicializa el código fuente con:
+Después de clonar CortexOS, inicializa el código fuente con:
 
 ```sh
 git submodule update --init --recursive
@@ -17,17 +17,17 @@ git submodule update --init --recursive
 
 El código está **integrado como fuente vendorizado**, pero todavía no se
 instala como `/bin/bash`. Compilar Bash para el host no lo convierte en un
-programa ejecutable por NucleOS.
+programa ejecutable por CortexOS.
 
 Para ejecutar Bash dentro del sistema hacen falta, como mínimo:
 
-- una libc para NucleOS y sus headers;
+- una libc para CortexOS y sus headers;
 - un cargador ELF para programas de usuario;
 - `fork`, `execve`, `waitpid`, `pipe`, `dup2`, `isatty`, `ioctl`, señales,
   `stat`, `open/read/write` con descriptores reales y manejo de errores POSIX;
 - soporte de terminal/TTY y job control;
 - un enlazador y una cadena de compilación que produzcan binarios para el ABI
-  de NucleOS.
+  de CortexOS.
 
 El kernel ya contiene prototipos de algunos syscalls, pero su implementación
 actual no proporciona todavía el ABI POSIX/libc que Bash necesita. Por eso no

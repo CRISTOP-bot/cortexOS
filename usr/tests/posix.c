@@ -5,7 +5,7 @@
 
 /* ABI smoke test for the interfaces required by OpenRC, Fastfetch and Bash.
  * It is intentionally small and only proves that the user headers/libc link
- * against the NucleOS syscall ABI. Runtime execution still needs the kernel
+ * against the CortexOS syscall ABI. Runtime execution still needs the kernel
  * process and address-space work documented in Documentation/USERSPACE_PORT.md. */
 int main(void)
 {

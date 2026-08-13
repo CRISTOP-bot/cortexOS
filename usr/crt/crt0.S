@@ -2,7 +2,7 @@
 .global _start
 .type _start,@function
 _start:
-	/* NucleOS builds the normal SysV initial stack: argc, argv[], envp[]. */
+	/* CortexOS builds the normal SysV initial stack: argc, argv[], envp[]. */
 	mov (%rsp), %rdi
 	lea 8(%rsp), %rsi
 	lea 8(%rsi,%rdi,8), %rdx
