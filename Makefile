@@ -268,6 +268,26 @@ bash-source:
 	@echo "  Si falta, ejecuta: git submodule update --init --recursive"
 	@echo "  Pendiente: libc/ABI POSIX y cargador ELF para compilarlo para NucleOS"
 
+archinstall-source:
+	@test -f tools/archinstall/upstream/archinstall/main.py
+	@test -f tools/archinstall/nucleos.py
+	@echo "  Archinstall upstream y adaptador NucleOS disponibles"
+
+nucleos-archinstall:
+	python3 tools/archinstall/nucleos.py --help
+
+check-layout:
+	$(PYTHON) scripts/check-layout.py
+
+check-python:
+	$(PYTHON) scripts/check-python.py
+
+verify-crfs: $(ROOTFS)
+	$(PYTHON) scripts/verify-crfs.py $(ROOTFS)
+
+check-live-ram:
+	$(PYTHON) scripts/check-live-ram.py qemu-serial.log
+
 fastfetch-source:
 	@test -f $(FASTFETCH_SRC_DIR)/CMakeLists.txt
 	@test -f $(FASTFETCH_SRC_DIR)/LICENSE
@@ -278,5 +298,5 @@ fastfetch-source:
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)
 
-.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix aarch64-early aarch64-run armv7-early armv7-run openrc-source bash-source fastfetch-source clean installer installer-usb
+.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix aarch64-early aarch64-run armv7-early armv7-run openrc-source bash-source archinstall-source nucleos-archinstall check-layout check-python verify-crfs check-live-ram fastfetch-source clean installer installer-usb
 

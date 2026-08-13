@@ -57,6 +57,9 @@ jobs:
       - name: Validate architecture matrix
         run: make arch-list
 
+      - name: Validate source layout
+        run: make check-layout
+
       - name: Build user ABI smoke test
         run: make user-test-posix
 
@@ -96,6 +99,7 @@ jobs:
           test -s dist/os.iso
           test -s build/iso/boot/kernel.bin
           test -s build/iso/boot/rootfs.bin
+          python3 scripts/verify-crfs.py build/iso/boot/rootfs.bin
           sha256sum dist/os.iso > SHA256SUMS
 
       - name: Boot smoke test in QEMU
@@ -129,6 +133,13 @@ jobs:
             echo 'Marcador de arranque encontrado en COM1.'
           else
             echo 'Aviso: no apareció el marcador serial; se conservan los logs para diagnóstico.'
+            exit 1
+          fi
+
+          if grep -aFq 'Rootfs copied to RAM' qemu-serial.log; then
+            echo 'Rootfs live confirmado en RAM.'
+          else
+            echo 'No se confirmó la copia del rootfs a RAM.'
             exit 1
           fi
 

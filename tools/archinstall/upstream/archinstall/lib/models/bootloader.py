@@ -1,0 +1,155 @@
+import sys
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Self, override
+
+from archinstall.lib.log import warn
+from archinstall.lib.models.config import SubConfig
+from archinstall.lib.translationhandler import tr
+
+
+class Bootloader(Enum):
+	NO_BOOTLOADER = 'No bootloader'
+	Systemd = 'Systemd-boot'
+	Grub = 'Grub'
+	Efistub = 'Efistub'
+	Limine = 'Limine'
+	Refind = 'Refind'
+
+	def has_uki_support(self) -> bool:
+		return self != Bootloader.NO_BOOTLOADER
+
+	def has_removable_support(self) -> bool:
+		match self:
+			case Bootloader.Grub | Bootloader.Limine:
+				return True
+			case _:
+				return False
+
+	def is_uefi_only(self) -> bool:
+		match self:
+			case Bootloader.Systemd | Bootloader.Efistub | Bootloader.Refind:
+				return True
+			case _:
+				return False
+
+	def json(self) -> str:
+		return self.value
+
+	@staticmethod
+	def get_default(uefi: bool, skip_boot: bool = False) -> Bootloader:
+		if skip_boot:
+			return Bootloader.NO_BOOTLOADER
+		elif uefi:
+			return Bootloader.Systemd
+		else:
+			return Bootloader.Grub
+
+	@classmethod
+	def from_arg(cls, bootloader: str, skip_boot: bool) -> Self:
+		# to support old configuration files
+		bootloader = bootloader.capitalize()
+
+		bootloader_options = [e.value for e in cls if e != cls.NO_BOOTLOADER or skip_boot is True]
+
+		if bootloader not in bootloader_options:
+			values = ', '.join(bootloader_options)
+			warn(f'Invalid bootloader value "{bootloader}". Allowed values: {values}')
+			sys.exit(1)
+
+		return cls(bootloader)
+
+
+class PlymouthTheme(Enum):
+	BGRT = 'bgrt'
+	FADE = 'fade-in'
+	GLOW = 'glow'
+	SCRIPT = 'script'
+	SOLAR = 'solar'
+	SPINNER = 'spinner'
+	SPINFINITY = 'spinfinity'
+	TRIBAR = 'tribar'
+	TEXT = 'text'
+	DETAILS = 'details'
+
+	@classmethod
+	def from_arg(cls, plymouth: str | None) -> Self | None:
+		if plymouth is None:
+			return None
+
+		plymouth = plymouth.lower()
+
+		values = [e.value for e in cls]
+
+		if plymouth not in values:
+			warn(f'Invalid plymouth value "{plymouth}". Allowed values: {", ".join(values)}')
+			sys.exit(1)
+
+		return cls(plymouth)
+
+
+@dataclass
+class BootloaderConfiguration(SubConfig):
+	bootloader: Bootloader
+	uki: bool = False
+	removable: bool = True
+	plymouth: PlymouthTheme | None = None
+
+	@override
+	def json(self) -> dict[str, Any]:
+		data = {'bootloader': self.bootloader.json(), 'uki': self.uki, 'removable': self.removable}
+
+		if self.plymouth is not None:
+			data['plymouth'] = self.plymouth.value
+		return data
+
+	@override
+	def summary(self) -> list[str]:
+		out = [tr('Bootloader "{}"').format(self.bootloader.value)]
+
+		if self.uki:
+			out.append(tr('UKI enabled'))
+		if self.removable:
+			out.append(tr('Removable'))
+		if self.plymouth is not None:
+			out.append(tr('Plymouth "{}"').format(self.plymouth.value))
+
+		return out
+
+	@classmethod
+	def parse_arg(cls, config: dict[str, Any], skip_boot: bool) -> Self:
+		bootloader = Bootloader.from_arg(config.get('bootloader', ''), skip_boot)
+		uki = config.get('uki', False)
+		removable = config.get('removable', True)
+		plymouth = PlymouthTheme.from_arg(config.get('plymouth', None))
+		return cls(bootloader=bootloader, uki=uki, removable=removable, plymouth=plymouth)
+
+	@classmethod
+	def get_default(cls, uefi: bool, skip_boot: bool = False) -> Self:
+		bootloader = Bootloader.get_default(uefi, skip_boot)
+		removable = uefi and bootloader.has_removable_support()
+		uki = uefi and bootloader.has_uki_support()
+		plymouth = None
+		return cls(bootloader=bootloader, uki=uki, removable=removable, plymouth=plymouth)
+
+	def preview(self, uefi: bool) -> str:
+		text = f'{tr("Bootloader")}: {self.bootloader.value}'
+		text += '\n'
+		if uefi and self.bootloader.has_uki_support():
+			if self.uki:
+				uki_string = tr('Enabled')
+			else:
+				uki_string = tr('Disabled')
+			text += f'UKI: {uki_string}'
+			text += '\n'
+		if uefi and self.bootloader.has_removable_support():
+			if self.removable:
+				removable_string = tr('Enabled')
+			else:
+				removable_string = tr('Disabled')
+			text += f'{tr("Removable")}: {removable_string}'
+			text += '\n'
+		if self.plymouth is not None:
+			text += f'{tr("Plymouth")}: {self.plymouth.value}'
+			text += '\n'
+		return text

@@ -1,0 +1,267 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "archinstall"
+version = "4.4"
+description = "Arch Linux installer - guided, templates etc."
+authors = [
+    {name = "Anton Hvornum", email = "anton@hvornum.se"},
+]
+license = "GPL-3.0-only"
+readme = "README.md"
+requires-python = ">=3.14"
+keywords = ["linux", "arch", "archinstall", "installer"]
+classifiers = [
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    "pyparted>=3.13.0",
+    "pydantic>=2.13.4",
+    "cryptography>=50.0.0",
+    "textual>=8.2.8",
+    "markdown-it-py>=4.2.0",
+    "linkify-it-py>=2.1.0",
+]
+
+[project.urls]
+Home = "https://archlinux.org"
+Documentation = "https://archinstall.readthedocs.io/"
+Source = "https://github.com/archlinux/archinstall"
+
+[project.optional-dependencies]
+log = ["systemd_python>=236"]
+dev = [
+    "mypy>=2.3.0",
+    "flake8>=7.3.0",
+    "pre-commit>=4.6.1",
+    "ruff>=0.16.2",
+    "pylint>=4.0.7",
+    "pytest>=9.1.1",
+    "hypothesis>=6.152.4",
+]
+doc = ["sphinx"]
+
+[project.scripts]
+archinstall = "archinstall.main:main"
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.rst", "USAGE.rst"]}
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+# We could specify locales/languages.json etc instead, but catchall works too.
+"archinstall" = [
+    "**/*.py",
+    "**/*.mo",
+    "**/*.po",
+    "**/*.pot",
+    "**/*.json",
+    "**/*.kdl",
+]
+
+[tool.setuptools.package-dir]
+archinstall = "archinstall"
+
+[tool.mypy]
+python_version = "3.14"
+files = "."
+exclude = [
+    "^build/",
+]
+disallow_any_explicit = false
+disallow_any_expr = false
+disallow_any_unimported = true
+enable_error_code = [
+    "deprecated",
+    "explicit-override",
+    "ignore-without-code",
+    "mutable-override",
+    "possibly-undefined",
+    "redundant-expr",
+    "redundant-self",
+    "truthy-bool",
+    "truthy-iterable",
+    "unimported-reveal",
+    "unused-awaitable",
+]
+show_traceback = true
+strict = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = "archinstall.default_profiles.*"
+disallow_any_explicit = true
+
+[[tool.mypy.overrides]]
+module = "archinstall.examples.*"
+disallow_any_explicit = true
+
+[[tool.mypy.overrides]]
+module = "archinstall.lib.*"
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = "archinstall.lib.disk.*"
+# 'Any' imports are allowed because pyparted doesn't have type hints
+disallow_any_unimported = false
+
+[[tool.mypy.overrides]]
+module = "archinstall.lib.models.*"
+# 'Any' imports are allowed because pyparted doesn't have type hints
+disallow_any_unimported = false
+
+[[tool.mypy.overrides]]
+module = "archinstall.lib.packages"
+disallow_any_explicit = true
+
+[[tool.mypy.overrides]]
+module = "archinstall.lib.utils"
+disallow_any_explicit = true
+
+[[tool.mypy.overrides]]
+module = [
+    "parted",
+]
+ignore_missing_imports = true
+
+[tool.bandit]
+targets = ["archinstall"]
+exclude = ["/tests"]
+
+[tool.pytest]
+pythonpath = ["."]
+addopts = [
+    "-s",
+    "--strict",
+]
+testpaths = ["tests"]
+
+[tool.pylint.main]
+ignore-paths = [
+    "^build/",
+    "^docs/",
+    "^node_modules/",
+]
+persistent = false
+py-version = "3.14"
+recursive = true
+
+[tool.pylint.format]
+indent-string = '\t'
+max-line-length = 160
+
+[tool.pylint."messages control"]
+disable = [
+    "C",
+    "R",
+    "attribute-defined-outside-init",
+    "broad-exception-caught",
+    "cell-var-from-loop",
+    "dangerous-default-value",
+    "fixme",
+    "protected-access",
+    "raise-missing-from",
+    "unspecified-encoding",
+    "unused-argument",
+]
+
+[tool.pylint.refactoring]
+score = false
+
+[tool.pylint.variables]
+init-import = true
+
+[tool.pyrefly]
+python-version = "3.14"
+
+replace-imports-with-any = [
+    "parted",  # pyparted doesn't have type hints
+]
+
+[tool.pyrefly.errors]
+# Enable some additional rules that are disabled by default
+implicit-abstract-class = true
+missing-override-decorator = true
+missing-source = true
+not-required-key-access = true
+open-unpacking = true
+unannotated-parameter = true
+unused-ignore = true
+
+[tool.ruff]
+target-version = "py314"
+line-length = 160
+
+[tool.ruff.format]
+indent-style = "tab"
+quote-style = "single"
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = [
+    "ASYNC",  # flake8-async
+    "B",      # flake8-bugbear
+    "C90",    # mccabe
+    "COM",    # flake8-commas
+    "DTZ",    # flake8-datetimez
+    "E",      # pycodestyle errors
+    "EXE",    # flake8-executable
+    "F",      # Pyflakes
+    "FA",     # flake8-future-annotations
+    "FLY",    # flynt
+    "G",      # flake8-logging-format
+    "I",      # isort
+    "ICN",    # flake8-import-conventions
+    "INT",    # flake8-gettext
+    "ISC",    # flake8-implicit-str-concat
+    "LOG",    # flake8-logging
+    "PGH",    # pygrep-hooks
+    "PIE",    # flake8-pie
+    "PLC",    # Pylint conventions
+    "PLE",    # Pylint errors
+    "PLW",    # Pylint warnings
+    "PYI",    # flake8-pyi
+    "RSE",    # flake8-raise
+    "RUF",    # Ruff-specific rules
+    "SLOT",   # flake8-slot
+    "T10",    # flake8-debugger
+    "TID",    # flake8-tidy-imports (Enables TID252)
+    "UP",     # pyupgrade
+    "W",      # pycodestyle warnings
+    "YTT",    # flake8-2020
+]
+
+ignore = [
+    "B006",     # mutable-argument-default
+    "B008",     # function-call-in-default-argument
+    "B904",     # raise-without-from-inside-except
+    "B905",     # zip-without-explicit-strict
+    "B909",     # loop-iterator-mutation
+    "COM812",   # missing-trailing-comma
+    "PLC0415",  # import-outside-top-level
+    "PLC1901",  # compare-to-empty-string
+    "PLW1514",  # unspecified-encoding
+    "PLW1641",  # eq-without-hash
+    "PLW2901",  # redefined-loop-name
+    "RUF005",   # collection-literal-concatenation
+    "RUF015",   # unnecessary-iterable-allocation-for-first-element
+    "RUF039",   # unraw-re-pattern
+    "W191",     # tab-indentation
+]
+
+[tool.ruff.lint.flake8-gettext]
+function-names = [
+    "tr",
+    "tr_noop",
+]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 40

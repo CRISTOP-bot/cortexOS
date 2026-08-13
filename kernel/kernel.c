@@ -81,6 +81,28 @@ static void boot_delay(void)
 	for (i = 0; i < 3000000; i++);
 }
 
+static void reserve_boot_modules(unsigned long mbi_addr)
+{
+	if (!mbi_addr)
+		return;
+	struct multiboot_info *mbi = (struct multiboot_info *)(uintptr_t)mbi_addr;
+	pmm_reserve_range(mbi_addr, sizeof(*mbi));
+	if (!(mbi->flags & 0x8))
+		return;
+	struct multiboot_module *mods =
+	    (struct multiboot_module *)(uintptr_t)mbi->mods_addr;
+	pmm_reserve_range(mbi->mods_addr,
+		mbi->mods_count * sizeof(struct multiboot_module));
+	for (unsigned long i = 0; i < mbi->mods_count; ++i) {
+		const char *name = (const char *)(uintptr_t)mods[i].cmdline;
+		if (name)
+			pmm_reserve_range(mods[i].cmdline, kstrlen(name) + 1);
+		if (name && kstrstr(name, "rootfs") && mods[i].mod_end > mods[i].mod_start)
+			pmm_reserve_range(mods[i].mod_start,
+				mods[i].mod_end - mods[i].mod_start);
+	}
+}
+
 static void print_banner(void)
 {
 	console_print_color("\n", VGA_DEFAULT_ATTR);
@@ -158,6 +180,9 @@ void kmain(unsigned long mbi_addr)
 		halt_cpu();
 	}
 
+	/* GRUB already placed the module in RAM. Reserve it before the PMM can
+	 * reuse that range, then copy it to a PMM-owned buffer below. */
+	reserve_boot_modules(mbi_addr);
 	pmm_init(sys_mem_lower, sys_mem_upper);
 	boot_status("Initialized Physical Memory Manager");
 	boot_delay();
@@ -214,20 +239,28 @@ void kmain(unsigned long mbi_addr)
 			for (unsigned long i = 0; i < mbi->mods_count; ++i) {
 				const char *name = (const char *)(uintptr_t)mods[i].cmdline;
 				if (name && kstrstr(name, "rootfs")) {
-					boot_info("Mounting rootfs from module...\n");
+					boot_info("Copying rootfs module to RAM...\n");
 					boot_delay();
-					if (fs_init((const void *)(uintptr_t)mods[i].mod_start,
-						    mods[i].mod_end - mods[i].mod_start)) {
-						boot_status("Mounted rootfs (module)");
+					unsigned long rootfs_size = mods[i].mod_end - mods[i].mod_start;
+					unsigned long pages = (rootfs_size + PAGE_SIZE - 1) / PAGE_SIZE;
+					void *ram_rootfs = pmm_alloc_pages(pages);
+					if (ram_rootfs) {
+						kmemcpy(ram_rootfs,
+							(const void *)(uintptr_t)mods[i].mod_start,
+							rootfs_size);
+					}
+					if (ram_rootfs && fs_init(ram_rootfs, rootfs_size)) {
+						boot_status("Rootfs copied to RAM");
+						serial_print("Rootfs copied to RAM\n");
 						boot_delay();
 						if (vfs_init()) {
-							boot_status("Initialized VFS");
+							boot_status("Initialized VFS (RAM rootfs)");
 							rootfs_loaded = true;
 						} else {
 							boot_failed("VFS initialization");
 						}
 					} else {
-						boot_failed("Rootfs mount");
+						boot_failed("Rootfs RAM copy");
 					}
 					break;
 				}

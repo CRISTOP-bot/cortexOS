@@ -23,7 +23,8 @@ activa; los artefactos generados nunca se guardan en el árbol fuente.
 - `rust/`: módulo Rust del kernel.
 - `rootfs/`: contenido empaquetado en el módulo raíz.
 - `config/`: configuración de GRUB y de la ISO.
-- `tools/`: constructor de rootfs, instalador, LCP, medios y setup del host.
+- `tools/`: constructor de rootfs, instalador, Archinstall adaptado, LCP,
+  medios y setup del host.
 - `third_party/`: únicamente submódulos externos y sus licencias.
 - `LICENSES/`: avisos de copyright y licencias del proyecto y sus componentes.
 - `certs/`, `crypto/`, `io_uring/`, `samples/`, `scripts/`, `security/`,
