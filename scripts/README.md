@@ -1,46 +1,68 @@
 # Scripts de mantenimiento
 
-Estos scripts comprueban y diagnostican el árbol de NucleOS. No sustituyen al
-`Makefile`, no escriben en discos y no generan archivos fuente duplicados.
+Los scripts están separados por plataforma para que cada sistema tenga una
+entrada clara y no se mezclen comandos de shells diferentes.
 
-- `check-layout.py`: comprueba las rutas nuevas y detecta rutas obsoletas.
-- `check-python.py`: compila los archivos Python para detectar errores de sintaxis.
-- `verify-crfs.py`: valida un `rootfs.bin` sin montarlo.
-- `check-live-ram.py`: verifica los marcadores del arranque live desde RAM.
-- `nucleos.ps1` / `nucleos.bat`: comandos de build, ISO, QEMU y VirtualBox en
-  Windows, usando Make nativo o WSL automáticamente.
-- `run-virtualbox.ps1` / `run-virtualbox.bat`: crea y arranca una VM de
-  VirtualBox con la ISO de NucleOS.
+```text
+scripts/
+├── linux/
+│   ├── check-layout.py
+│   ├── check-python.py
+│   ├── verify-crfs.py
+│   ├── check-live-ram.py
+│   └── nucleos.sh
+├── mac/
+│   └── nucleos.sh
+└── win/
+    ├── nucleos.ps1
+    ├── nucleos.bat
+    ├── run-virtualbox.ps1
+    └── run-virtualbox.bat
+```
 
-Ejemplos:
+## Linux
 
 ```bash
-python3 scripts/check-layout.py
-python3 scripts/check-python.py
-# Con Python 3.14 o superior, comprobar también la copia upstream:
-python3 scripts/check-python.py --all
-python3 scripts/verify-crfs.py build/iso/boot/rootfs.bin
-python3 scripts/check-live-ram.py qemu-serial.log
+scripts/linux/nucleos.sh check
+scripts/linux/nucleos.sh build
+scripts/linux/nucleos.sh iso
+scripts/linux/nucleos.sh qemu
+scripts/linux/nucleos.sh clean
+
+python3 scripts/linux/check-layout.py
+python3 scripts/linux/check-python.py
+python3 scripts/linux/verify-crfs.py build/iso/boot/rootfs.bin
+python3 scripts/linux/check-live-ram.py qemu-serial.log
 ```
 
-## Windows y VirtualBox
+## macOS
 
-Con VirtualBox instalado y `VBoxManage.exe` disponible:
+```bash
+scripts/mac/nucleos.sh check
+scripts/mac/nucleos.sh build
+scripts/mac/nucleos.sh iso
+scripts/mac/nucleos.sh qemu
+scripts/mac/nucleos.sh clean
+```
+
+El script usa `gmake` cuando está disponible y, en su defecto, `make`. La
+creación de la ISO requiere que las herramientas de GRUB, xorriso y mtools
+estén disponibles en el entorno elegido.
+
+## Windows
 
 ```bat
-scripts\nucleos.bat check
-scripts\nucleos.bat iso
-scripts\nucleos.bat virtualbox -Build
+scripts\win\nucleos.bat check
+scripts\win\nucleos.bat build
+scripts\win\nucleos.bat iso
+scripts\win\nucleos.bat qemu
+scripts\win\nucleos.bat virtualbox -Build
+
+scripts\win\run-virtualbox.bat -Build
+scripts\win\run-virtualbox.bat -Action status
+scripts\win\run-virtualbox.bat -Action stop
 ```
 
-También puedes usar directamente:
-
-```bat
-scripts\run-virtualbox.bat -Build
-scripts\run-virtualbox.bat -Action status
-scripts\run-virtualbox.bat -Action stop
-```
-
-Si Windows no tiene `make`, los comandos de build buscan WSL y ejecutan el
-Makefile dentro de la distribución Linux. La VM de VirtualBox usa BIOS,
-2 CPUs, 1 GB de RAM, red NAT y arranca `dist\os.iso` como DVD.
+Los comandos de Windows usan Make nativo cuando existe. Si no está disponible,
+buscan WSL y ejecutan el Makefile dentro de la distribución Linux. La VM de
+VirtualBox requiere `VBoxManage.exe` y arranca `dist\os.iso` como DVD.

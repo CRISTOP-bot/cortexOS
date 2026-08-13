@@ -6,7 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$Root = Split-Path -Parent $PSScriptRoot
+$Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
 function Invoke-Python([string[]]$Arguments) {
     $python = Get-Command py.exe -ErrorAction SilentlyContinue
@@ -37,7 +37,7 @@ function Invoke-Make([string[]]$Arguments) {
 switch ($Command) {
     'check' {
         & (Join-Path $Root 'tools\setup\install-deps.bat') --check
-        Invoke-Python @((Join-Path $Root 'scripts\check-layout.py'))
+        Invoke-Python @((Join-Path $Root 'scripts\linux\check-layout.py'))
     }
     'build' { Invoke-Make @('all') }
     'iso' { Invoke-Make @('PYTHON=python3', 'echo-iso') }

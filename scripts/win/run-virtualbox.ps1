@@ -11,7 +11,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$Root = Split-Path -Parent $PSScriptRoot
+$Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ([string]::IsNullOrWhiteSpace($IsoPath)) {
     $IsoPath = Join-Path $Root 'dist\os.iso'
 }
@@ -59,7 +59,7 @@ function Build-Iso {
             if ($LASTEXITCODE -eq 0 -and (Test-Path $IsoPath)) { return }
         }
     }
-    throw "No existe $IsoPath. Ejecuta scripts\nucleos.bat iso o usa -Build con MSYS2/WSL."
+    throw "No existe $IsoPath. Ejecuta scripts\win\nucleos.bat iso o usa -Build con MSYS2/WSL."
 }
 
 function Create-Vm {
