@@ -352,6 +352,35 @@ Early architecture images:
     make armv7-early ARMV7_CC=arm-linux-gnueabihf-gcc ARMV7_LD=arm-linux-gnueabihf-ld
     make armv7-run ARMV7_CC=arm-linux-gnueabihf-gcc ARMV7_LD=arm-linux-gnueabihf-ld
 
+Remote Bootstrap Installers
+===========================
+
+CortexOS provides bootstrap installers that download a repository snapshot and
+then execute the platform script from the downloaded tree. They do not
+partition or format disks. The default installation directories are
+`$HOME/CortexOS` on Linux/macOS and `$HOME\CortexOS` on Windows.
+
+Linux or macOS:
+
+    curl -fsSL https://raw.githubusercontent.com/CRISTOP-bot/nucleos/5839ba06f44023eeaa37dd975316d78371c300cf/tools/setup/install-cortexos.sh | bash -s -- check
+
+Replace `check` with `build`, `iso`, `qemu`, or `clean` to execute another
+platform command. To choose another directory, set `CORTEXOS_DIR`:
+
+    CORTEXOS_DIR="$HOME/CortexOS-dev" bash -c "$(curl -fsSL https://raw.githubusercontent.com/CRISTOP-bot/nucleos/5839ba06f44023eeaa37dd975316d78371c300cf/tools/setup/install-cortexos.sh)" -- check
+
+Windows PowerShell:
+
+    $installer = Join-Path $env:TEMP 'install-cortexos.ps1'
+    curl.exe -fsSL https://raw.githubusercontent.com/CRISTOP-bot/nucleos/5839ba06f44023eeaa37dd975316d78371c300cf/tools/setup/install-cortexos.ps1 -o $installer
+    powershell.exe -ExecutionPolicy Bypass -File $installer -Command check
+
+The PowerShell installer accepts `-Command build`, `-Command iso`,
+`-Command qemu`, or `-Command clean`, and supports `-InstallDir` for a custom
+installation directory. Review remote scripts before piping them to a shell.
+The bootstrap archive can be overridden with `CORTEXOS_ARCHIVE_URL` for a
+reviewed branch or release.
+
 Installation
 ============
 
