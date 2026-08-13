@@ -36,7 +36,7 @@ DIST_DIR    = dist
 ISO_DIR     = $(BUILD_DIR)/iso
 KERNEL_DIR  = kernel
 ARCH_DIR    = arch/$(ARCH)
-KERNEL_SRC_DIRS = kernel block fs init ipc mm net drivers lib
+KERNEL_SRC_DIRS = kernel/core kernel/apps kernel/console kernel/graphics kernel/system kernel/services block fs init ipc mm net drivers lib
 CONFIG_DIR  = config
 GRUB_DIR    = $(CONFIG_DIR)/grub
 ROOTFS_DIR  = rootfs
@@ -71,7 +71,7 @@ ARMV7_EARLY = $(ARMV7_BUILD)/early.elf
 ARMV7_DTB = $(ARMV7_BUILD)/virt.dtb
 ARMV7_DTB_ADDRESS = 0x47f00000
 
-KERNEL_INCLUDES = $(foreach dir,$(KERNEL_SRC_DIRS),-I $(dir)) -I include -I rust -I $(ARCH_DIR)
+KERNEL_INCLUDES = $(foreach dir,$(KERNEL_SRC_DIRS),-I $(dir)) -I kernel/include -I include -I rust -I $(ARCH_DIR)
 CFLAGS  = -ffreestanding -O2 -Wall -Wextra -m64 -nostdlib -std=c99 $(KERNEL_INCLUDES) -fno-stack-protector -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -fno-strict-aliasing -mno-red-zone -mcmodel=kernel -fno-pic -fno-pie
 ASFLAGS = -m64 -ffreestanding
 LDFLAGS = -m elf_x86_64 -nostdlib

@@ -9,8 +9,16 @@ activa; los artefactos generados nunca se guardan en el árbol fuente.
 - `Documentation/`: arquitectura, ports, ABI y estado del proyecto.
 - `arch/`: código específico de arquitectura (`x86_64`, `aarch64`, `armv7` e
   `i386`).
-- `kernel/`: núcleo común, consola, shell, aplicaciones y gestión del arranque.
+- `kernel/`: código común organizado en `core/`, `apps/`, `console/`,
+  `graphics/`, `system/`, `services/` e `include/`.
 - `drivers/`: consola, teclado, mouse, serial, PIC, timer y PCI.
+- `kernel/core/`: entrada común del kernel y arranque de alto nivel.
+- `kernel/apps/`: aplicaciones TUI, calculadora y juegos experimentales.
+- `kernel/console/`: consola y shell integrado.
+- `kernel/graphics/`: interfaz gráfica experimental.
+- `kernel/system/`: GDT, IDT, TSS, persistencia y LCP.
+- `kernel/services/`: servicios auxiliares, incluido el instalador provisional.
+- `kernel/include/`: headers comunes de entrada y temporizadores.
 - `block/`: ATA y particiones.
 - `fs/`: VFS, CRFS, ELF y ext2.
 - `init/`: inicialización y compatibilidad provisional con OpenRC.
