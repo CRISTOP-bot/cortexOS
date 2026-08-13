@@ -28,7 +28,6 @@ REQUIRED = (
 FORBIDDEN = (
     "docs",
     "user",
-    "kernel/core",
     "kernel/arch",
     "kernel/drivers",
     "LICENSE.md",
@@ -38,8 +37,19 @@ FORBIDDEN = (
 
 
 def main() -> int:
-    missing = [p for p in REQUIRED if not (ROOT / p).is_dir()]
+    required = REQUIRED + (
+        "kernel/core",
+        "kernel/apps",
+        "kernel/console",
+        "kernel/graphics",
+        "kernel/system",
+        "kernel/services",
+        "kernel/include",
+    )
+    missing = [p for p in required if not (ROOT / p).is_dir()]
     stale = [p for p in FORBIDDEN if (ROOT / p).exists()]
+    if list((ROOT / "kernel").glob("*.c")) or list((ROOT / "kernel").glob("*.h")):
+        stale.append("kernel files outside functional subdirectories")
     if missing or stale:
         if missing:
             print("Missing directories: " + ", ".join(missing), file=sys.stderr)
