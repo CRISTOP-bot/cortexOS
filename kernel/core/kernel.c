@@ -4,6 +4,7 @@
 #include "vfs.h"
 #include "shell.h"
 #include "keyboard.h"
+#include "tty.h"
 #include "lcp.h"
 #include "openrc.h"
 #include "init.h"
@@ -216,7 +217,8 @@ void kmain(unsigned long mbi_addr)
 	boot_delay();
 
 	keyboard_init();
-	boot_status("Initialized Keyboard");
+	tty_init();
+	boot_status("Initialized Keyboard and TTY console");
 	boot_delay();
 
 	mouse_init();

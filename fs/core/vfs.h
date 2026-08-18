@@ -19,6 +19,8 @@ struct vfs_fd_state {
 	int pipe_id;
 	bool pipe_read;
 	bool pipe_write;
+	bool tty;
+	int tty_id;
 };
 struct vfs_fd_table {
 	struct vfs_fd_state fds[VFS_MAX_FDS];

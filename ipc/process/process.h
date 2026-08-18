@@ -66,7 +66,6 @@ struct process {
 	uint32_t pending_signals;
 	uint32_t blocked_signals;
 	uintptr_t signal_handlers[PROCESS_SIG_MAX];
-	unsigned long tty_termios[10];
 	struct vfs_fd_table fd_table;
 };
 
@@ -93,6 +92,7 @@ int process_tty_get(void *termios_data, size_t size);
 int process_tty_set(const void *termios_data, size_t size);
 int process_tty_getpgrp(void);
 int process_tty_setpgrp(int pgid);
+void process_tty_signal(int signal);
 struct process *process_current(void);
 void process_list(void);
 void process_schedule(void);

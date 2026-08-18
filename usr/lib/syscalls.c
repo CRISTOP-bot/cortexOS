@@ -159,7 +159,11 @@ int umount(const char *target) { return (int)result(__cortexos_syscall1(N_SYS_UM
 int tcgetattr(int fd, struct termios *termios_p)
 { return ioctl(fd, TCGETS, termios_p); }
 int tcsetattr(int fd, int actions, const struct termios *termios_p)
-{ (void)actions; return ioctl(fd, TCSETS, (void *)termios_p); }
+{
+	unsigned long request = actions == TCSADRAIN ? TCSETSW :
+		actions == TCSAFLUSH ? TCSETSF : TCSETS;
+	return ioctl(fd, request, (void *)termios_p);
+}
 int tcgetpgrp(int fd)
 { int pgrp = -1; return ioctl(fd, TIOCGPGRP, &pgrp) < 0 ? -1 : pgrp; }
 int tcsetpgrp(int fd, int pgrp)
