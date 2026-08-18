@@ -9,3 +9,7 @@
 [submodule "third_party/fastfetch"]
 	path = third_party/fastfetch
 	url = https://github.com/fastfetch-cli/fastfetch
+
+[submodule "third_party/doom"]
+	path = third_party/doom
+	url = https://github.com/id-Software/DOOM.git

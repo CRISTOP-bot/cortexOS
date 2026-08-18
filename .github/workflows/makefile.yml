@@ -59,6 +59,11 @@ jobs:
       - name: Validate Fastfetch submodule
         run: make fastfetch-source
 
+      - name: Validate original Doom source and CortexOS platform boundary
+        run: |
+          make doom-source
+          make doom-platform-check
+
       - name: Validate architecture matrix
         run: make arch-list
 
