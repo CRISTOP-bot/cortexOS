@@ -1,47 +1,69 @@
 .text
 
-.global enter_user_mode
-.type enter_user_mode, @function
-enter_user_mode:
-    /* rdi = rip, rsi = rsp, rdx = rflags */
-    mov %rsi, %rsp
-    pushq $0x23          /* SS (user data) */
-    pushq %rsi           /* RSP */
-    pushq %rdx           /* RFLAGS */
-    pushq $0x1B          /* CS (user code) */
-    pushq %rdi           /* RIP */
-    iretq
+/* struct process starts with 0x50 bytes before struct process_context. */
+.equ CTX_RAX,    0x50
+.equ CTX_RBX,    0x58
+.equ CTX_RCX,    0x60
+.equ CTX_RDX,    0x68
+.equ CTX_RSI,    0x70
+.equ CTX_RDI,    0x78
+.equ CTX_RBP,    0x80
+.equ CTX_RSP,    0x88
+.equ CTX_R8,     0x90
+.equ CTX_R9,     0x98
+.equ CTX_R10,    0xa0
+.equ CTX_R11,    0xa8
+.equ CTX_R12,    0xb0
+.equ CTX_R13,    0xb8
+.equ CTX_R14,    0xc0
+.equ CTX_R15,    0xc8
+.equ CTX_RIP,    0xd0
+.equ CTX_RFLAGS, 0xd8
+.equ CTX_CR3,    0xe0
+.equ CTX_CS,     0xe8
+.equ CTX_SS,     0xf0
 
 .global context_switch_to
 .type context_switch_to, @function
 context_switch_to:
-    /* rdi = pointer to next process struct */
-    mov %rdi, %rax
-    /* Save current context is done by C code, this just does the switch */
+    /* The caller is on the old kernel stack.  Build a fresh iret frame there
+       and restore every general register from the selected process. */
+    mov %rdi, %r10
+    sub $40, %rsp
+    mov CTX_RIP(%r10), %rax
+    mov %rax, 0(%rsp)
+    mov CTX_CS(%r10), %rax
+    mov %rax, 8(%rsp)
+    mov CTX_RFLAGS(%r10), %rax
+    mov %rax, 16(%rsp)
+    mov CTX_RSP(%r10), %rax
+    mov %rax, 24(%rsp)
+    mov CTX_SS(%r10), %rax
+    mov %rax, 32(%rsp)
 
-    /* Load new RSP from process->ctx.rsp (offset 0x58 in struct) */
-    mov 0x58(%rdi), %rsp
+    mov CTX_CR3(%r10), %rax
+    mov %rax, %cr3
 
-    /* Load RFLAGS */
-    mov 0x80(%rdi), %rax
-    pushq %rax
-    popfq
-
-    /* Push return address for IRETQ */
-    mov 0x78(%rdi), %rax  /* rip */
-    pushq $0x23           /* SS */
-    mov 0x58(%rdi), %rax
-    pushq %rax            /* RSP */
-    pushfq
-    pushq $0x1B           /* CS */
-    mov 0x78(%rdi), %rax
-    pushq %rax            /* RIP */
+    mov CTX_RAX(%r10), %rax
+    mov CTX_RBX(%r10), %rbx
+    mov CTX_RCX(%r10), %rcx
+    mov CTX_RDX(%r10), %rdx
+    mov CTX_RSI(%r10), %rsi
+    mov CTX_RDI(%r10), %rdi
+    mov CTX_RBP(%r10), %rbp
+    mov CTX_R8(%r10), %r8
+    mov CTX_R9(%r10), %r9
+    mov CTX_R11(%r10), %r11
+    mov CTX_R10(%r10), %r10
+    mov CTX_R12(%r10), %r12
+    mov CTX_R13(%r10), %r13
+    mov CTX_R14(%r10), %r14
+    mov CTX_R15(%r10), %r15
     iretq
 
 .global syscall_entry
 .type syscall_entry, @function
 syscall_entry:
-    /* Save registers */
     pushq %rax
     pushq %rbx
     pushq %rcx
@@ -58,19 +80,28 @@ syscall_entry:
     pushq %r14
     pushq %r15
 
-    /* Set up kernel stack segments */
     mov $0x10, %ax
     mov %ax, %ds
     mov %ax, %es
 
-    /* Arguments: rdi, rsi, rdx, r10, r8, rax (syscall number) */
-    /* Already in correct registers, just call */
+    mov %rsp, %rdi
+    call process_save_syscall_context
+    /* process_save_syscall_context is allowed to use caller-saved registers;
+       reload the ABI arguments from the saved frame before dispatch. */
+    mov 72(%rsp), %rdi
+    mov 80(%rsp), %rsi
+    mov 88(%rsp), %rdx
+    mov 40(%rsp), %r10
+    mov 56(%rsp), %r8
+    mov 112(%rsp), %rax
     call syscall_handler
-    /* Replace the saved syscall number with the return value.  The final
-       pop into rax exposes the result to the user process. */
-    mov %rax, 112(%rsp)
 
-    /* Restore segments */
+    /* Keep the return value in r12 while recording it in the process model. */
+    mov %rax, %r12
+    mov %rax, %rdi
+    call process_record_syscall_result
+    mov %r12, 112(%rsp)
+
     popq %r15
     popq %r14
     popq %r13

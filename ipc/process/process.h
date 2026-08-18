@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include "pmm.h"
 
 #define MAX_PROCESSES 32
 #define PROCESS_NAME_SIZE 64
@@ -10,8 +12,12 @@
 #define KERNEL_STACK_SIZE (PAGE_SIZE * 4)
 #define USER_STACK_TOP 0x7FFFFFF000ULL
 #define USER_CODE_TOP 0x400000ULL
-#define USER_CODE_SIZE (USER_STACK_SIZE * 2)
+#define USER_CODE_SIZE (PAGE_SIZE * 32)
+#define USER_HEAP_BASE 0x10000000ULL
+#define USER_HEAP_LIMIT 0x20000000ULL
 
+/* The context is the complete user-visible register state needed to resume
+ * after an interrupt or syscall. cr3 is the physical root of this process. */
 enum process_state {
 	PROCESS_UNUSED = 0,
 	PROCESS_RUNNING,
@@ -53,7 +59,7 @@ int process_spawn_exec(const char *name, const char *path,
 void process_exit(int code);
 int process_fork(void);
 int process_exec(const char *path, const char *const *argv,
-		 const char *const *envp);
+			 const char *const *envp);
 #define PROCESS_WNOHANG 1
 int process_wait(int *status);
 int process_waitpid(int pid, int *status, int options);
@@ -64,7 +70,15 @@ void process_start_scheduler(void);
 void process_switch_to(struct process *next);
 int process_get_pid(void);
 
+/* Called by the low-level entry stubs before changing address spaces. */
+void process_save_syscall_context(uint64_t *frame);
+void process_record_syscall_result(int64_t result);
+void process_save_interrupt_context(uint64_t *frame);
+
+bool process_user_range(const void *address, size_t length, bool write);
+bool process_copy_user_string(char *dst, size_t dst_size, const char *src);
+int process_sbrk(intptr_t increment, uint64_t *old_break);
+
 int keyboard_readline_user(char *buf, int maxlen);
 
 #endif
-

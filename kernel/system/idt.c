@@ -171,6 +171,8 @@ void irq_handler(struct isr_regs *r)
 {
 	unsigned char irq = (unsigned char)(r->num - 32);
 
+	/* Save a preempted ring-3 frame before the scheduler can replace CR3. */
+	process_save_interrupt_context((uint64_t *)r);
 	switch (irq) {
 	case 0:
 		timer_handler();
