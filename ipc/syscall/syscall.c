@@ -16,8 +16,6 @@ static int64_t sys_read(uint64_t fd, uint64_t buf, uint64_t count, uint64_t a4, 
 		return 0;
 	if (!process_user_range((const void *)buf, (size_t)count, true))
 		return -1;
-	if (fd == 0)
-		return keyboard_readline_user((char *)buf, count);
 	return vfs_read_fd((int)fd, (void *)buf, (size_t)count);
 }
 
@@ -26,12 +24,6 @@ static int64_t sys_write(uint64_t fd, uint64_t buf, uint64_t count, uint64_t a4,
 	(void)a4; (void)a5;
 	if (count && !process_user_range((const void *)buf, (size_t)count, false))
 		return -1;
-	if (fd <= 2) {
-		const char *src = (const char *)buf;
-		for (uint64_t i = 0; i < count; ++i)
-			console_putchar(src[i]);
-		return (int64_t)count;
-	}
 	return vfs_write_fd((int)fd, (const void *)buf, (size_t)count);
 }
 
@@ -260,12 +252,12 @@ static int64_t sys_ioctl(uint64_t fd, uint64_t request, uint64_t arg,
 		uint64_t a4, uint64_t a5)
 {
 	(void)a4; (void)a5;
-	if (fd > 2) return -1;
+	if (!vfs_isatty_fd((int)fd)) return -1;
 	if (request == TCGETS) {
 		if (!arg || !process_user_range((const void *)arg, sizeof(struct termios), true)) return -1;
 		return process_tty_get((void *)arg, sizeof(struct termios));
 	}
-	if (request == TCSETS) {
+	if (request == TCSETS || request == TCSETSW || request == TCSETSF) {
 		if (!arg || !process_user_range((const void *)arg, sizeof(struct termios), false)) return -1;
 		return process_tty_set((const void *)arg, sizeof(struct termios));
 	}

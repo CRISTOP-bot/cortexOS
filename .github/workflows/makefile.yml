@@ -70,6 +70,9 @@ jobs:
       - name: Validate source layout
         run: make check-layout
 
+      - name: Validate TTY line discipline
+        run: make tty-check
+
       - name: Build user ABI smoke test
         run: make user-test-posix
 

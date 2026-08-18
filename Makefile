@@ -36,7 +36,7 @@ DIST_DIR    = dist
 ISO_DIR     = $(BUILD_DIR)/iso
 KERNEL_DIR  = kernel
 ARCH_DIR    = arch/$(ARCH)
-KERNEL_SRC_DIRS = kernel/core kernel/apps kernel/console kernel/graphics kernel/system kernel/services block/ata block/partition fs/core fs/crfs fs/elf fs/ext2 init/core init/openrc ipc/process ipc/syscall mm/physical mm/virtual mm/heap net/core drivers/console drivers/input drivers/interrupts drivers/pci drivers/serial lib/core lib/string
+KERNEL_SRC_DIRS = kernel/core kernel/apps kernel/console kernel/graphics kernel/system kernel/services drivers/tty block/ata block/partition fs/core fs/crfs fs/elf fs/ext2 init/core init/openrc ipc/process ipc/syscall mm/physical mm/virtual mm/heap net/core drivers/console drivers/input drivers/interrupts drivers/pci drivers/serial lib/core lib/string
 CONFIG_DIR  = config
 GRUB_DIR    = $(CONFIG_DIR)/grub
 ROOTFS_DIR  = rootfs
@@ -220,6 +220,14 @@ $(DOOM_PLATFORM_TEST): usr/doom/cortexos_platform.c usr/doom/cortexos_platform.h
 doom-platform-check: $(DOOM_PLATFORM_TEST)
 	$(DOOM_PLATFORM_TEST)
 
+TTY_LINE_TEST = $(BUILD_DIR)/tty-line-test
+$(TTY_LINE_TEST): drivers/tty/tty_line.c drivers/tty/tty_line.h include/termios.h tools/validate/tty_line_test.c | $(BUILD_DIR)
+	$(DOOM_HOST_CC) -std=c99 -Wall -Wextra -Werror -Idrivers/tty -Iinclude \
+		drivers/tty/tty_line.c tools/validate/tty_line_test.c -o $@
+
+tty-check: $(TTY_LINE_TEST)
+	$(TTY_LINE_TEST)
+
 # The combined check validates only source provenance and the platform boundary;
 # it is not a playable-game target.
 doom-check: doom-source doom-platform-check
@@ -341,5 +349,5 @@ fastfetch-source:
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)
 
-.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix doom-source doom-platform-check doom-check aarch64-early aarch64-run armv7-early armv7-run openrc-source openrc-stage check-openrc bash-source archinstall-source nucleos-archinstall check-layout check-python verify-crfs check-live-ram fastfetch-source clean installer installer-usb
+.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix doom-source doom-platform-check doom-check tty-check aarch64-early aarch64-run armv7-early armv7-run openrc-source openrc-stage check-openrc bash-source archinstall-source nucleos-archinstall check-layout check-python verify-crfs check-live-ram fastfetch-source clean installer installer-usb
 

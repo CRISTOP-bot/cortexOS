@@ -6,6 +6,7 @@
 #include "kstring.h"
 #include "timer.h"
 #include "keyboard.h"
+#include "tty.h"
 #include "tss.h"
 #include "asm.h"
 #include "elf.h"
@@ -70,6 +71,7 @@ int process_create(const char *name, uint64_t entry, bool user)
 	proc->sid = proc->pid;
 	proc->pgid = proc->pid;
 	proc->tty_pgid = proc->pid;
+	if (tty_get_foreground() == 0) tty_set_foreground(proc->pgid);
 	vfs_fd_table_init(&proc->fd_table);
 	proc->user_code = USER_CODE_TOP;
 	proc->user_stack = USER_STACK_TOP - USER_STACK_SIZE;
@@ -494,28 +496,42 @@ int process_getpgrp(void)
 
 int process_tty_get(void *data, size_t size)
 {
-	struct process *p = process_current();
-	if (!p || !data || size > sizeof(p->tty_termios)) return -1;
-	kmemcpy(data, p->tty_termios, size); return 0;
+	struct termios value;
+	if (!process_current() || !data || size != sizeof(value) || tty_get_termios(&value) < 0) return -1;
+	kmemcpy(data, &value, sizeof(value)); return 0;
 }
 
 int process_tty_set(const void *data, size_t size)
 {
-	struct process *p = process_current();
-	if (!p || !data || size > sizeof(p->tty_termios)) return -1;
-	kmemcpy(p->tty_termios, data, size); return 0;
+	if (!process_current() || !data || size != sizeof(struct termios)) return -1;
+	return tty_set_termios((const struct termios *)data);
 }
 
 int process_tty_getpgrp(void)
 {
-	struct process *p = process_current(); return p ? p->tty_pgid : -1;
+	return process_current() ? tty_get_foreground() : -1;
 }
 
 int process_tty_setpgrp(int pgid)
 {
-	struct process *p = process_current();
-	if (!p || pgid <= 0) return -1;
-	p->tty_pgid = pgid; return 0;
+	struct process *self = process_current();
+	bool found = false;
+	if (!self || pgid <= 0) return -1;
+	for (int i = 0; i < MAX_PROCESSES; ++i)
+		if (processes[i].state != PROCESS_UNUSED && processes[i].sid == self->sid && processes[i].pgid == pgid) { found = true; break; }
+	if (!found) return -1;
+	return tty_set_foreground(pgid);
+}
+
+void process_tty_signal(int signal)
+{
+	int pgid = tty_get_foreground();
+	if (pgid <= 0) return;
+	for (int i = 0; i < MAX_PROCESSES; ++i) {
+		struct process *target = &processes[i];
+		if (target->state != PROCESS_UNUSED && target->pgid == pgid)
+			(void)process_kill(target->pid, signal);
+	}
 }
 
 void process_list(void)

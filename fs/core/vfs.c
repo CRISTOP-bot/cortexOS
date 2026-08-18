@@ -1,6 +1,7 @@
 #include "vfs.h"
 #include "process.h"
 #include "console.h"
+#include "tty.h"
 #include "fs.h"
 #include "kstring.h"
 #include <stddef.h>
@@ -261,6 +262,8 @@ void vfs_fd_table_init(struct vfs_fd_table *table)
 		table->fds[i].pipe_id = -1;
 		table->fds[i].pipe_read = false;
 		table->fds[i].pipe_write = false;
+		table->fds[i].tty = false;
+		table->fds[i].tty_id = -1;
 	}
 }
 
@@ -303,6 +306,8 @@ void vfs_fd_table_close_all(struct vfs_fd_table *table)
 		state->used = false;
 		state->node = -1;
 		state->pipe_id = -1;
+		state->tty = false;
+		state->tty_id = -1;
 	}
 }
 
@@ -597,7 +602,9 @@ const void *vfs_read(const char *path)
 
 size_t vfs_get_size(const char *path)
 {
-	int node = vfs_resolve(path);
+	int node;
+	if (tty_is_device_path(path)) return 0;
+	node = vfs_resolve(path);
 	if (node < 0 || nodes[node].is_dir)
 		return 0;
 	return nodes[node].size;
@@ -605,12 +612,14 @@ size_t vfs_get_size(const char *path)
 
 bool vfs_exists(const char *path)
 {
-	return vfs_resolve(path) >= 0;
+	return tty_is_device_path(path) || vfs_resolve(path) >= 0;
 }
 
 bool vfs_is_dir(const char *path)
 {
-	int node = vfs_resolve(path);
+	int node;
+	if (tty_is_device_path(path)) return false;
+	node = vfs_resolve(path);
 	if (node < 0)
 		return false;
 	return nodes[node].is_dir;
@@ -711,8 +720,17 @@ int vfs_open_fd(const char *path, int flags)
 	int node;
 	int fd = -1;
 
-	if (!path)
+	if (!path) return -1;
+	if (tty_is_device_path(path)) {
+		for (int i = 3; i < VFS_MAX_FDS; ++i) if (!fd_table[i].used) {
+			fd_table[i].used = true; fd_table[i].node = -1;
+			fd_table[i].offset = 0; fd_table[i].flags = flags;
+			fd_table[i].pipe_id = -1; fd_table[i].pipe_read = false;
+			fd_table[i].pipe_write = false; fd_table[i].tty = true;
+			fd_table[i].tty_id = CORTEXOS_TTY_CONSOLE; return i;
+		}
 		return -1;
+	}
 	node = vfs_resolve(path);
 	if (node < 0 && (flags & VFS_OPEN_CREAT))
 		node = vfs_create_node(path, false);
@@ -739,6 +757,7 @@ int vfs_open_fd(const char *path, int flags)
 	fd_table[fd].pipe_id = -1;
 	fd_table[fd].pipe_read = false;
 	fd_table[fd].pipe_write = false;
+	fd_table[fd].tty = false; fd_table[fd].tty_id = -1;
 	return fd;
 }
 
@@ -748,9 +767,11 @@ int vfs_read_fd(int fd, void *buffer, size_t count)
 	const vfs_node_t *node;
 	size_t available;
 
-	if (fd < 3 || fd >= VFS_MAX_FDS || !buffer || !fd_table[fd].used)
-		return -1;
+	if (!buffer) return -1;
+	if (fd >= 0 && fd <= 2) return tty_read(CORTEXOS_TTY_CONSOLE, buffer, count);
+	if (fd < 3 || fd >= VFS_MAX_FDS || !fd_table[fd].used) return -1;
 	state = &fd_table[fd];
+	if (state->tty) return tty_read(state->tty_id, buffer, count);
 	if (state->pipe_id >= 0) {
 		struct vfs_pipe_state *pipe = &pipe_table[state->pipe_id];
 		size_t available;
@@ -785,9 +806,11 @@ int vfs_write_fd(int fd, const void *buffer, size_t count)
 	size_t new_size;
 	char *storage;
 
-	if (fd < 3 || fd >= VFS_MAX_FDS || !buffer || !fd_table[fd].used)
-		return -1;
+	if (!buffer && count) return -1;
+	if (fd >= 0 && fd <= 2) return tty_write(CORTEXOS_TTY_CONSOLE, buffer, count);
+	if (fd < 3 || fd >= VFS_MAX_FDS || !fd_table[fd].used) return -1;
 	state = &fd_table[fd];
+	if (state->tty) return tty_write(state->tty_id, buffer, count);
 	if (state->pipe_id >= 0) {
 		struct vfs_pipe_state *pipe = &pipe_table[state->pipe_id];
 		size_t available;
@@ -827,8 +850,8 @@ int vfs_write_fd(int fd, const void *buffer, size_t count)
 int vfs_close_fd(int fd)
 {
 	struct vfs_fd_state *state;
-	if (fd < 3 || fd >= VFS_MAX_FDS || !fd_table[fd].used)
-		return -1;
+	if (fd >= 0 && fd <= 2) return 0;
+	if (fd < 3 || fd >= VFS_MAX_FDS || !fd_table[fd].used) return -1;
 	state = &fd_table[fd];
 	if (state->pipe_id >= 0 && pipe_table[state->pipe_id].used) {
 		if (state->pipe_read && pipe_table[state->pipe_id].readers > 0)
@@ -846,18 +869,25 @@ int vfs_close_fd(int fd)
 	state->pipe_id = -1;
 	state->pipe_read = false;
 	state->pipe_write = false;
+	state->tty = false;
+	state->tty_id = -1;
 	return 0;
 }
 
 int vfs_dup_fd(int old_fd, int new_fd)
 {
-	if (old_fd < 3 || old_fd >= VFS_MAX_FDS || !fd_table[old_fd].used ||
-	    new_fd < 3 || new_fd >= VFS_MAX_FDS)
-		return -1;
-	if (old_fd == new_fd)
-		return new_fd;
-	if (fd_table[new_fd].used)
-		vfs_close_fd(new_fd);
+	if (new_fd < 3 || new_fd >= VFS_MAX_FDS) return -1;
+	if (old_fd >= 0 && old_fd <= 2) {
+		if (fd_table[new_fd].used) vfs_close_fd(new_fd);
+		fd_table[new_fd].used = true; fd_table[new_fd].node = -1;
+		fd_table[new_fd].offset = 0; fd_table[new_fd].flags = 0;
+		fd_table[new_fd].pipe_id = -1; fd_table[new_fd].pipe_read = false;
+		fd_table[new_fd].pipe_write = false; fd_table[new_fd].tty = true;
+		fd_table[new_fd].tty_id = CORTEXOS_TTY_CONSOLE; return new_fd;
+	}
+	if (old_fd < 3 || old_fd >= VFS_MAX_FDS || !fd_table[old_fd].used) return -1;
+	if (old_fd == new_fd) return new_fd;
+	if (fd_table[new_fd].used) vfs_close_fd(new_fd);
 	fd_table[new_fd] = fd_table[old_fd];
 	fd_table[new_fd].used = true;
 	if (fd_table[new_fd].pipe_id >= 0) {
@@ -922,7 +952,7 @@ int vfs_lseek_fd(int fd, long offset, int whence)
 	long base;
 	long next;
 	if (fd < 3 || fd >= VFS_MAX_FDS || !fd_table[fd].used ||
-	    fd_table[fd].pipe_id >= 0)
+	    fd_table[fd].pipe_id >= 0 || fd_table[fd].tty)
 		return -1;
 	state = &fd_table[fd];
 	if (whence == VFS_SEEK_SET)
@@ -942,7 +972,8 @@ int vfs_lseek_fd(int fd, long offset, int whence)
 
 bool vfs_isatty_fd(int fd)
 {
-	return fd >= 0 && fd <= 2;
+	if (fd >= 0 && fd <= 2) return true;
+	return fd >= 3 && fd < VFS_MAX_FDS && fd_table[fd].used && fd_table[fd].tty;
 }
 
 int vfs_get_fd_flags(int fd)

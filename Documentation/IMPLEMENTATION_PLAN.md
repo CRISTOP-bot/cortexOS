@@ -52,11 +52,15 @@ el código; la aceptación runtime no está demostrada. La copia de memoria de
 
 ## Etapa 4 — TTY y señales
 
-- [ ] `termios`, `ioctl`, `tcgetattr` y `tcsetattr`.
+- [x] TTY device layer for the controlling console (`tty0`), `/dev/console`,
+      `/dev/tty`, canonical/raw buffering, echo/editing, and termios/ioctl;
+      see `Documentation/TTY.md`.
 - [x] Syscalls `SIGTERM`/`SIGKILL`/`SIGCHLD`, `kill` y almacenamiento de
       disposiciones mediante `sigaction`; falta entrega de handlers/`sigreturn`.
 - [x] Primitivas mínimas de sesiones, grupos de procesos, `termios` e `ioctl`.
-- [ ] `SIGINT`, `SIGTSTP`, disciplina de línea y control de trabajos.
+- [x] Disciplina de línea canónica/raw, control de grupo foreground y Ctrl-C
+      básico para el TTY controlador.
+- [ ] `SIGTSTP`, `SIGTTIN`, `SIGTTOU` y control de trabajos completo.
 
 **Aceptación:** un shell interactivo responde a Ctrl+C/Ctrl+Z y soporta
 `jobs`, `fg` y `bg`.
