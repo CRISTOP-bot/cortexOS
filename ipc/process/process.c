@@ -67,6 +67,10 @@ int process_create(const char *name, uint64_t entry, bool user)
 	proc->pid = alloc_pid();
 	proc->parent_pid = current_pid;
 	proc->state = PROCESS_READY;
+	proc->sid = proc->pid;
+	proc->pgid = proc->pid;
+	proc->tty_pgid = proc->pid;
+	vfs_fd_table_init(&proc->fd_table);
 	proc->user_code = USER_CODE_TOP;
 	proc->user_stack = USER_STACK_TOP - USER_STACK_SIZE;
 	proc->brk = USER_HEAP_BASE;
@@ -186,6 +190,16 @@ int process_fork(void)
 	kmemset(child, 0, sizeof(*child));
 	child->pid = alloc_pid(); child->parent_pid = parent->pid;
 	child->state = PROCESS_READY; child->user_code = parent->user_code;
+	child->sid = parent->sid; child->pgid = parent->pgid;
+	child->tty_pgid = parent->tty_pgid;
+	child->pending_signals = 0;
+	child->blocked_signals = parent->blocked_signals;
+	for (int si = 0; si < PROCESS_SIG_MAX; ++si)
+		child->signal_handlers[si] = parent->signal_handlers[si];
+	if (vfs_fd_table_clone(&child->fd_table, &parent->fd_table) < 0) {
+		child->state = PROCESS_UNUSED;
+		return -1;
+	}
 	child->user_stack = parent->user_stack; child->brk = parent->brk;
 	child->brk_limit = parent->brk_limit; child->ctx = parent->ctx;
 	child->ctx.rax = 0; kstrcpy(child->name, parent->name, PROCESS_NAME_SIZE);
@@ -200,6 +214,7 @@ int process_fork(void)
 			  parent->brk)) {
 		if (child->ctx.cr3 && child->ctx.cr3 != vmm_current_address_space())
 			vmm_destroy_address_space(child->ctx.cr3);
+		vfs_fd_table_close_all(&child->fd_table);
 		child->state = PROCESS_UNUSED;
 		return -1;
 	}
@@ -332,11 +347,16 @@ void process_exit(int code)
 {
 	struct process *p = process_current();
 	if (!p) return;
-	p->exit_code = code; p->state = PROCESS_ZOMBIE;
+	p->exit_code = code;
+	vfs_fd_table_close_all(&p->fd_table);
+	p->state = PROCESS_ZOMBIE;
 	if (p->parent_pid > 0) {
 		struct process *parent = find_process(p->parent_pid);
-		if (parent && parent->state == PROCESS_BLOCKED) {
-			parent->state = PROCESS_READY; parent->wait_exit = p->pid;
+		if (parent) {
+			parent->pending_signals |= PROCESS_SIGBIT(PROCESS_SIGCHLD);
+			if (parent->state == PROCESS_BLOCKED) {
+				parent->state = PROCESS_READY; parent->wait_exit = p->pid;
+			}
 		}
 	}
 	process_schedule();
@@ -355,6 +375,7 @@ int process_waitpid(int pid, int *status, int options)
 			int child = processes[i].pid;
 			if (status) *status = processes[i].exit_code;
 			processes[i].state = PROCESS_UNUSED;
+			p->pending_signals &= ~PROCESS_SIGBIT(PROCESS_SIGCHLD);
 			return child;
 		}
 	}
@@ -390,6 +411,111 @@ int process_sbrk(intptr_t increment, uint64_t *old_break)
 		}
 	}
 	p->brk = next; *old_break = old; return 0;
+}
+
+static bool valid_signal(int sig)
+{
+	return sig > 0 && sig < PROCESS_SIG_MAX && sig != 32;
+}
+
+int process_kill(int pid, int sig)
+{
+	struct process *target;
+	if (!valid_signal(sig) && sig != 0) return -1;
+	target = find_process(pid);
+	if (!target || target->state == PROCESS_ZOMBIE) return -1;
+	if (!sig) return 0;
+	target->pending_signals |= PROCESS_SIGBIT(sig);
+	/* A handler is delivered by the user return path when that path exists;
+	 * default fatal signals must not be left running indefinitely. */
+	if ((sig == PROCESS_SIGKILL || sig == PROCESS_SIGTERM || sig == PROCESS_SIGHUP ||
+		 sig == PROCESS_SIGINT) && target->signal_handlers[sig - 1] == 0) {
+		target->exit_code = 128 + sig;
+		vfs_fd_table_close_all(&target->fd_table);
+		target->state = PROCESS_ZOMBIE;
+		if (target->parent_pid > 0) {
+			struct process *parent = find_process(target->parent_pid);
+			if (parent) {
+				parent->pending_signals |= PROCESS_SIGBIT(PROCESS_SIGCHLD);
+				if (parent->state == PROCESS_BLOCKED) parent->state = PROCESS_READY;
+			}
+		}
+	}
+	return 0;
+}
+
+int process_sigaction(int sig, uintptr_t handler, unsigned long flags,
+		unsigned long mask, uintptr_t *old_handler,
+		unsigned long *old_flags, unsigned long *old_mask)
+{
+	struct process *p = process_current();
+	if (!p || !valid_signal(sig) || sig == PROCESS_SIGKILL) return -1;
+	if (old_handler) *old_handler = p->signal_handlers[sig - 1];
+	if (old_flags) *old_flags = 0;
+	if (old_mask) *old_mask = p->blocked_signals;
+	/* SIG_IGN is represented by 1; SIG_DFL by 0.  Preserve the disposition
+	 * and mask even though frame-based handler delivery is not enabled yet. */
+	p->signal_handlers[sig - 1] = handler;
+	p->blocked_signals = mask;
+	(void)flags;
+	if (handler == 1) p->pending_signals &= ~PROCESS_SIGBIT(sig);
+	return 0;
+}
+
+int process_setsid(void)
+{
+	struct process *p = process_current();
+	if (!p || p->pgid == p->pid) return -1;
+	p->sid = p->pid; p->pgid = p->pid; p->tty_pgid = p->pid;
+	return p->sid;
+}
+
+int process_getsid(int pid)
+{
+	struct process *p = pid == 0 ? process_current() : find_process(pid);
+	return p ? p->sid : -1;
+}
+
+int process_setpgid(int pid, int pgid)
+{
+	struct process *self = process_current();
+	struct process *p = pid == 0 ? self : find_process(pid);
+	if (!self || !p || pgid < 0 || (p != self && p->parent_pid != self->pid)) return -1;
+	if (pgid == 0) pgid = p->pid;
+	p->pgid = pgid;
+	return 0;
+}
+
+int process_getpgrp(void)
+{
+	struct process *p = process_current();
+	return p ? p->pgid : -1;
+}
+
+int process_tty_get(void *data, size_t size)
+{
+	struct process *p = process_current();
+	if (!p || !data || size > sizeof(p->tty_termios)) return -1;
+	kmemcpy(data, p->tty_termios, size); return 0;
+}
+
+int process_tty_set(const void *data, size_t size)
+{
+	struct process *p = process_current();
+	if (!p || !data || size > sizeof(p->tty_termios)) return -1;
+	kmemcpy(p->tty_termios, data, size); return 0;
+}
+
+int process_tty_getpgrp(void)
+{
+	struct process *p = process_current(); return p ? p->tty_pgid : -1;
+}
+
+int process_tty_setpgrp(int pgid)
+{
+	struct process *p = process_current();
+	if (!p || pgid <= 0) return -1;
+	p->tty_pgid = pgid; return 0;
 }
 
 void process_list(void)

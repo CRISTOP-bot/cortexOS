@@ -20,6 +20,20 @@
 #define N_SYS_STAT 18
 #define N_SYS_FCNTL 19
 #define N_SYS_WAITPID 20
+#define N_SYS_KILL 21
+#define N_SYS_SIGACTION 22
+#define N_SYS_SETSID 23
+#define N_SYS_GETSID 24
+#define N_SYS_SETPGID 25
+#define N_SYS_GETPGRP 26
+#define N_SYS_IOCTL 27
+#define N_SYS_MOUNT 28
+#define N_SYS_UMOUNT 29
+#define N_SYS_MKDIR 30
+#define N_SYS_UNLINK 31
+#define N_SYS_ACCESS 32
+#define N_SYS_GETUID 33
+#define N_SYS_GETGID 34
 
 static inline long __cortexos_syscall5(long number, long a1, long a2,
 				      long a3, long a4, long a5)
@@ -37,6 +51,7 @@ static inline long __cortexos_syscall5(long number, long a1, long a2,
 #define __cortexos_syscall1(n,a) __cortexos_syscall5((n), (long)(a), 0, 0, 0, 0)
 #define __cortexos_syscall2(n,a,b) __cortexos_syscall5((n), (long)(a), (long)(b), 0, 0, 0)
 #define __cortexos_syscall3(n,a,b,c) __cortexos_syscall5((n), (long)(a), (long)(b), (long)(c), 0, 0)
+#define __cortexos_syscall4(n,a,b,c,d) __cortexos_syscall5((n), (long)(a), (long)(b), (long)(c), (long)(d), 0)
 
 #endif
 

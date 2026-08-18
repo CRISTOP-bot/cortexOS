@@ -19,6 +19,21 @@ void _exit(int status) __attribute__((noreturn));
 void *sbrk(intptr_t increment);
 char *getcwd(char *buffer, size_t size);
 int chdir(const char *path);
+int ioctl(int fd, unsigned long request, ...);
+int setsid(void);
+int getsid(int pid);
+int setpgid(int pid, int pgid);
+int getpgrp(void);
+int mount(const char *source, const char *target, const char *filesystem,
+          unsigned long flags, const void *data);
+int umount(const char *target);
+int mkdir(const char *path, unsigned int mode);
+int unlink(const char *path);
+int access(const char *path, int mode);
+int getuid(void);
+int geteuid(void);
+int getgid(void);
+int getegid(void);
 
 #endif
 

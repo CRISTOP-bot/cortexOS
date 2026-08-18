@@ -5,6 +5,8 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <signal.h>
+#include <termios.h>
 
 int errno;
 
@@ -128,3 +130,48 @@ int stat(const char *path, struct stat *buffer)
 	return (int)result(__cortexos_syscall2(N_SYS_STAT, path, buffer));
 }
 
+
+int kill(int pid, int sig)
+{
+	return (int)result(__cortexos_syscall2(N_SYS_KILL, pid, sig));
+}
+int sigaction(int sig, const struct sigaction *action, struct sigaction *old_action)
+{
+	return (int)result(__cortexos_syscall3(N_SYS_SIGACTION, sig, action, old_action));
+}
+int ioctl(int fd, unsigned long request, ...)
+{
+	va_list args; void *arg; long value;
+	va_start(args, request); arg = va_arg(args, void *); va_end(args);
+	value = __cortexos_syscall3(N_SYS_IOCTL, fd, request, arg);
+	return (int)result(value);
+}
+int setsid(void) { return (int)result(__cortexos_syscall0(N_SYS_SETSID)); }
+int getsid(int pid) { return (int)result(__cortexos_syscall1(N_SYS_GETSID, pid)); }
+int setpgid(int pid, int pgid) { return (int)result(__cortexos_syscall2(N_SYS_SETPGID, pid, pgid)); }
+int getpgrp(void) { return (int)result(__cortexos_syscall0(N_SYS_GETPGRP)); }
+int mount(const char *source, const char *target, const char *filesystem, unsigned long flags, const void *data)
+{
+	(void)data; return (int)result(__cortexos_syscall4(N_SYS_MOUNT, source, target, filesystem, flags));
+}
+int umount(const char *target) { return (int)result(__cortexos_syscall1(N_SYS_UMOUNT, target)); }
+
+int tcgetattr(int fd, struct termios *termios_p)
+{ return ioctl(fd, TCGETS, termios_p); }
+int tcsetattr(int fd, int actions, const struct termios *termios_p)
+{ (void)actions; return ioctl(fd, TCSETS, (void *)termios_p); }
+int tcgetpgrp(int fd)
+{ int pgrp = -1; return ioctl(fd, TIOCGPGRP, &pgrp) < 0 ? -1 : pgrp; }
+int tcsetpgrp(int fd, int pgrp)
+{ return ioctl(fd, TIOCSPGRP, &pgrp); }
+
+int mkdir(const char *path, unsigned int mode)
+{ return (int)result(__cortexos_syscall2(N_SYS_MKDIR, path, mode)); }
+int unlink(const char *path)
+{ return (int)result(__cortexos_syscall1(N_SYS_UNLINK, path)); }
+int access(const char *path, int mode)
+{ return (int)result(__cortexos_syscall2(N_SYS_ACCESS, path, mode)); }
+int getuid(void) { return (int)result(__cortexos_syscall0(N_SYS_GETUID)); }
+int geteuid(void) { return getuid(); }
+int getgid(void) { return (int)result(__cortexos_syscall0(N_SYS_GETGID)); }
+int getegid(void) { return getgid(); }

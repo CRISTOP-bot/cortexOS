@@ -24,7 +24,21 @@
 #define SYSCALL_STAT    18
 #define SYSCALL_FCNTL   19
 #define SYSCALL_WAITPID 20
-#define SYSCALL_MAX     21
+#define SYSCALL_KILL    21
+#define SYSCALL_SIGACTION 22
+#define SYSCALL_SETSID  23
+#define SYSCALL_GETSID  24
+#define SYSCALL_SETPGID 25
+#define SYSCALL_GETPGRP 26
+#define SYSCALL_IOCTL   27
+#define SYSCALL_MOUNT   28
+#define SYSCALL_UMOUNT  29
+#define SYSCALL_MKDIR   30
+#define SYSCALL_UNLINK  31
+#define SYSCALL_ACCESS  32
+#define SYSCALL_GETUID  33
+#define SYSCALL_GETGID  34
+#define SYSCALL_MAX     35
 
 void syscall_init(void);
 int64_t syscall_handler(uint64_t rdi, uint64_t rsi, uint64_t rdx,

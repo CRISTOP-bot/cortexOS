@@ -3,6 +3,30 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
+
+#define VFS_MAX_FDS 64
+#define VFS_MAX_PIPES 16
+#define VFS_PIPE_SIZE 4096
+
+/* A descriptor table belongs to one process.  Pipe storage is shared by
+ * descriptor entries, so fork/dup can preserve the required references. */
+struct vfs_fd_state {
+	bool used;
+	int node;
+	size_t offset;
+	int flags;
+	int pipe_id;
+	bool pipe_read;
+	bool pipe_write;
+};
+struct vfs_fd_table {
+	struct vfs_fd_state fds[VFS_MAX_FDS];
+};
+void vfs_fd_table_init(struct vfs_fd_table *table);
+int vfs_fd_table_clone(struct vfs_fd_table *dst,
+		const struct vfs_fd_table *src);
+void vfs_fd_table_close_all(struct vfs_fd_table *table);
 bool vfs_init(void);
 const char *vfs_pwd(void);
 bool vfs_cd(const char *path);
@@ -22,6 +46,14 @@ bool vfs_is_dir(const char *path);
 int vfs_get_children(const char *path, const char **names, int max_names);
 int vfs_get_file_count(const char *path);
 bool vfs_stat(const char *path);
+
+/* Mount namespace scaffolding used by the early OpenRC ABI.  Only the
+ * in-memory proc/sys registration is provided until a real VFS backend is
+ * available; unsupported filesystems fail rather than claiming success. */
+int vfs_mount(const char *source, const char *target, const char *fstype,
+		unsigned long flags);
+int vfs_umount(const char *target);
+bool vfs_is_mounted(const char *target);
 
 /* Kernel-side file descriptors used by the user ABI. */
 #define VFS_OPEN_WRITE 0x0001

@@ -4,6 +4,8 @@
 #include "vfs.h"
 #include "timer.h"
 #include "kstring.h"
+#include "signal.h"
+#include "termios.h"
 
 typedef int64_t (*syscall_fn)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
 
@@ -218,6 +220,106 @@ static int64_t sys_fcntl(uint64_t fd, uint64_t command, uint64_t value, uint64_t
 	return -1;
 }
 
+static int64_t sys_kill(uint64_t pid, uint64_t sig, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	(void)a3; (void)a4; (void)a5;
+	return process_kill((int)pid, (int)sig);
+}
+
+static int64_t sys_sigaction(uint64_t sig, uint64_t action, uint64_t old,
+		uint64_t a4, uint64_t a5)
+{
+	struct sigaction in, previous;
+	uintptr_t old_handler = 0;
+	unsigned long old_flags = 0, old_mask = 0;
+	(void)a4; (void)a5;
+	if (action && !process_user_range((const void *)action, sizeof(in), false)) return -1;
+	if (old && !process_user_range((const void *)old, sizeof(previous), true)) return -1;
+	if (action) { kmemcpy(&in, (const void *)action, sizeof(in)); }
+	if (process_sigaction((int)sig, action ? (uintptr_t)in.sa_handler : 0,
+			action ? in.sa_flags : 0, action ? in.sa_mask : 0,
+			&old_handler, &old_flags, &old_mask) < 0) return -1;
+	if (old) {
+		previous.sa_handler = (sighandler_t)old_handler;
+		previous.sa_flags = old_flags; previous.sa_mask = old_mask;
+		kmemcpy((void *)old, &previous, sizeof(previous));
+	}
+	return 0;
+}
+
+static int64_t sys_setsid(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{ (void)a1; (void)a2; (void)a3; (void)a4; (void)a5; return process_setsid(); }
+static int64_t sys_getsid(uint64_t pid, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{ (void)a2; (void)a3; (void)a4; (void)a5; return process_getsid((int)pid); }
+static int64_t sys_setpgid(uint64_t pid, uint64_t pgid, uint64_t a3, uint64_t a4, uint64_t a5)
+{ (void)a3; (void)a4; (void)a5; return process_setpgid((int)pid, (int)pgid); }
+static int64_t sys_getpgrp(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{ (void)a1; (void)a2; (void)a3; (void)a4; (void)a5; return process_getpgrp(); }
+
+static int64_t sys_ioctl(uint64_t fd, uint64_t request, uint64_t arg,
+		uint64_t a4, uint64_t a5)
+{
+	(void)a4; (void)a5;
+	if (fd > 2) return -1;
+	if (request == TCGETS) {
+		if (!arg || !process_user_range((const void *)arg, sizeof(struct termios), true)) return -1;
+		return process_tty_get((void *)arg, sizeof(struct termios));
+	}
+	if (request == TCSETS) {
+		if (!arg || !process_user_range((const void *)arg, sizeof(struct termios), false)) return -1;
+		return process_tty_set((const void *)arg, sizeof(struct termios));
+	}
+	if (request == TIOCGPGRP) {
+		if (!arg || !process_user_range((const void *)arg, sizeof(int), true)) return -1;
+		*(int *)arg = process_tty_getpgrp(); return 0;
+	}
+	if (request == TIOCSPGRP) {
+		if (!arg || !process_user_range((const void *)arg, sizeof(int), false)) return -1;
+		return process_tty_setpgrp(*(const int *)arg);
+	}
+	return -1;
+}
+
+static int64_t sys_mount(uint64_t source, uint64_t target, uint64_t fstype,
+		uint64_t flags, uint64_t a5)
+{
+	char source_copy[128], target_copy[128], type_copy[32];
+	(void)a5;
+	if (!process_copy_user_string(source_copy, sizeof(source_copy), (const char *)source) ||
+		!process_copy_user_string(target_copy, sizeof(target_copy), (const char *)target) ||
+		!process_copy_user_string(type_copy, sizeof(type_copy), (const char *)fstype)) return -1;
+	return vfs_mount(source_copy, target_copy, type_copy, (unsigned long)flags);
+}
+static int64_t sys_umount(uint64_t target, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	char target_copy[128]; (void)a2; (void)a3; (void)a4; (void)a5;
+	if (!process_copy_user_string(target_copy, sizeof(target_copy), (const char *)target)) return -1;
+	return vfs_umount(target_copy);
+}
+
+static int64_t sys_mkdir(uint64_t path, uint64_t mode, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	char copy[256]; (void)mode; (void)a3; (void)a4; (void)a5;
+	if (!process_copy_user_string(copy, sizeof(copy), (const char *)path)) return -1;
+	return vfs_mkdir(copy) ? 0 : -1;
+}
+static int64_t sys_unlink(uint64_t path, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	char copy[256]; (void)a2; (void)a3; (void)a4; (void)a5;
+	if (!process_copy_user_string(copy, sizeof(copy), (const char *)path)) return -1;
+	return vfs_remove(copy) ? 0 : -1;
+}
+static int64_t sys_access(uint64_t path, uint64_t mode, uint64_t a3, uint64_t a4, uint64_t a5)
+{
+	char copy[256]; (void)mode; (void)a3; (void)a4; (void)a5;
+	if (!process_copy_user_string(copy, sizeof(copy), (const char *)path)) return -1;
+	return vfs_exists(copy) ? 0 : -1;
+}
+static int64_t sys_getuid(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{ (void)a1; (void)a2; (void)a3; (void)a4; (void)a5; return 0; }
+static int64_t sys_getgid(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{ (void)a1; (void)a2; (void)a3; (void)a4; (void)a5; return 0; }
+
 static syscall_fn syscall_table[SYSCALL_MAX] = {
 	sys_read,
 	sys_write,
@@ -240,6 +342,20 @@ static syscall_fn syscall_table[SYSCALL_MAX] = {
 	sys_stat,
 	sys_fcntl,
 	sys_waitpid,
+	sys_kill,
+	sys_sigaction,
+	sys_setsid,
+	sys_getsid,
+	sys_setpgid,
+	sys_getpgrp,
+	sys_ioctl,
+	sys_mount,
+	sys_umount,
+	sys_mkdir,
+	sys_unlink,
+	sys_access,
+	sys_getuid,
+	sys_getgid,
 };
 
 void syscall_init(void)

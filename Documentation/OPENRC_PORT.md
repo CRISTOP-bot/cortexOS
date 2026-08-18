@@ -61,23 +61,13 @@ Los límites actuales son:
 1. **ABI/libc:** faltan la mayoría de interfaces POSIX requeridas por Meson y
    OpenRC, además de errores `errno` completos, usuarios/grupos y soporte
    estático de enlace.
-2. **Procesos/ELF:** el cargador todavía acepta solo ELF64 x86_64 `ET_EXEC`
-   estático; no hay COW, `PT_INTERP`/PIE, descriptores por proceso heredables,
-   ni una prueba runtime de `fork/exec/waitpid`. Las tablas son separadas,
-   pero la tabla de descriptores y el VFS siguen siendo globales.
-3. **Señales:** no existen `sigaction`, `kill`, `SIGCHLD`, `SIGTERM` ni la
-   entrega/reanudación de señales que usa el supervisor.
-4. **TTY:** faltan `termios`, `ioctl`, sesiones, grupos de procesos y control
-   del terminal.
-5. **Sistema:** `/proc` y `/sys` son directorios vacíos, no hay montaje,
-   dispositivos reales, reloj/temporizadores POSIX ni soporte suficiente para
-   los scripts y utilidades auxiliares de OpenRC.
+2. **Procesos/ELF:** el cargador acepta únicamente ELF64 x86_64 `ET_EXEC` estático y rechaza explícitamente `ET_DYN`/`PT_INTERP`; no hay COW ni PIE/dynamic linker. Las tablas de descriptores ya son por proceso, se clonan en `fork()` y se cierran en `exit()`; las tuberías conservan referencias, pero los offsets de archivos regulares todavía no son open-file descriptions compartidas como exige POSIX. No existe aún una prueba runtime de `fork/exec/waitpid`.
+3. **Señales:** existen las syscalls `kill` y `sigaction`, disposiciones `SIGTERM`/`SIGKILL` por defecto, `SIGCHLD` pendiente al terminar un hijo y `waitpid()` desbloqueable. La entrega de handlers a un frame de usuario y `sigreturn` aún no están implementados; por ello no se declara compatibilidad POSIX completa.
+4. **TTY:** hay primitivas mínimas de `termios`/`ioctl`, `tcgetattr`/`tcsetattr`, sesiones, grupos de procesos y `tcgetpgrp`/`tcsetpgrp` sobre la consola; faltan disciplina de línea, terminales multiproceso, job control y entrega de `SIGINT`/`SIGTSTP`.
+5. **Sistema:** `/proc` y `/sys` se crean como directorios de rootfs y `mount("proc"/"sysfs")` mantiene un registro en memoria; no hay todavía contenido virtual, dispositivos reales, desmontaje persistente, reloj/temporizadores POSIX ni soporte suficiente para los scripts y utilidades auxiliares de OpenRC.
 6. **Rootfs:** la imagen CRFS actual es de solo lectura y no representa
    enlaces simbólicos, permisos, ownership ni runlevels como los espera OpenRC.
-7. **Validación:** los checks Python, layout, CRFS y contrato OpenRC pasan
-   localmente. GitHub Actions también pasó compilación del kernel, ABI smoke,
-   etapas AArch64/ARMv7, validación Multiboot, ISO y smoke boot QEMU; falta una
-   prueba específica que ejecute `fork/exec/waitpid` y confirme OpenRC como PID 1.
+7. **Validación:** esta máquina no tiene `make`, compiladores bare-metal ni QEMU. CI conserva compilación del kernel, ABI smoke, etapas AArch64/ARMv7, validación Multiboot, ISO y smoke boot QEMU. Falta una prueba específica que ejecute `fork/exec/waitpid` y confirme OpenRC como PID 1.
 
 Completar OpenRC exige resolver esos bloqueadores y añadir una prueba QEMU que
 confirme que un binario cross-compilado es PID 1 y arranca/detiene un servicio
