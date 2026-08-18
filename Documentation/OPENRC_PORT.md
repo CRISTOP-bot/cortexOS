@@ -1,37 +1,72 @@
 # OpenRC real en CortexOS
 
-CortexOS integra la fuente original de OpenRC mediante un submódulo Git:
+## Estado de esta rama
 
-- Repositorio oficial: `https://github.com/OpenRC/openrc`
+La fuente oficial de OpenRC se mantiene como submódulo Git:
+
+- Repositorio: `https://github.com/OpenRC/openrc`
 - Rama de origen: `master`
 - Commit fijado: `04d75bc192486fee932e4e602bdfffc32a0d8b96`
 - Ruta: `third_party/openrc/`
 
-Ese commit corresponde a la versión del repositorio observada el 2 de agosto
-de 2026, cuyo último cambio visible fue `rc-service: also filter the
-environment`.
+Esta rama añade un contrato reproducible para la siguiente etapa del port:
 
-## Importante
+- `config/openrc/cortexos-x86_64.ini` es una plantilla Meson que identifica a
+  CortexOS como sistema destino y nunca usa el compilador Linux del host.
+- `tools/build/openrc.py` valida y copia únicamente los cuatro ejecutables
+  OpenRC ya compilados para CortexOS (`openrc-init`, `rc-service`, `rc-status`
+  y `rc-update`). Rechaza PIE/ET_DYN, intérpretes dinámicos, arquitecturas
+  distintas y segmentos ELF fuera del archivo.
+- `make openrc-stage OPENRC_BIN_DIR=...` instala esos binarios en el rootfs,
+  pero falla si no existen. No genera binarios falsos ni copia ejecutables del
+  host.
+- `rootfs/etc/conf.d/openrc` y el árbol de configuración del runlevel default
+  ya están preparados para la instalación de una compilación real.
 
-`init/openrc/openrc.c` sigue siendo el gestor provisional de respaldo que CortexOS usa
-si no encuentra el binario real. La fuente de `third_party/openrc` es el OpenRC
-real y el kernel ya tiene el punto de entrada para entregarle el control como
-primer proceso de usuario: busca `/sbin/openrc-init`, le construye
-`argv/envp`, lo carga como ELF y habilita el planificador.
-
-Si `/sbin/openrc-init` no existe o no es un ELF válido, CortexOS conserva el
-arranque provisional para que la imagen siga siendo utilizable durante el port.
-OpenRC todavía necesita libc, procesos, señales, TTY, `/proc`/montajes y varios
-servicios POSIX que CortexOS está implementando antes de poder generar ese
-binario para CortexOS.
-
-Para comprobar que el submódulo fue descargado:
+Comprobaciones:
 
 ```bash
 git submodule update --init --recursive
 make openrc-source
+make check-openrc
+# Solo después de disponer de una libc/toolchain CortexOS:
+make openrc-stage OPENRC_BIN_DIR=/ruta/a/openrc-cross/bin
 ```
 
-El siguiente port debe generar los binarios de OpenRC como programas de
-usuario, no copiar sus fuentes al kernel ni reemplazar el código provisional
-con una simulación.
+## Lo que todavía no está implementado
+
+El kernel conserva el gestor de compatibilidad de `init/openrc/openrc.c` para
+que la imagen siga siendo utilizable sin un binario real. `init_start_openrc()`
+solo intenta el handoff cuando `/sbin/openrc-init` está instalado; esta
+condición no convierte al parser de compatibilidad en OpenRC.
+
+No es honesto afirmar que OpenRC ya arranca como PID 1. El cargador actual
+solo admite ELF64 x86_64 `ET_EXEC` estático y el camino de proceso todavía usa
+las tablas de páginas globales (`cr3 = 0`), asigna a todos los procesos la
+misma ventana de código y no valida punteros de usuario antes de las syscalls.
+`fork()` tampoco implementa el retorno 0 en el hijo ni una copia COW/espacio de
+direcciones independiente. Por tanto, un ejecutable de OpenRC no puede
+considerarse funcional aunque se consiga compilarlo.
+
+Los bloqueadores exactos para ejecutar OpenRC real son:
+
+1. **ABI/libc:** faltan la mayoría de interfaces POSIX requeridas por Meson y
+   OpenRC, además de errores `errno` completos, usuarios/grupos y soporte
+   estático de enlace.
+2. **Procesos/ELF:** falta un espacio de direcciones por proceso, `fork/exec`
+   completo, carga de PIE/`PT_INTERP` o una estrategia estática estable, gestión
+   de descriptores heredados y semántica fiable de `waitpid`.
+3. **Señales:** no existen `sigaction`, `kill`, `SIGCHLD`, `SIGTERM` ni la
+   entrega/reanudación de señales que usa el supervisor.
+4. **TTY:** faltan `termios`, `ioctl`, sesiones, grupos de procesos y control
+   del terminal.
+5. **Sistema:** `/proc` y `/sys` son directorios vacíos, no hay montaje,
+   dispositivos reales, reloj/temporizadores POSIX ni soporte suficiente para
+   los scripts y utilidades auxiliares de OpenRC.
+6. **Rootfs:** la imagen CRFS actual es de solo lectura y no representa
+   enlaces simbólicos, permisos, ownership ni runlevels como los espera OpenRC.
+
+Completar OpenRC exige resolver esos bloqueadores y añadir una prueba QEMU que
+confirme que un binario cross-compilado es PID 1 y arranca/detiene un servicio
+real. Esta rama implementa preparación, validación y staging seguros; no
+simula esa aceptación.

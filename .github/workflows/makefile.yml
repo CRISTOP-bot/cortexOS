@@ -48,6 +48,11 @@ jobs:
         with:
           targets: x86_64-unknown-linux-gnu
 
+      - name: Validate OpenRC source and staging contract
+        run: |
+          make openrc-source
+          make check-openrc
+
       - name: Validate Bash submodule
         run: make bash-source
 

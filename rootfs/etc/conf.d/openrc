@@ -1,0 +1,6 @@
+# CortexOS OpenRC defaults.
+# The file is inert until cross-built OpenRC programs are staged in /sbin.
+rc_sys="cortexos"
+rc_parallel="NO"
+rc_logger="NO"
+rc_verbose="YES"
