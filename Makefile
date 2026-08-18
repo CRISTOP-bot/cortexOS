@@ -45,6 +45,9 @@ TOOLS_DIR   = tools
 PYTHON      ?= python3
 BASH_SRC_DIR    = third_party/bash
 OPENRC_SRC_DIR  = third_party/openrc
+OPENRC_COMMIT   = 04d75bc192486fee932e4e602bdfffc32a0d8b96
+OPENRC_BIN_DIR   ?= $(BUILD_DIR)/openrc/bin
+OPENRC_STAGE_DIR ?= $(ROOTFS_DIR)
 FASTFETCH_SRC_DIR = third_party/fastfetch
 FASTFETCH_COMMIT  = a0452b8323aaa9d3b5b6ded435ed6660cee2bbb9
 
@@ -258,8 +261,19 @@ armv7-run: armv7-early
 openrc-source:
 	@test -f $(OPENRC_SRC_DIR)/meson.build
 	@test -d $(OPENRC_SRC_DIR)/src
-	@echo "  Fuente oficial de OpenRC disponible en $(OPENRC_SRC_DIR)"
+	@test -f $(OPENRC_SRC_DIR)/src/openrc-init/openrc-init.c
+	@test -f $(OPENRC_SRC_DIR)/src/rc-service/rc-service.c
+	@test "$$(git -C $(OPENRC_SRC_DIR) rev-parse HEAD)" = "$(OPENRC_COMMIT)"
+	@echo "  Fuente oficial de OpenRC disponible en $(OPENRC_SRC_DIR) ($(OPENRC_COMMIT))"
 	@echo "  El submódulo se mantiene fijado al commit oficial documentado en Documentation/OPENRC_PORT.md"
+
+# Stage only binaries produced by a CortexOS cross build. The validator rejects
+# host Linux binaries, PIE, dynamic interpreters, and non-x86_64 images.
+openrc-stage: openrc-source
+	$(PYTHON) tools/build/openrc.py --bin-dir "$(OPENRC_BIN_DIR)" --rootfs "$(OPENRC_STAGE_DIR)"
+
+check-openrc:
+	$(PYTHON) scripts/linux/check-openrc.py
 
 bash-source:
 	@test -f $(BASH_SRC_DIR)/configure.ac
@@ -298,5 +312,5 @@ fastfetch-source:
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)
 
-.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix aarch64-early aarch64-run armv7-early armv7-run openrc-source bash-source archinstall-source nucleos-archinstall check-layout check-python verify-crfs check-live-ram fastfetch-source clean installer installer-usb
+.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix aarch64-early aarch64-run armv7-early armv7-run openrc-source openrc-stage check-openrc bash-source archinstall-source nucleos-archinstall check-layout check-python verify-crfs check-live-ram fastfetch-source clean installer installer-usb
 

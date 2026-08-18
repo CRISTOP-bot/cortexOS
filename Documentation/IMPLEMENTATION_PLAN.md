@@ -48,12 +48,16 @@ compartir accidentalmente su stack o código.
 ## Etapa 5 — OpenRC real
 
 - [x] Fuente oficial fijada como submódulo.
-- [x] Handoff del kernel a `/sbin/openrc-init`.
-- [ ] Compilar OpenRC estáticamente contra la libc de CortexOS.
-- [ ] Instalar `openrc-init`, `rc-service`, `rc-status` y `rc-update`.
-- [ ] Implementar runlevels y servicios en `/etc/init.d`.
+- [x] Punto de handoff condicionado a `/sbin/openrc-init` y cargador ELF.
+- [x] Plantilla Meson cross para CortexOS y validador de staging seguro.
+- [ ] Completar libc/ABI POSIX y compilar OpenRC estáticamente contra ella.
+- [ ] Instalar binarios cross-compilados: `openrc-init`, `rc-service`,
+  `rc-status` y `rc-update`.
+- [ ] Implementar espacios de direcciones, señales, TTY, montajes y runlevels.
+- [ ] Probar un servicio real bajo QEMU como PID 1.
 
-**Aceptación:** OpenRC es PID 1 y arranca/detiene un servicio real.
+**Aceptación:** OpenRC es PID 1 y arranca/detiene un servicio real. La
+existencia del punto de handoff o del submódulo no cuenta como aceptación.
 
 ## Etapa 6 — Bash real
 
