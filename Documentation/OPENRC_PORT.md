@@ -41,11 +41,13 @@ validan que todas sus páginas estén presentes, sean de usuario y tengan el
 permiso requerido. `sbrk()` también asigna y libera páginas del heap en vez de
 mover únicamente un contador.
 
-Esto está implementado y revisado por compilación estática del código fuente,
-pero no se debe presentar como aceptación de OpenRC: en este entorno no están
-disponibles `make`, el compilador x86_64 bare-metal ni QEMU para ejecutar la
-prueba de proceso. La semántica no se marca como runtime-validated hasta poder
-arrancar un ELF real.
+Esto está implementado y revisado por compilación del código fuente, pero no
+se debe presentar como aceptación de OpenRC. La máquina de trabajo local no
+trae `make`, el compilador x86_64 bare-metal ni QEMU; el check de GitHub Actions
+para este commit sí terminó correctamente con compilación del kernel, validación
+Multiboot, ISO arrancable, smoke boot QEMU y ABI/etapas tempranas. Ese smoke
+boot no ejecuta todavía el fork/exec de un ELF de usuario ni OpenRC como PID 1,
+por lo que esa semántica sigue sin marcarse como runtime-validated.
 
 ## Lo que todavía no está implementado o validado
 
@@ -72,9 +74,10 @@ Los límites actuales son:
    los scripts y utilidades auxiliares de OpenRC.
 6. **Rootfs:** la imagen CRFS actual es de solo lectura y no representa
    enlaces simbólicos, permisos, ownership ni runlevels como los espera OpenRC.
-7. **Validación:** los checks Python, layout, CRFS y contrato OpenRC son
-   verificables; la compilación y ejecución QEMU quedan pendientes en una
-   máquina con toolchain disponible.
+7. **Validación:** los checks Python, layout, CRFS y contrato OpenRC pasan
+   localmente. GitHub Actions también pasó compilación del kernel, ABI smoke,
+   etapas AArch64/ARMv7, validación Multiboot, ISO y smoke boot QEMU; falta una
+   prueba específica que ejecute `fork/exec/waitpid` y confirme OpenRC como PID 1.
 
 Completar OpenRC exige resolver esos bloqueadores y añadir una prueba QEMU que
 confirme que un binario cross-compilado es PID 1 y arranca/detiene un servicio
