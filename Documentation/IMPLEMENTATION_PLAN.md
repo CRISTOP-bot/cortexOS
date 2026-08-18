@@ -11,21 +11,30 @@ pasar a la siguiente.
 - [x] Wrappers de libc y `crt0`.
 - [x] `open/read/write/close/dup2/pipe/lseek` iniciales.
 - [ ] Compilar y arrancar un programa `hello.elf` dentro del rootfs.
-- [ ] Validar punteros de usuario antes de cada syscall.
+- [x] Validar rangos y permisos de punteros de usuario antes de las syscalls
+      que acceden a memoria.
 
 **Aceptación:** un ELF estático escribe en stdout, lee un archivo y termina
-con un código observable por `waitpid()`.
+con un código observable por `waitpid()`. Sigue pendiente la ejecución real.
 
 ## Etapa 2 — Procesos y memoria
 
-- [ ] Crear un espacio de direcciones por proceso.
-- [ ] Guardar/restaurar contexto completo al entrar y salir de una syscall.
-- [ ] Hacer que `fork()` retorne 0 al hijo y el PID al padre.
-- [ ] Heredar y cerrar descriptores correctamente.
-- [ ] Completar `execve()` y limpiar el espacio anterior.
+- [x] Crear un espacio de direcciones por proceso (`cr3` propio) con mapeo de
+      kernel y páginas de usuario separadas.
+- [x] Guardar/restaurar el frame completo de syscall/interrupción, registros,
+      `cr3` y retorno `iretq` en x86_64.
+- [x] Hacer que el modelo de `fork()` prepare retorno 0 en el hijo y PID en el
+      padre, copiando código, stack y heap a páginas independientes.
+- [ ] Heredar y cerrar descriptores correctamente: la tabla de FDs y el VFS
+      todavía son globales.
+- [x] Completar la sustitución de espacio en `execve()` para ELF estático y
+      copiar de forma segura `path/argv/envp`.
+- [x] Hacer que `sbrk()` asigne/libere páginas del heap.
+- [ ] Ejecutar y observar `fork()`, `execve()` y `waitpid()` bajo QEMU.
 
-**Aceptación:** `fork()`, `execve()` y `waitpid()` ejecutan dos procesos sin
-compartir accidentalmente su stack o código.
+**Estado exacto:** la implementación de tablas, contexto y validación está en
+el código; la aceptación runtime no está demostrada. Sigue faltando COW,
+`PIE/PT_INTERP`, FDs por proceso y la prueba QEMU.
 
 ## Etapa 3 — POSIX de archivos y libc
 
@@ -52,12 +61,15 @@ compartir accidentalmente su stack o código.
 - [x] Plantilla Meson cross para CortexOS y validador de staging seguro.
 - [ ] Completar libc/ABI POSIX y compilar OpenRC estáticamente contra ella.
 - [ ] Instalar binarios cross-compilados: `openrc-init`, `rc-service`,
-  `rc-status` y `rc-update`.
+      `rc-status` y `rc-update`.
 - [ ] Implementar espacios de direcciones, señales, TTY, montajes y runlevels.
+      El espacio de direcciones x86_64 ya está separado, pero el resto sigue
+      pendiente.
 - [ ] Probar un servicio real bajo QEMU como PID 1.
 
 **Aceptación:** OpenRC es PID 1 y arranca/detiene un servicio real. La
-existencia del punto de handoff o del submódulo no cuenta como aceptación.
+existencia del punto de handoff, el submódulo o las tablas de páginas no cuenta
+como aceptación.
 
 ## Etapa 6 — Bash real
 

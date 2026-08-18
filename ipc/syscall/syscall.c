@@ -10,8 +10,10 @@ typedef int64_t (*syscall_fn)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
 static int64_t sys_read(uint64_t fd, uint64_t buf, uint64_t count, uint64_t a4, uint64_t a5)
 {
 	(void)a4; (void)a5;
-	if (!buf || count == 0)
+	if (count == 0)
 		return 0;
+	if (!process_user_range((const void *)buf, (size_t)count, true))
+		return -1;
 	if (fd == 0)
 		return keyboard_readline_user((char *)buf, count);
 	return vfs_read_fd((int)fd, (void *)buf, (size_t)count);
@@ -20,7 +22,7 @@ static int64_t sys_read(uint64_t fd, uint64_t buf, uint64_t count, uint64_t a4, 
 static int64_t sys_write(uint64_t fd, uint64_t buf, uint64_t count, uint64_t a4, uint64_t a5)
 {
 	(void)a4; (void)a5;
-	if (!buf)
+	if (count && !process_user_range((const void *)buf, (size_t)count, false))
 		return -1;
 	if (fd <= 2) {
 		const char *src = (const char *)buf;
@@ -34,9 +36,10 @@ static int64_t sys_write(uint64_t fd, uint64_t buf, uint64_t count, uint64_t a4,
 static int64_t sys_open(uint64_t path, uint64_t flags, uint64_t a3, uint64_t a4, uint64_t a5)
 {
 	(void)a3; (void)a4; (void)a5;
-	if (!path)
+	char path_copy[256];
+	if (!process_copy_user_string(path_copy, sizeof(path_copy), (const char *)path))
 		return -1;
-	return vfs_open_fd((const char *)path, (int)flags);
+	return vfs_open_fd(path_copy, (int)flags);
 }
 
 static int64_t sys_close(uint64_t fd, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
@@ -72,12 +75,16 @@ static int64_t sys_exec(uint64_t path, uint64_t argv, uint64_t envp, uint64_t a4
 static int64_t sys_wait(uint64_t status, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
 {
 	(void)a2; (void)a3; (void)a4; (void)a5;
+	if (status && !process_user_range((const void *)status, sizeof(int), true))
+		return -1;
 	return process_wait((int *)status);
 }
 
 static int64_t sys_waitpid(uint64_t pid, uint64_t status, uint64_t options, uint64_t a4, uint64_t a5)
 {
 	(void)a4; (void)a5;
+	if (status && !process_user_range((const void *)status, sizeof(int), true))
+		return -1;
 	return process_waitpid((int)pid, (int *)status, (int)options);
 }
 
@@ -91,20 +98,16 @@ static int64_t sys_getpid(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, ui
 static int64_t sys_sbrk(uint64_t increment, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
 {
 	(void)a2; (void)a3; (void)a4; (void)a5;
-	struct process *p = process_current();
-	if (!p)
+	uint64_t old;
+	if (process_sbrk((intptr_t)increment, &old) < 0)
 		return -1;
-	uint64_t old = p->brk;
-	if (p->brk + increment > p->brk_limit)
-		return -1;
-	p->brk += increment;
 	return (int64_t)old;
 }
 
 static int64_t sys_getcwd(uint64_t buf, uint64_t size, uint64_t a3, uint64_t a4, uint64_t a5)
 {
 	(void)a3; (void)a4; (void)a5;
-	if (!buf || size == 0)
+	if (!buf || size == 0 || !process_user_range((const void *)buf, (size_t)size, true))
 		return -1;
 	const char *cwd = vfs_pwd();
 	size_t len = kstrlen(cwd);
@@ -117,9 +120,10 @@ static int64_t sys_getcwd(uint64_t buf, uint64_t size, uint64_t a3, uint64_t a4,
 static int64_t sys_chdir(uint64_t path, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
 {
 	(void)a2; (void)a3; (void)a4; (void)a5;
-	if (!path)
+	char path_copy[256];
+	if (!process_copy_user_string(path_copy, sizeof(path_copy), (const char *)path))
 		return -1;
-	return vfs_cd((const char *)path) ? 0 : -1;
+	return vfs_cd(path_copy) ? 0 : -1;
 }
 
 static int64_t sys_ps(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
@@ -153,7 +157,8 @@ static int64_t sys_pipe(uint64_t pipe_fds, uint64_t a2, uint64_t a3, uint64_t a4
 {
 	int fds[2];
 	(void)a2; (void)a3; (void)a4; (void)a5;
-	if (!pipe_fds || vfs_pipe(fds) < 0)
+	if (!pipe_fds || !process_user_range((const void *)pipe_fds, sizeof(fds), true) ||
+	    vfs_pipe(fds) < 0)
 		return -1;
 	((int *)pipe_fds)[0] = fds[0];
 	((int *)pipe_fds)[1] = fds[1];
@@ -182,11 +187,14 @@ struct cortexos_stat {
 static int64_t sys_stat(uint64_t path, uint64_t output, uint64_t a3, uint64_t a4, uint64_t a5)
 {
 	struct cortexos_stat *st = (struct cortexos_stat *)output;
+	char path_copy[256];
 	(void)a3; (void)a4; (void)a5;
-	if (!path || !st || !vfs_exists((const char *)path))
+	if (!st || !process_user_range((const void *)st, sizeof(*st), true) ||
+	    !process_copy_user_string(path_copy, sizeof(path_copy), (const char *)path) ||
+	    !vfs_exists(path_copy))
 		return -1;
-	st->st_size = vfs_get_size((const char *)path);
-	st->st_mode = vfs_is_dir((const char *)path) ? CORTEXOS_S_IFDIR : CORTEXOS_S_IFREG;
+	st->st_size = vfs_get_size(path_copy);
+	st->st_mode = vfs_is_dir(path_copy) ? CORTEXOS_S_IFDIR : CORTEXOS_S_IFREG;
 	st->st_nlink = 1;
 	st->st_uid = 0;
 	st->st_gid = 0;
