@@ -39,10 +39,15 @@ activa; los artefactos generados nunca se guardan en el árbol fuente.
 - `usr/`: crt0, libc y pruebas de espacio de usuario.
 - `rust/`: módulo Rust del kernel.
 - `rootfs/`: contenido empaquetado en el módulo raíz.
-- `config/`: configuración de GRUB y de la ISO.
+- `config/`: configuración de GRUB, la ISO y el cross-build de OpenRC.
+- `config/openrc/`: plantillas Meson para compilar OpenRC contra CortexOS.
 - `tools/`: constructor de rootfs, instalador, Archinstall adaptado, LCP,
   medios y setup del host.
-- `third_party/`: únicamente submódulos externos y sus licencias.
+- `tools/build/openrc.py`: validación y staging de binarios OpenRC ya compilados.
+- `scripts/linux/check-openrc.py`: validación del contrato de fuente y staging.
+- `rootfs/etc/conf.d/openrc`: configuración base de OpenRC dentro del rootfs.
+- `third_party/`: únicamente submódulos externos y sus licencias, incluido
+  el commit fijado de OpenRC.
 - `LICENSES/`: avisos de copyright y licencias del proyecto y sus componentes.
 - `certs/`, `crypto/`, `io_uring/`, `samples/`, `scripts/`, `security/`,
   `sound/` y `virt/`: puntos de extensión reservados, con README mientras no
@@ -56,6 +61,8 @@ activa; los artefactos generados nunca se guardan en el árbol fuente.
 kernel/ + arch/x86_64/ + drivers/ + subsistemas/ ──> build/kernel.bin
 rootfs/ + tools/build/rootfs.py ──> build/iso/boot/rootfs.bin
 config/grub/ + build/* + tools/installer/ ──> build/iso/
+third_party/openrc/ + config/openrc/ + usr/ libc ──> OpenRC cross binaries
+OpenRC binaries + tools/build/openrc.py ──> rootfs/sbin/ and rootfs/usr/sbin/
 build/iso/ + grub-mkrescue ──> dist/os.iso
 ```
 
