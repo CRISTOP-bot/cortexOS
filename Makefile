@@ -50,6 +50,11 @@ OPENRC_BIN_DIR   ?= $(BUILD_DIR)/openrc/bin
 OPENRC_STAGE_DIR ?= $(ROOTFS_DIR)
 FASTFETCH_SRC_DIR = third_party/fastfetch
 FASTFETCH_COMMIT  = a0452b8323aaa9d3b5b6ded435ed6660cee2bbb9
+DOOM_SRC_DIR      = third_party/doom
+DOOM_COMMIT       = a77dfb96cb91780ca334d0d4cfd86957558007e0
+DOOM_HOST_CC      ?= gcc
+DOOM_PLATFORM_BUILD = $(BUILD_DIR)/doom-platform
+DOOM_PLATFORM_TEST  = $(DOOM_PLATFORM_BUILD)/check
 
 KERNEL      = $(BUILD_DIR)/kernel.bin
 ROOTFS      = $(ISO_DIR)/boot/rootfs.bin
@@ -195,6 +200,30 @@ user-test-hello:
 user-test-posix:
 	$(MAKE) -C usr CC="$(CC)" test-posix
 
+# Doom source is kept as an upstream GPLv2 submodule. This check intentionally
+# does not download an IWAD or attempt to call the incomplete engine port.
+doom-source:
+	@test -f $(DOOM_SRC_DIR)/LICENSE.TXT
+	@test -f $(DOOM_SRC_DIR)/linuxdoom-1.10/d_main.c
+	@test "$$(git -C $(DOOM_SRC_DIR) rev-parse HEAD)" = "$(DOOM_COMMIT)"
+	@grep -qi 'GNU GENERAL PUBLIC LICENSE' $(DOOM_SRC_DIR)/LICENSE.TXT
+	@echo "  Original Doom GPLv2 source available at $(DOOM_SRC_DIR) ($(DOOM_COMMIT))"
+	@echo "  IWAD/PWAD data is deliberately not present; supply compatible data separately"
+
+$(DOOM_PLATFORM_BUILD):
+	mkdir -p $@
+
+$(DOOM_PLATFORM_TEST): usr/doom/cortexos_platform.c usr/doom/cortexos_platform.h tools/validate/doom_platform_test.c | $(DOOM_PLATFORM_BUILD)
+	$(DOOM_HOST_CC) -std=c99 -Wall -Wextra -Werror -Iusr/doom \
+		usr/doom/cortexos_platform.c tools/validate/doom_platform_test.c -o $@
+
+doom-platform-check: $(DOOM_PLATFORM_TEST)
+	$(DOOM_PLATFORM_TEST)
+
+# The combined check validates only source provenance and the platform boundary;
+# it is not a playable-game target.
+doom-check: doom-source doom-platform-check
+
 # First independently buildable AArch64 stage. This does not yet build the
 # x86_64-oriented top-level kernel subsystems; it validates the ARM64 boot and UART path.
 aarch64-early: $(AARCH64_EARLY)
@@ -312,5 +341,5 @@ fastfetch-source:
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)
 
-.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix aarch64-early aarch64-run armv7-early armv7-run openrc-source openrc-stage check-openrc bash-source archinstall-source nucleos-archinstall check-layout check-python verify-crfs check-live-ram fastfetch-source clean installer installer-usb
+.PHONY: all iso echo-iso run check-arch arch-list user-libc user-test-hello user-test-posix doom-source doom-platform-check doom-check aarch64-early aarch64-run armv7-early armv7-run openrc-source openrc-stage check-openrc bash-source archinstall-source nucleos-archinstall check-layout check-python verify-crfs check-live-ram fastfetch-source clean installer installer-usb
 

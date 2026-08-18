@@ -36,7 +36,7 @@ activa; los artefactos generados nunca se guardan en el árbol fuente.
 - `net/`: red del kernel.
 - `lib/`: utilidades internas del kernel.
 - `include/`: headers públicos del ABI de usuario.
-- `usr/`: crt0, libc y pruebas de espacio de usuario.
+- `usr/`: crt0, libc, Doom platform boundary, and userspace tests.
 - `rust/`: módulo Rust del kernel.
 - `rootfs/`: contenido empaquetado en el módulo raíz.
 - `config/`: configuración de GRUB, la ISO y el cross-build de OpenRC.
@@ -47,7 +47,7 @@ activa; los artefactos generados nunca se guardan en el árbol fuente.
 - `scripts/linux/check-openrc.py`: validación del contrato de fuente y staging.
 - `rootfs/etc/conf.d/openrc`: configuración base de OpenRC dentro del rootfs.
 - `third_party/`: únicamente submódulos externos y sus licencias, incluido
-  el commit fijado de OpenRC.
+  el commit fijado de OpenRC y el source-only Doom submodule. No game data.
 - `LICENSES/`: avisos de copyright y licencias del proyecto y sus componentes.
 - `certs/`, `crypto/`, `io_uring/`, `samples/`, `scripts/`, `security/`,
   `sound/` y `virt/`: puntos de extensión reservados, con README mientras no

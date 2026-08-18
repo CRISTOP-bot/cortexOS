@@ -9,6 +9,7 @@ licenses.
 | GNU Bash 5.3 | `third_party/bash/` | GPL-3.0 | Source mirror pinned by the Bash integration. |
 | OpenRC | `third_party/openrc/` | BSD-2-Clause | Official OpenRC source pinned for the CortexOS port. |
 | Fastfetch | `third_party/fastfetch/` | MIT | Official Fastfetch source pinned for the CortexOS port. |
+| Original id Software Doom source | `third_party/doom/` | GPLv2 | Source-only submodule pinned for the CortexOS port; no IWAD/PWAD game data is included. |
 | Archinstall | `tools/archinstall/upstream/` | GPL-3.0-only | Upstream installer sources vendored as the basis for the CortexOS adapter. |
 
 The authoritative notices, copyright statements, and full license texts are

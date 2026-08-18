@@ -43,6 +43,9 @@ Not complete:
 * A full ELF loader and broad POSIX compatibility.
 * TTYs, signals, job control, dynamic linking, and a complete userspace runtime.
 * Bash, OpenRC, and Fastfetch as working CortexOS binaries.
+* A playable Doom binary. The GPLv2 engine source is pinned as a submodule, but
+  the CortexOS platform boundary is not yet wired to userspace; no IWAD/game
+  data is included and a compatible IWAD must be supplied separately.
 * An integrated ARM64 CortexOS kernel and rootfs image.
 * Complete ARMv7 and i386 ports.
 
@@ -123,6 +126,7 @@ Development and planning:
 
 * Documentation/IMPLEMENTATION_PLAN.md - current implementation roadmap.
 * Documentation/USERSPACE_PORT.md - userspace, libc, ELF, and ABI limitations.
+* Documentation/DOOM_PORT.md - Doom milestone status, controls, licensing, and blockers.
 
 Integrated projects:
 
