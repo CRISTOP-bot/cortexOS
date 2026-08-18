@@ -57,8 +57,19 @@ bool elf_load_image(const void *image, size_t image_size,
 		uint64_t segment_end;
 		unsigned char *destination;
 
+		/* CortexOS currently has no dynamic linker.  Refuse PT_INTERP
+		 * explicitly instead of silently loading an unusable image. */
+		if (ph->type == ELF_PROGRAM_INTERP)
+			return false;
 		if (ph->type != ELF_PROGRAM_LOAD)
 			continue;
+		if (ph->file_size == 0 && ph->memory_size == 0)
+			continue;
+		if (ph->alignment > 1 && (ph->alignment & (ph->alignment - 1)) != 0)
+			return false;
+		if (ph->alignment > 1 &&
+			(ph->virtual_address % ph->alignment) != (ph->offset % ph->alignment))
+			return false;
 		if (ph->memory_size < ph->file_size ||
 		    !elf_range_ok(ph->offset, ph->file_size, image_size))
 			return false;

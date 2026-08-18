@@ -5,6 +5,15 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "pmm.h"
+#include "vfs.h"
+
+#define PROCESS_SIG_MAX 32
+#define PROCESS_SIGBIT(sig) (1U << ((sig) - 1))
+#define PROCESS_SIGHUP 1
+#define PROCESS_SIGINT 2
+#define PROCESS_SIGKILL 9
+#define PROCESS_SIGTERM 15
+#define PROCESS_SIGCHLD 17
 
 #define MAX_PROCESSES 32
 #define PROCESS_NAME_SIZE 64
@@ -50,6 +59,15 @@ struct process {
 	uint64_t brk_limit;
 	int exit_code;
 	int wait_exit;
+	/* POSIX process identity and signal state. */
+	int sid;
+	int pgid;
+	int tty_pgid;
+	uint32_t pending_signals;
+	uint32_t blocked_signals;
+	uintptr_t signal_handlers[PROCESS_SIG_MAX];
+	unsigned long tty_termios[10];
+	struct vfs_fd_table fd_table;
 };
 
 void process_init(void);
@@ -63,6 +81,18 @@ int process_exec(const char *path, const char *const *argv,
 #define PROCESS_WNOHANG 1
 int process_wait(int *status);
 int process_waitpid(int pid, int *status, int options);
+int process_kill(int pid, int sig);
+int process_sigaction(int sig, uintptr_t handler, unsigned long flags,
+                      unsigned long mask, uintptr_t *old_handler,
+                      unsigned long *old_flags, unsigned long *old_mask);
+int process_setsid(void);
+int process_getsid(int pid);
+int process_setpgid(int pid, int pgid);
+int process_getpgrp(void);
+int process_tty_get(void *termios_data, size_t size);
+int process_tty_set(const void *termios_data, size_t size);
+int process_tty_getpgrp(void);
+int process_tty_setpgrp(int pgid);
 struct process *process_current(void);
 void process_list(void);
 void process_schedule(void);

@@ -25,16 +25,21 @@ con un código observable por `waitpid()`. Sigue pendiente la ejecución real.
       `cr3` y retorno `iretq` en x86_64.
 - [x] Hacer que el modelo de `fork()` prepare retorno 0 en el hijo y PID en el
       padre, copiando código, stack y heap a páginas independientes.
-- [ ] Heredar y cerrar descriptores correctamente: la tabla de FDs y el VFS
-      todavía son globales.
+- [x] Heredar y cerrar descriptores correctamente: cada proceso tiene una
+      tabla de FDs; `fork()` clona entradas y referencias de pipes y `exit()`
+      las cierra.
+- [ ] Compartir open-file descriptions/offsets de archivos regulares entre
+      `dup()`/`fork()` como exige POSIX.
 - [x] Completar la sustitución de espacio en `execve()` para ELF estático y
       copiar de forma segura `path/argv/envp`.
 - [x] Hacer que `sbrk()` asigne/libere páginas del heap.
-- [ ] Ejecutar y observar `fork()`, `execve()` y `waitpid()` bajo QEMU.
+- [ ] Ejecutar y observar `fork()`, `execve()` y `waitpid()` bajo QEMU; no hay
+      aceptación runtime en esta rama.
 
 **Estado exacto:** la implementación de tablas, contexto y validación está en
-el código; la aceptación runtime no está demostrada. Sigue faltando COW,
-`PIE/PT_INTERP`, FDs por proceso y la prueba QEMU.
+el código; la aceptación runtime no está demostrada. La copia de memoria de
+`fork()` es no-COW (copias físicas independientes), y el cargador rechaza
+`ET_DYN`/`PT_INTERP`; siguen faltando COW, PIE/dynamic linker y la prueba QEMU.
 
 ## Etapa 3 — POSIX de archivos y libc
 
@@ -48,8 +53,10 @@ el código; la aceptación runtime no está demostrada. Sigue faltando COW,
 ## Etapa 4 — TTY y señales
 
 - [ ] `termios`, `ioctl`, `tcgetattr` y `tcsetattr`.
-- [ ] `SIGINT`, `SIGTERM`, `SIGCHLD`, `SIGTSTP` y `kill`.
-- [ ] Sesiones, grupos de procesos y control de trabajos.
+- [x] Syscalls `SIGTERM`/`SIGKILL`/`SIGCHLD`, `kill` y almacenamiento de
+      disposiciones mediante `sigaction`; falta entrega de handlers/`sigreturn`.
+- [x] Primitivas mínimas de sesiones, grupos de procesos, `termios` e `ioctl`.
+- [ ] `SIGINT`, `SIGTSTP`, disciplina de línea y control de trabajos.
 
 **Aceptación:** un shell interactivo responde a Ctrl+C/Ctrl+Z y soporta
 `jobs`, `fg` y `bg`.
@@ -62,9 +69,10 @@ el código; la aceptación runtime no está demostrada. Sigue faltando COW,
 - [ ] Completar libc/ABI POSIX y compilar OpenRC estáticamente contra ella.
 - [ ] Instalar binarios cross-compilados: `openrc-init`, `rc-service`,
       `rc-status` y `rc-update`.
-- [ ] Implementar espacios de direcciones, señales, TTY, montajes y runlevels.
-      El espacio de direcciones x86_64 ya está separado, pero el resto sigue
-      pendiente.
+- [ ] Implementar COW/PIE/dynamic linker, entrega completa de señales, TTY
+      real, contenido `/proc`/`/sys`, montajes persistentes y runlevels.
+      Esta rama ya tiene tablas de direcciones separadas (no-COW), tablas de
+      FDs por proceso y registro mínimo de montajes.
 - [ ] Probar un servicio real bajo QEMU como PID 1.
 
 **Aceptación:** OpenRC es PID 1 y arranca/detiene un servicio real. La

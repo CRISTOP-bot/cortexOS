@@ -1,4 +1,5 @@
 #include "vfs.h"
+#include "process.h"
 #include "console.h"
 #include "fs.h"
 #include "kstring.h"
@@ -31,10 +32,10 @@ static char data_store[VFS_DATA_STORE_SIZE];
 static size_t data_used;
 static int root_node = -1;
 static int cwd_node = -1;
+#define VFS_MAX_MOUNTS 8
+struct vfs_mount_state { bool used; char target[128]; char fstype[16]; };
+static struct vfs_mount_state mounts[VFS_MAX_MOUNTS];
 
-#define VFS_MAX_FDS 64
-#define VFS_MAX_PIPES 16
-#define VFS_PIPE_SIZE 4096
 struct vfs_pipe_state {
 	bool used;
 	unsigned char data[VFS_PIPE_SIZE];
@@ -43,17 +44,14 @@ struct vfs_pipe_state {
 	int readers;
 	int writers;
 };
-struct vfs_fd_state {
-	bool used;
-	int node;
-	size_t offset;
-	int flags;
-	int pipe_id;
-	bool pipe_read;
-	bool pipe_write;
-};
-static struct vfs_fd_state fd_table[VFS_MAX_FDS];
+static struct vfs_fd_table fallback_fd_table;
 static struct vfs_pipe_state pipe_table[VFS_MAX_PIPES];
+static struct vfs_fd_table *active_fd_table(void)
+{
+	struct process *process = process_current();
+	return process ? &process->fd_table : &fallback_fd_table;
+}
+#define fd_table (active_fd_table()->fds)
 
 static int vfs_new_node(void)
 {
@@ -252,6 +250,62 @@ static void vfs_build_path(int node, char *out, size_t max_len)
 	out[i] = '\0';
 }
 
+void vfs_fd_table_init(struct vfs_fd_table *table)
+{
+	if (!table) return;
+	for (int i = 0; i < VFS_MAX_FDS; ++i) {
+		table->fds[i].used = false;
+		table->fds[i].node = -1;
+		table->fds[i].offset = 0;
+		table->fds[i].flags = 0;
+		table->fds[i].pipe_id = -1;
+		table->fds[i].pipe_read = false;
+		table->fds[i].pipe_write = false;
+	}
+}
+
+int vfs_fd_table_clone(struct vfs_fd_table *dst,
+		const struct vfs_fd_table *src)
+{
+	if (!dst || !src) return -1;
+	*dst = *src;
+	for (int i = 0; i < VFS_MAX_FDS; ++i) {
+		if (!dst->fds[i].used || dst->fds[i].pipe_id < 0) continue;
+		if (dst->fds[i].pipe_id >= VFS_MAX_PIPES ||
+			!pipe_table[dst->fds[i].pipe_id].used) {
+			vfs_fd_table_init(dst);
+			return -1;
+		}
+		if (dst->fds[i].pipe_read) ++pipe_table[dst->fds[i].pipe_id].readers;
+		if (dst->fds[i].pipe_write) ++pipe_table[dst->fds[i].pipe_id].writers;
+	}
+	return 0;
+}
+
+void vfs_fd_table_close_all(struct vfs_fd_table *table)
+{
+	if (!table) return;
+	/* close through the table directly: this helper is also used while a
+	 * zombie is being reaped, when it is not the current process. */
+	for (int i = 3; i < VFS_MAX_FDS; ++i) {
+		struct vfs_fd_state *state = &table->fds[i];
+		if (!state->used) continue;
+		if (state->pipe_id >= 0 && state->pipe_id < VFS_MAX_PIPES &&
+			pipe_table[state->pipe_id].used) {
+			if (state->pipe_read && pipe_table[state->pipe_id].readers > 0)
+				--pipe_table[state->pipe_id].readers;
+			if (state->pipe_write && pipe_table[state->pipe_id].writers > 0)
+				--pipe_table[state->pipe_id].writers;
+			if (!pipe_table[state->pipe_id].readers &&
+				!pipe_table[state->pipe_id].writers)
+				pipe_table[state->pipe_id].used = false;
+		}
+		state->used = false;
+		state->node = -1;
+		state->pipe_id = -1;
+	}
+}
+
 bool vfs_init(void)
 {
 	for (int i = 0; i < VFS_MAX_NODES; ++i) {
@@ -261,15 +315,7 @@ bool vfs_init(void)
 		nodes[i].own_data = 0;
 	}
 	data_used = 0;
-	for (int i = 0; i < VFS_MAX_FDS; ++i) {
-		fd_table[i].used = false;
-		fd_table[i].node = -1;
-		fd_table[i].offset = 0;
-		fd_table[i].flags = 0;
-		fd_table[i].pipe_id = -1;
-		fd_table[i].pipe_read = false;
-		fd_table[i].pipe_write = false;
-	}
+	vfs_fd_table_init(&fallback_fd_table);
 	for (int i = 0; i < VFS_MAX_PIPES; ++i) {
 		pipe_table[i].used = false;
 		pipe_table[i].read_offset = 0;
@@ -359,6 +405,7 @@ bool vfs_init(void)
 			}
 		}
 	}
+	for (int i = 0; i < VFS_MAX_MOUNTS; ++i) mounts[i].used = false;
 	return true;
 }
 
@@ -620,6 +667,41 @@ bool vfs_stat(const char *path)
 		console_print("\n");
 	}
 	return true;
+}
+
+int vfs_mount(const char *source, const char *target, const char *fstype,
+		unsigned long flags)
+{
+	(void)source; (void)flags;
+	if (!target || !fstype || !vfs_is_dir(target)) return -1;
+	if (kstrcmp(fstype, "proc") != 0 && kstrcmp(fstype, "sysfs") != 0 &&
+		kstrcmp(fstype, "sys") != 0) return -1;
+	for (int i = 0; i < VFS_MAX_MOUNTS; ++i) {
+		if (mounts[i].used && kstrcmp(mounts[i].target, target) == 0) return -1;
+	}
+	for (int i = 0; i < VFS_MAX_MOUNTS; ++i) if (!mounts[i].used) {
+		mounts[i].used = true;
+		kstrcpy(mounts[i].target, target, sizeof(mounts[i].target));
+		kstrcpy(mounts[i].fstype, fstype, sizeof(mounts[i].fstype));
+		return 0;
+	}
+	return -1;
+}
+
+int vfs_umount(const char *target)
+{
+	if (!target) return -1;
+	for (int i = 0; i < VFS_MAX_MOUNTS; ++i) if (mounts[i].used &&
+		kstrcmp(mounts[i].target, target) == 0) { mounts[i].used = false; return 0; }
+	return -1;
+}
+
+bool vfs_is_mounted(const char *target)
+{
+	if (!target) return false;
+	for (int i = 0; i < VFS_MAX_MOUNTS; ++i)
+		if (mounts[i].used && kstrcmp(mounts[i].target, target) == 0) return true;
+	return false;
 }
 
 /* User-space descriptor operations. Standard input/output/error remain

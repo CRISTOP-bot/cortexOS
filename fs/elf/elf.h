@@ -14,6 +14,10 @@
 #define ELF_TYPE_DYN 3
 #define ELF_MACHINE_X86_64 62
 #define ELF_PROGRAM_LOAD 1
+#define ELF_PROGRAM_INTERP 3
+#define ELF_PF_X 1
+#define ELF_PF_W 2
+#define ELF_PF_R 4
 
 struct elf64_header {
 	unsigned char ident[ELF_IDENT_SIZE];
