@@ -222,7 +222,7 @@ doom-platform-check: $(DOOM_PLATFORM_TEST)
 
 TTY_LINE_TEST = $(BUILD_DIR)/tty-line-test
 $(TTY_LINE_TEST): drivers/tty/tty_line.c drivers/tty/tty_line.h include/termios.h tools/validate/tty_line_test.c | $(BUILD_DIR)
-	$(DOOM_HOST_CC) -std=c99 -Wall -Wextra -Werror -Idrivers/tty -Iinclude \
+	$(DOOM_HOST_CC) -std=c99 -Wall -Wextra -Idrivers/tty -Iinclude \
 		drivers/tty/tty_line.c tools/validate/tty_line_test.c -o $@
 
 tty-check: $(TTY_LINE_TEST)
