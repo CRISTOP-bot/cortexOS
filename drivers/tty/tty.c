@@ -43,7 +43,8 @@ int tty_read(int tty, void *buffer, size_t count)
 
 int tty_write(int tty, const void *buffer, size_t count)
 {
-	if (tty != CORTEXOS_TTY_CONSOLE || (!buffer && count)) return -1;
+	if (count == 0) return 0;
+	if (tty != CORTEXOS_TTY_CONSOLE || !buffer) return -1;
 	return tty_line_write(&console_tty, buffer, count, tty_console_emit, 0);
 }
 
