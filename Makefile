@@ -34,23 +34,23 @@ endif
 BUILD_DIR   = build
 DIST_DIR    = dist
 ISO_DIR     = $(BUILD_DIR)/iso
-KERNEL_DIR  = kernel
+KERNEL_DIR  = core/kernel
 ARCH_DIR    = arch/$(ARCH)
-KERNEL_SRC_DIRS = kernel/core kernel/apps kernel/console kernel/graphics kernel/system kernel/services drivers/tty block/ata block/partition fs/core fs/crfs fs/elf fs/ext2 init/core init/openrc ipc/process ipc/syscall mm/physical mm/virtual mm/heap net/core drivers/console drivers/input drivers/interrupts drivers/pci drivers/serial lib/core lib/string
-CONFIG_DIR  = config
+KERNEL_SRC_DIRS = core/kernel/core core/kernel/apps core/kernel/console core/kernel/graphics core/kernel/system core/kernel/services hw/drivers/tty hw/block/ata hw/block/partition core/fs/core core/fs/crfs core/fs/elf core/fs/ext2 boot/core boot/openrc core/ipc/process core/ipc/syscall core/mm/physical core/mm/virtual core/mm/heap hw/net/core hw/drivers/console hw/drivers/input hw/drivers/interrupts hw/drivers/pci hw/drivers/serial core/lib core/lib/string
+CONFIG_DIR  = project/config
 GRUB_DIR    = $(CONFIG_DIR)/grub
-ROOTFS_DIR  = rootfs
-TOOLS_DIR   = tools
+ROOTFS_DIR  = userspace/rootfs
+TOOLS_DIR   = project/tools
 
 PYTHON      ?= python3
-BASH_SRC_DIR    = third_party/bash
-OPENRC_SRC_DIR  = third_party/openrc
+BASH_SRC_DIR    = project/third_party/bash
+OPENRC_SRC_DIR  = project/third_party/openrc
 OPENRC_COMMIT   = 04d75bc192486fee932e4e602bdfffc32a0d8b96
 OPENRC_BIN_DIR   ?= $(BUILD_DIR)/openrc/bin
 OPENRC_STAGE_DIR ?= $(ROOTFS_DIR)
-FASTFETCH_SRC_DIR = third_party/fastfetch
+FASTFETCH_SRC_DIR = project/third_party/fastfetch
 FASTFETCH_COMMIT  = a0452b8323aaa9d3b5b6ded435ed6660cee2bbb9
-DOOM_SRC_DIR      = third_party/doom
+DOOM_SRC_DIR      = project/third_party/doom
 DOOM_COMMIT       = a77dfb96cb91780ca334d0d4cfd86957558007e0
 DOOM_HOST_CC      ?= gcc
 DOOM_PLATFORM_BUILD = $(BUILD_DIR)/doom-platform
@@ -79,7 +79,7 @@ ARMV7_EARLY = $(ARMV7_BUILD)/early.elf
 ARMV7_DTB = $(ARMV7_BUILD)/virt.dtb
 ARMV7_DTB_ADDRESS = 0x47f00000
 
-KERNEL_INCLUDES = $(foreach dir,$(KERNEL_SRC_DIRS),-I $(dir)) -I kernel/include -I include -I rust/include -I $(ARCH_DIR)
+KERNEL_INCLUDES = $(foreach dir,$(KERNEL_SRC_DIRS),-I $(dir)) -I core/kernel/include -I userspace/include -I project/rust/include -I $(ARCH_DIR)
 CFLAGS  = -ffreestanding -O2 -Wall -Wextra -m64 -nostdlib -std=c99 $(KERNEL_INCLUDES) -fno-stack-protector -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -fno-strict-aliasing -mno-red-zone -mcmodel=kernel -fno-pic -fno-pie
 ASFLAGS = -m64 -ffreestanding
 LDFLAGS = -m elf_x86_64 -nostdlib
@@ -88,7 +88,7 @@ RUSTC       = rustc
 RUST_TARGET = x86_64-unknown-linux-gnu
 RUSTFLAGS   = -C no-redzone=yes -C code-model=kernel -C relocation-model=static
 RUSTFLAGS  += -C panic=abort -C debuginfo=0 -C opt-level=2
-RUST_SRC    = rust/kernel/rust_kernel.rs
+RUST_SRC    = project/rust/kernel/rust_kernel.rs
 RUST_OBJ    = $(BUILD_DIR)/rust_kernel.o
 
 # Every top-level kernel subsystem owns its sources. Adding a C file to one of
@@ -101,13 +101,13 @@ ARCH_OBJS   = $(BUILD_DIR)/arch_asm_utils.o \
 OBJS        = $(KERNEL_OBJS) $(ARCH_OBJS) \
               $(BUILD_DIR)/boot_entry.o $(RUST_OBJ)
 
-INSTALLER_FILES = tools/installer/__init__.py \
-                  tools/installer/ui.py \
-                  tools/installer/disk.py \
-                  tools/installer/config.py \
-                  tools/installer/install.py \
-                  tools/installer/nucleos-install
-LCP_FILES      = tools/lcp/lcp.py tools/lcp/main_repo.json
+INSTALLER_FILES = project/tools/installer/__init__.py \
+                  project/tools/installer/ui.py \
+                  project/tools/installer/disk.py \
+                  project/tools/installer/config.py \
+                  project/tools/installer/install.py \
+                  project/tools/installer/nucleos-install
+LCP_FILES      = project/tools/lcp/lcp.py project/tools/lcp/main_repo.json
 
 all: check-arch $(KERNEL)
 
@@ -115,7 +115,7 @@ check-arch:
 ifeq ($(ARCH_SUPPORTED),yes)
 	@echo "  Arquitectura seleccionada: $(ARCH)"
 else
-	$(error ARCH=$(ARCH) todavía no tiene un port arrancable; consulta Documentation/ARCHITECTURES.md)
+	$(error ARCH=$(ARCH) todavía no tiene un port arrancable; consulta project/Documentation/ARCHITECTURES.md)
 endif
 
 arch-list:
@@ -152,7 +152,7 @@ $(KERNEL): $(OBJS) $(LINKER) | $(BUILD_DIR)
 
 $(ISO_DIR)/installer: $(INSTALLER_FILES) $(LCP_FILES) | $(ISO_DIR)/boot/grub
 	mkdir -p $@
-	cp -r tools/installer/. $@/
+	cp -r project/tools/installer/. $@/
 	cp $(LCP_FILES) $@/
 	rm -rf $@/__pycache__
 	@echo "  Instalador y LCP copiados al ISO"
@@ -178,7 +178,7 @@ installer:
 	@echo "    2. Ejecuta:           sudo python /mnt/installer/nucleos-install"
 	@echo ""
 	@echo "  Para ejecutar el instalador LOCALMENTE:"
-	@echo "    sudo tools/installer/nucleos-install"
+	@echo "    sudo project/tools/installer/nucleos-install"
 	@echo ""
 	@echo "  Debes compilar primero: make echo-iso"
 	@echo ""
@@ -186,19 +186,19 @@ installer:
 installer-usb:
 	@echo ""
 	@echo "  Crear USB booteable con instalador:"
-	@echo "    sudo bash tools/media/make-usb.sh /dev/sdX"
+	@echo "    sudo bash project/tools/media/make-usb.sh /dev/sdX"
 	@echo ""
 	@echo "  ADVERTENCIA: Esto BORRA todos los datos del dispositivo"
 	@echo ""
 
 user-libc:
-	$(MAKE) -C usr CC="$(CC)"
+	$(MAKE) -C userspace/usr CC="$(CC)"
 
 user-test-hello:
-	$(MAKE) -C usr CC="$(CC)" test-hello
+	$(MAKE) -C userspace/usr CC="$(CC)" test-hello
 
 user-test-posix:
-	$(MAKE) -C usr CC="$(CC)" test-posix
+	$(MAKE) -C userspace/usr CC="$(CC)" test-posix
 
 # Doom source is kept as an upstream GPLv2 submodule. This check intentionally
 # does not download an IWAD or attempt to call the incomplete engine port.
@@ -213,17 +213,17 @@ doom-source:
 $(DOOM_PLATFORM_BUILD):
 	mkdir -p $@
 
-$(DOOM_PLATFORM_TEST): usr/doom/cortexos_platform.c usr/doom/cortexos_platform.h tools/validate/doom_platform_test.c | $(DOOM_PLATFORM_BUILD)
-	$(DOOM_HOST_CC) -std=c99 -Wall -Wextra -Werror -Iusr/doom \
-		usr/doom/cortexos_platform.c tools/validate/doom_platform_test.c -o $@
+$(DOOM_PLATFORM_TEST): userspace/usr/doom/cortexos_platform.c userspace/usr/doom/cortexos_platform.h project/tools/validate/doom_platform_test.c | $(DOOM_PLATFORM_BUILD)
+	$(DOOM_HOST_CC) -std=c99 -Wall -Wextra -Werror -Iuserspace/usr/doom \
+		userspace/usr/doom/cortexos_platform.c project/tools/validate/doom_platform_test.c -o $@
 
 doom-platform-check: $(DOOM_PLATFORM_TEST)
 	$(DOOM_PLATFORM_TEST)
 
 TTY_LINE_TEST = $(BUILD_DIR)/tty-line-test
-$(TTY_LINE_TEST): drivers/tty/tty_line.c drivers/tty/tty_line.h include/termios.h tools/validate/tty_line_test.c | $(BUILD_DIR)
-	$(DOOM_HOST_CC) -std=c99 -Wall -Wextra -Idrivers/tty -Iinclude \
-		drivers/tty/tty_line.c tools/validate/tty_line_test.c -o $@
+$(TTY_LINE_TEST): hw/drivers/tty/tty_line.c hw/drivers/tty/tty_line.h userspace/include/termios.h project/tools/validate/tty_line_test.c | $(BUILD_DIR)
+	$(DOOM_HOST_CC) -std=c99 -Wall -Wextra -Ihw/drivers/tty -Iuserspace/include \
+		hw/drivers/tty/tty_line.c project/tools/validate/tty_line_test.c -o $@
 
 tty-check: $(TTY_LINE_TEST)
 	$(TTY_LINE_TEST)
@@ -302,15 +302,15 @@ openrc-source:
 	@test -f $(OPENRC_SRC_DIR)/src/rc-service/rc-service.c
 	@test "$$(git -C $(OPENRC_SRC_DIR) rev-parse HEAD)" = "$(OPENRC_COMMIT)"
 	@echo "  Fuente oficial de OpenRC disponible en $(OPENRC_SRC_DIR) ($(OPENRC_COMMIT))"
-	@echo "  El submódulo se mantiene fijado al commit oficial documentado en Documentation/OPENRC_PORT.md"
+	@echo "  El submódulo se mantiene fijado al commit oficial documentado en project/Documentation/OPENRC_PORT.md"
 
 # Stage only binaries produced by a CortexOS cross build. The validator rejects
 # host Linux binaries, PIE, dynamic interpreters, and non-x86_64 images.
 openrc-stage: openrc-source
-	$(PYTHON) tools/build/openrc.py --bin-dir "$(OPENRC_BIN_DIR)" --rootfs "$(OPENRC_STAGE_DIR)"
+	$(PYTHON) project/tools/build/openrc.py --bin-dir "$(OPENRC_BIN_DIR)" --rootfs "$(OPENRC_STAGE_DIR)"
 
 check-openrc:
-	$(PYTHON) scripts/linux/check-openrc.py
+	$(PYTHON) project/scripts/linux/check-openrc.py
 
 bash-source:
 	@test -f $(BASH_SRC_DIR)/configure.ac
@@ -320,24 +320,24 @@ bash-source:
 	@echo "  Pendiente: libc/ABI POSIX y cargador ELF para compilarlo para CortexOS"
 
 archinstall-source:
-	@test -f tools/archinstall/upstream/archinstall/main.py
-	@test -f tools/archinstall/nucleos.py
+	@test -f project/tools/archinstall/upstream/archinstall/main.py
+	@test -f project/tools/archinstall/nucleos.py
 	@echo "  Archinstall upstream y adaptador CortexOS disponibles"
 
 nucleos-archinstall:
-	python3 tools/archinstall/nucleos.py --help
+	python3 project/tools/archinstall/nucleos.py --help
 
 check-layout:
-	$(PYTHON) scripts/linux/check-layout.py
+	$(PYTHON) project/scripts/linux/check-layout.py
 
 check-python:
-	$(PYTHON) scripts/linux/check-python.py
+	$(PYTHON) project/scripts/linux/check-python.py
 
 verify-crfs: $(ROOTFS)
-	$(PYTHON) scripts/linux/verify-crfs.py $(ROOTFS)
+	$(PYTHON) project/scripts/linux/verify-crfs.py $(ROOTFS)
 
 check-live-ram:
-	$(PYTHON) scripts/linux/check-live-ram.py qemu-serial.log
+	$(PYTHON) project/scripts/linux/check-live-ram.py qemu-serial.log
 
 fastfetch-source:
 	@test -f $(FASTFETCH_SRC_DIR)/CMakeLists.txt
