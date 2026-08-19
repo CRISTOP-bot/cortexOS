@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "../../usr/doom/cortexos_platform.h"
+#include "../../../userspace/usr/doom/cortexos_platform.h"
 
 static int expect_action(unsigned short scancode,
                          enum cortexos_doom_action expected)

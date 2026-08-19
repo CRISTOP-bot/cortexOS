@@ -192,13 +192,13 @@ installer-usb:
 	@echo ""
 
 user-libc:
-	$(MAKE) -C usr CC="$(CC)"
+	$(MAKE) -C userspace/usr CC="$(CC)"
 
 user-test-hello:
-	$(MAKE) -C usr CC="$(CC)" test-hello
+	$(MAKE) -C userspace/usr CC="$(CC)" test-hello
 
 user-test-posix:
-	$(MAKE) -C usr CC="$(CC)" test-posix
+	$(MAKE) -C userspace/usr CC="$(CC)" test-posix
 
 # Doom source is kept as an upstream GPLv2 submodule. This check intentionally
 # does not download an IWAD or attempt to call the incomplete engine port.
@@ -214,7 +214,7 @@ $(DOOM_PLATFORM_BUILD):
 	mkdir -p $@
 
 $(DOOM_PLATFORM_TEST): userspace/usr/doom/cortexos_platform.c userspace/usr/doom/cortexos_platform.h project/tools/validate/doom_platform_test.c | $(DOOM_PLATFORM_BUILD)
-	$(DOOM_HOST_CC) -std=c99 -Wall -Wextra -Werror -Iusr/doom \
+	$(DOOM_HOST_CC) -std=c99 -Wall -Wextra -Werror -Iuserspace/usr/doom \
 		userspace/usr/doom/cortexos_platform.c project/tools/validate/doom_platform_test.c -o $@
 
 doom-platform-check: $(DOOM_PLATFORM_TEST)
@@ -222,7 +222,7 @@ doom-platform-check: $(DOOM_PLATFORM_TEST)
 
 TTY_LINE_TEST = $(BUILD_DIR)/tty-line-test
 $(TTY_LINE_TEST): hw/drivers/tty/tty_line.c hw/drivers/tty/tty_line.h userspace/include/termios.h project/tools/validate/tty_line_test.c | $(BUILD_DIR)
-	$(DOOM_HOST_CC) -std=c99 -Wall -Wextra -Idrivers/tty -Iinclude \
+	$(DOOM_HOST_CC) -std=c99 -Wall -Wextra -Ihw/drivers/tty -Iuserspace/include \
 		hw/drivers/tty/tty_line.c project/tools/validate/tty_line_test.c -o $@
 
 tty-check: $(TTY_LINE_TEST)
