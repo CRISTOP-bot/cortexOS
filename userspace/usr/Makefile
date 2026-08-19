@@ -4,7 +4,7 @@ BUILD ?= build
 INCLUDES = -I ../include
 CFLAGS ?= -ffreestanding -O2 -Wall -Wextra -std=c99 -m64 -nostdlib -fno-stack-protector -fno-pie -fno-pic -mno-red-zone
 
-LIBC_SRCS = core/lib/syscalls.c core/lib/string.c core/lib/stdlib.c core/lib/stdio.c
+LIBC_SRCS = lib/syscalls.c lib/string.c lib/stdlib.c lib/stdio.c
 LIBC_OBJS = $(patsubst %.c,$(BUILD)/%.o,$(LIBC_SRCS))
 TEST_OBJ = $(BUILD)/tests/hello.o
 POSIX_TEST_OBJ = $(BUILD)/tests/posix.o
