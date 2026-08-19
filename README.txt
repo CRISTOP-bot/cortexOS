@@ -66,7 +66,7 @@ Clone and initialize the repository:
     git clone https://github.com/CRISTOP-bot/nucleos.git
     cd nucleos
     git submodule update --init --recursive
-    bash tools/setup/install-deps.sh --check
+    bash project/tools/setup/install-deps.sh --check
 
 Build and run the main x86_64 image:
 
@@ -84,17 +84,17 @@ The platform-specific script entry points are:
 
 Linux:
 
-    scripts/linux/nucleos.sh check
-    scripts/linux/nucleos.sh build
-    scripts/linux/nucleos.sh iso
-    scripts/linux/nucleos.sh qemu
+    project/scripts/linux/nucleos.sh check
+    project/scripts/linux/nucleos.sh build
+    project/scripts/linux/nucleos.sh iso
+    project/scripts/linux/nucleos.sh qemu
 
 macOS:
 
-    scripts/mac/nucleos.sh check
-    scripts/mac/nucleos.sh build
-    scripts/mac/nucleos.sh iso
-    scripts/mac/nucleos.sh qemu
+    project/scripts/mac/nucleos.sh check
+    project/scripts/mac/nucleos.sh build
+    project/scripts/mac/nucleos.sh iso
+    project/scripts/mac/nucleos.sh qemu
 
 The macOS script uses gmake when available. Building an ISO still requires the
 GNU, GRUB, xorriso, and mtools tools required by the project.
@@ -114,32 +114,32 @@ Essential Documentation
 =======================
 
 Use this file for project orientation. Detailed subsystem information is kept
-in Documentation/.
+in project/Documentation/.
 
 Architecture and layout:
 
-* Documentation/ARCHITECTURES.md - supported and experimental architecture paths.
-* Documentation/PROJECT_LAYOUT.md - source-tree responsibilities and locations.
-* Documentation/LIVE_RAM.md - live rootfs loading and RAM behavior.
+* project/Documentation/ARCHITECTURES.md - supported and experimental architecture paths.
+* project/Documentation/PROJECT_LAYOUT.md - source-tree responsibilities and locations.
+* project/Documentation/LIVE_RAM.md - live rootfs loading and RAM behavior.
 
 Development and planning:
 
-* Documentation/IMPLEMENTATION_PLAN.md - current implementation roadmap.
-* Documentation/USERSPACE_PORT.md - userspace, libc, ELF, and ABI limitations.
-* Documentation/DOOM_PORT.md - Doom milestone status, controls, licensing, and blockers.
+* project/Documentation/IMPLEMENTATION_PLAN.md - current implementation roadmap.
+* project/Documentation/USERSPACE_PORT.md - userspace, libc, ELF, and ABI limitations.
+* project/Documentation/DOOM_PORT.md - Doom milestone status, controls, licensing, and blockers.
 
 Integrated projects:
 
-* Documentation/BASH_PORT.md - Bash source integration status.
-* Documentation/OPENRC_PORT.md - OpenRC source integration status.
-* Documentation/FASTFETCH_PORT.md - Fastfetch source integration status.
+* project/Documentation/BASH_PORT.md - Bash source integration status.
+* project/Documentation/OPENRC_PORT.md - OpenRC source integration status.
+* project/Documentation/FASTFETCH_PORT.md - Fastfetch source integration status.
 
 Licensing:
 
 * LICENSE - GPLv3 license for CortexOS code and original project files.
-* LICENSES/LICENSE.md - project licensing notes.
-* LICENSES/COPYRIGHT.md - copyright notices.
-* LICENSES/THIRD_PARTY_LICENSES.md - external component license inventory.
+* project/LICENSES/LICENSE.md - project licensing notes.
+* project/LICENSES/COPYRIGHT.md - copyright notices.
+* project/LICENSES/THIRD_PARTY_LICENSES.md - external component license inventory.
 
 Who Are You?
 ============
@@ -169,10 +169,10 @@ New OS Developer
 
 Start with the Quick Start section and run the x86_64 image in QEMU. Then read:
 
-* Documentation/ARCHITECTURES.md
-* Documentation/PROJECT_LAYOUT.md
-* Documentation/IMPLEMENTATION_PLAN.md
-* Documentation/LIVE_RAM.md
+* project/Documentation/ARCHITECTURES.md
+* project/Documentation/PROJECT_LAYOUT.md
+* project/Documentation/IMPLEMENTATION_PLAN.md
+* project/Documentation/LIVE_RAM.md
 
 Use QEMU or another disposable virtual machine. The installer is experimental
 and destructive; never test it first on a disk containing important data.
@@ -183,11 +183,11 @@ Academic Researcher
 The most relevant experimental areas are:
 
 * arch/ - architecture-specific boot and port code.
-* mm/ - physical memory, virtual memory, and heap code.
-* ipc/ - process and system-call code.
-* fs/ - VFS, CRFS, ELF, and ext2 code.
-* drivers/ and block/ - hardware and block-device paths.
-* Documentation/IMPLEMENTATION_PLAN.md - known gaps and planned work.
+* core/mm/ - physical memory, virtual memory, and heap code.
+* core/ipc/ - process and system-call code.
+* core/fs/ - VFS, CRFS, ELF, and ext2 code.
+* hw/drivers/ and hw/block/ - hardware and block-device paths.
+* project/Documentation/IMPLEMENTATION_PLAN.md - known gaps and planned work.
 
 Results from an early boot image, compilation, or smoke test must not be
 presented as evidence of a complete operating-system feature.
@@ -195,30 +195,30 @@ presented as evidence of a complete operating-system feature.
 Kernel Developer
 ----------------
 
-The common kernel is organized by responsibility under kernel/:
+The common kernel is organized by responsibility under core/kernel/:
 
-* kernel/core/ - common entry and boot logic.
-* kernel/apps/ - applications and application registry code.
-* kernel/console/ - console interface and shell.
-* kernel/graphics/ - experimental GUI code.
-* kernel/system/ - GDT, IDT, TSS, LCP, and persistence-related code.
-* kernel/services/ - installer and service-related kernel components.
-* kernel/include/ - kernel-local headers.
+* core/kernel/core/ - common entry and boot logic.
+* core/kernel/apps/ - applications and application registry code.
+* core/kernel/console/ - console interface and shell.
+* core/kernel/graphics/ - experimental GUI code.
+* core/kernel/system/ - GDT, IDT, TSS, LCP, and persistence-related code.
+* core/kernel/services/ - installer and service-related kernel components.
+* core/kernel/include/ - kernel-local headers.
 
 Other kernel subsystems remain separate at the repository root. Read
-Documentation/PROJECT_LAYOUT.md before moving code or changing build paths.
+project/Documentation/PROJECT_LAYOUT.md before moving code or changing build paths.
 
 Driver Developer
 ----------------
 
-Hardware-facing code is organized under drivers/:
+Hardware-facing code is organized under hw/drivers/:
 
-* drivers/console/ - console output.
-* drivers/input/ - keyboard and mouse paths.
-* drivers/interrupts/ - PIC and timer paths.
-* drivers/pci/ - PCI support.
-* drivers/serial/ - serial output.
-* block/ata/ and block/partition/ - block-device support.
+* hw/drivers/console/ - console output.
+* hw/drivers/input/ - keyboard and mouse paths.
+* hw/drivers/interrupts/ - PIC and timer paths.
+* hw/drivers/pci/ - PCI support.
+* hw/drivers/serial/ - serial output.
+* hw/block/ata/ and hw/block/partition/ - block-device support.
 
 These interfaces are experimental and primarily exercised on x86_64 in QEMU.
 
@@ -227,15 +227,15 @@ Memory, Filesystems, Processes, and Syscalls
 
 Use these directories as starting points:
 
-* mm/physical/ - physical memory management.
-* mm/virtual/ - initial virtual-memory management.
-* mm/heap/ - heap and memory helpers.
-* fs/core/ - VFS code.
-* fs/crfs/ - CRFS image support.
-* fs/elf/ - ELF support.
-* fs/ext2/ - ext2-related code.
-* ipc/process/ - process code.
-* ipc/syscall/ - system-call code.
+* core/mm/physical/ - physical memory management.
+* core/mm/virtual/ - initial virtual-memory management.
+* core/mm/heap/ - heap and memory helpers.
+* core/fs/core/ - VFS code.
+* core/fs/crfs/ - CRFS image support.
+* core/fs/elf/ - ELF support.
+* core/fs/ext2/ - ext2-related code.
+* core/ipc/process/ - process code.
+* core/ipc/syscall/ - system-call code.
 
 The current implementations are useful for study and smoke tests, but they do
 not yet provide complete process isolation or a production filesystem stack.
@@ -243,8 +243,8 @@ not yet provide complete process isolation or a production filesystem stack.
 Userspace, libc, and ELF
 ------------------------
 
-Public userspace ABI headers are in include/. The initial libc, crt0, and ABI
-tests are in usr/. Static ELF support is partial and is intended for small
+Public userspace ABI headers are in userspace/include/. The initial libc, crt0, and ABI
+tests are in userspace/usr/. Static ELF support is partial and is intended for small
 experiments. Dynamic linking and broad POSIX compatibility are not implemented.
 
 Architecture Ports
@@ -257,18 +257,18 @@ Architecture-specific code is under arch/. The main bootable path is:
 * armv7 - independent early boot image, not a complete port.
 * i386 - port preparation only, not bootable.
 
-See Documentation/ARCHITECTURES.md before describing an architecture as
+See project/Documentation/ARCHITECTURES.md before describing an architecture as
 supported.
 
 Build, Installer, and Tooling Developer
 ---------------------------------------
 
-* tools/ - build, installer, media, Archinstall adapter, and setup tooling.
-* scripts/linux/ - Linux validation and build helpers.
-* scripts/mac/ - macOS build entry point.
-* scripts/win/ - Windows CMD, PowerShell, and VirtualBox entry points.
-* usr/ - userspace runtime and tests.
-* third_party/ - external source integrations and submodules.
+* project/tools/ - build, installer, media, Archinstall adapter, and setup tooling.
+* project/scripts/linux/ - Linux validation and build helpers.
+* project/scripts/mac/ - macOS build entry point.
+* project/scripts/win/ - Windows CMD, PowerShell, and VirtualBox entry points.
+* userspace/usr/ - userspace runtime and tests.
+* project/third_party/ - external source integrations and submodules.
 
 The installer may partition, format, mount, and install GRUB. Test it only in a
 virtual machine or on a disposable disk.
@@ -280,7 +280,7 @@ Choose one bounded change, read the relevant documentation, update the layout
 or build files when necessary, and run the closest available validation:
 
     make check-layout
-    python3 scripts/linux/check-python.py
+    python3 project/scripts/linux/check-python.py
     make verify-crfs
     make user-test-posix
 
@@ -310,7 +310,7 @@ Architecture Overview
        v
     kernel shell and experimental userspace boundary
 
-rootfs/ contains the files packaged into the live system. tools/build/rootfs.py
+userspace/rootfs/ contains the files packaged into the live system. project/tools/build/rootfs.py
 converts them into rootfs.bin, a compact CRFS image. During a live Multiboot
 boot, CortexOS copies the rootfs module into RAM before initializing the VFS.
 Changes made to the live rootfs are temporary and are lost at shutdown unless a
@@ -346,8 +346,8 @@ Validation:
 
     make check-layout
     make verify-crfs
-    python3 scripts/linux/check-python.py
-    python3 scripts/linux/check-live-ram.py build/qemu-serial.log
+    python3 project/scripts/linux/check-python.py
+    python3 project/scripts/linux/check-live-ram.py build/qemu-serial.log
 
 Early architecture images:
 
@@ -394,9 +394,9 @@ disk.
 
     make installer
     make installer-usb
-    sudo bash tools/media/make-usb.sh /dev/sdX
+    sudo bash project/tools/media/make-usb.sh /dev/sdX
     sudo python3 /mnt/installer/nucleos-install
-    sudo tools/installer/nucleos-install
+    sudo project/tools/installer/nucleos-install
 
 BIOS and UEFI are firmware paths. GRUB remains responsible for loading CortexOS
 through Multiboot v1.
@@ -406,8 +406,8 @@ Communication and Support
 
 * Issues and bug reports: https://github.com/CRISTOP-bot/nucleos/issues
 * Source code and changes: https://github.com/CRISTOP-bot/nucleos
-* Project layout: Documentation/PROJECT_LAYOUT.md
-* Architecture status: Documentation/ARCHITECTURES.md
+* Project layout: project/Documentation/PROJECT_LAYOUT.md
+* Architecture status: project/Documentation/ARCHITECTURES.md
 
 When reporting a problem, include the host platform, architecture, command
 used, relevant build output, and QEMU serial output when applicable. Explain
@@ -421,6 +421,6 @@ CortexOS code, documentation, build scripts, and original files are licensed
 under GPLv3. Third-party components retain their original licenses. See:
 
 * LICENSE
-* LICENSES/LICENSE.md
-* LICENSES/COPYRIGHT.md
-* LICENSES/THIRD_PARTY_LICENSES.md
+* project/LICENSES/LICENSE.md
+* project/LICENSES/COPYRIGHT.md
+* project/LICENSES/THIRD_PARTY_LICENSES.md

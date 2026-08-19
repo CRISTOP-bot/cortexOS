@@ -112,7 +112,7 @@ jobs:
           test -s dist/os.iso
           test -s build/iso/boot/kernel.bin
           test -s build/iso/boot/rootfs.bin
-          python3 scripts/linux/verify-crfs.py build/iso/boot/rootfs.bin
+          python3 project/scripts/linux/verify-crfs.py build/iso/boot/rootfs.bin
           sha256sum dist/os.iso > SHA256SUMS
 
       - name: Boot smoke test in QEMU
