@@ -6,6 +6,7 @@ _start:
 	mov (%rsp), %rdi
 	lea 8(%rsp), %rsi
 	lea 8(%rsi,%rdi,8), %rdx
+	mov %rdx, environ(%rip)	/* stash envp for getenv/setenv before main() */
 	call main
 	mov %eax, %edi
 	mov $4, %eax
