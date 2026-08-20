@@ -46,6 +46,13 @@ struct process_context {
 	uint64_t cs, ss;
 };
 
+/* Saved signal context: stored in process when a signal handler is invoked,
+ * so that sigreturn can restore the interrupted userspace state. */
+struct cortexos_sigframe {
+	struct process_context ctx;
+	int signal;
+};
+
 struct process {
 	int pid;
 	int parent_pid;
@@ -66,6 +73,9 @@ struct process {
 	uint32_t pending_signals;
 	uint32_t blocked_signals;
 	uintptr_t signal_handlers[PROCESS_SIG_MAX];
+	/* Signal delivery frame: populated when a signal handler is invoked,
+	 * consumed by sigreturn. Only one active signal delivery at a time. */
+	struct cortexos_sigframe saved_sigframe;
 	struct vfs_fd_table fd_table;
 };
 
@@ -104,6 +114,13 @@ int process_get_pid(void);
 void process_save_syscall_context(uint64_t *frame);
 void process_record_syscall_result(int64_t result);
 void process_save_interrupt_context(uint64_t *frame);
+
+/* Signal delivery: checks for pending signals and modifies the iret frame
+ * to jump to the signal handler. Returns 1 if a signal was delivered,
+ * 0 if no pending signals or they're blocked. The frame must be the kernel
+ * stack iret frame that context_switch_to would use. */
+int process_deliver_signal(struct process *proc, uint64_t *iret_frame);
+int process_sigreturn(void);
 
 bool process_user_range(const void *address, size_t length, bool write);
 bool process_copy_user_string(char *dst, size_t dst_size, const char *src);

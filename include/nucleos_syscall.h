@@ -34,6 +34,7 @@
 #define N_SYS_ACCESS 32
 #define N_SYS_GETUID 33
 #define N_SYS_GETGID 34
+#define N_SYS_SIGRETURN 35
 
 static inline long __cortexos_syscall5(long number, long a1, long a2,
 				      long a3, long a4, long a5)

@@ -38,7 +38,7 @@
 #define SYSCALL_ACCESS  32
 #define SYSCALL_GETUID  33
 #define SYSCALL_GETGID  34
-#define SYSCALL_MAX     35
+#define SYSCALL_MAX     36
 
 void syscall_init(void);
 int64_t syscall_handler(uint64_t rdi, uint64_t rsi, uint64_t rdx,

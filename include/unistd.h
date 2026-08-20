@@ -35,5 +35,10 @@ int geteuid(void);
 int getgid(void);
 int getegid(void);
 
+/* Signal return: called at the end of a signal handler to restore the
+ * interrupted context. Does not return; control transfers to the point
+ * where the signal interrupted execution. */
+void sigreturn(void) __attribute__((noreturn));
+
 #endif
 

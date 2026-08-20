@@ -179,3 +179,12 @@ int getuid(void) { return (int)result(__cortexos_syscall0(N_SYS_GETUID)); }
 int geteuid(void) { return getuid(); }
 int getgid(void) { return (int)result(__cortexos_syscall0(N_SYS_GETGID)); }
 int getegid(void) { return getgid(); }
+
+void sigreturn(void)
+{
+	/* sigreturn never returns to this function; the kernel restores the
+	 * interrupted context completely, transferring control back to userspace
+	 * at the point where the signal occurred. */
+	__cortexos_syscall0(N_SYS_SIGRETURN);
+	__builtin_unreachable();
+}

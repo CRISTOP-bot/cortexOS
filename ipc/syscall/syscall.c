@@ -311,6 +311,8 @@ static int64_t sys_getuid(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, ui
 { (void)a1; (void)a2; (void)a3; (void)a4; (void)a5; return 0; }
 static int64_t sys_getgid(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
 { (void)a1; (void)a2; (void)a3; (void)a4; (void)a5; return 0; }
+static int64_t sys_sigreturn(uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+{ (void)a1; (void)a2; (void)a3; (void)a4; (void)a5; return process_sigreturn(); }
 
 static syscall_fn syscall_table[SYSCALL_MAX] = {
 	sys_read,
@@ -348,6 +350,7 @@ static syscall_fn syscall_table[SYSCALL_MAX] = {
 	sys_access,
 	sys_getuid,
 	sys_getgid,
+	sys_sigreturn,
 };
 
 void syscall_init(void)

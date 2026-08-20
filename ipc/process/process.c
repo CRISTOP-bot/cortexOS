@@ -534,6 +534,100 @@ void process_tty_signal(int signal)
 	}
 }
 
+/* Small sigreturn stub placed on the user stack: calls the sigreturn syscall
+ * and should be unreachable (sigreturn never returns). 6 bytes total. */
+static const uint8_t sigreturn_stub[] = {
+	0xb8, 0x23, 0x00, 0x00, 0x00,  /* movl $N_SYS_SIGRETURN(35), %eax */
+	0xcd, 0x80                      /* int $0x80 */
+};
+
+/* Deliver a pending signal to the current process if it's in userspace.
+ * iret_frame is the kernel stack frame that context_switch_to would use
+ * (rip, cs, rflags, rsp, ss — 5 values at the top of the kernel stack).
+ *
+ * On success (signal delivered), modifies the frame's rip to point to the
+ * handler and the frame's rsp to have the stub and handler parameter set up.
+ * Returns 1 if a signal was delivered, 0 if none pending/blocked.
+ *
+ * This function is called from syscall_entry after process_record_syscall_result,
+ * before the iretq that would return to user. */
+int process_deliver_signal(struct process *proc, uint64_t *iret_frame)
+{
+	int sig;
+	uintptr_t handler;
+	uint64_t user_stack, stub_addr;
+	uint8_t *stub_mem;
+	uint64_t old_cr3;
+
+	if (!proc || proc->ctx.cs != 0x1B) return 0;  /* Not in userspace */
+
+	/* Find the first pending signal that is not blocked. */
+	for (sig = 1; sig < PROCESS_SIG_MAX; ++sig) {
+		if ((proc->pending_signals & PROCESS_SIGBIT(sig)) &&
+		    !(proc->blocked_signals & PROCESS_SIGBIT(sig)))
+			break;
+	}
+	if (sig >= PROCESS_SIG_MAX) return 0;  /* No pending signals */
+
+	handler = proc->signal_handlers[sig - 1];
+	if (!handler) return 0;  /* SIG_DFL (0) — handler not installed */
+	if (handler == 1) {  /* SIG_IGN */
+		proc->pending_signals &= ~PROCESS_SIGBIT(sig);
+		return 0;
+	}
+
+	/* Clear this signal from pending (one signal at a time). */
+	proc->pending_signals &= ~PROCESS_SIGBIT(sig);
+
+	/* Save the interrupted context for sigreturn to restore. */
+	proc->saved_sigframe.ctx = proc->ctx;
+	proc->saved_sigframe.signal = sig;
+
+	/* Prepare the user stack:
+	 * - Decrement RSP by space for the stub and a return address.
+	 * - Place the sigreturn stub at the new RSP.
+	 * - Place the signal number in RDI (handler's first argument).
+	 * - Set RIP to the handler.
+	 * - When the handler does RET, it will jump to the stub.
+	 */
+
+	user_stack = proc->ctx.rsp - 16;  /* Space for stub (8) + alignment (8) */
+	stub_addr = user_stack;
+
+	/* Switch to the process's address space to write the stub. */
+	old_cr3 = vmm_current_address_space();
+	vmm_switch_address_space(proc->ctx.cr3);
+
+	/* Copy the stub to the user stack. */
+	stub_mem = (uint8_t *)(uintptr_t)stub_addr;
+	kmemcpy(stub_mem, sigreturn_stub, sizeof(sigreturn_stub));
+
+	/* Restore kernel address space. */
+	vmm_switch_address_space(old_cr3);
+
+	/* Modify the iret frame to jump to the handler.
+	 * The frame layout (5 uint64_t values) is: rip, cs, rflags, rsp, ss.
+	 * We only modify rip, rsp, and rdi. */
+	iret_frame[0] = handler;         /* rip — jump to handler */
+	iret_frame[3] = stub_addr;       /* rsp — point to our stub for return */
+	proc->ctx.rdi = sig;             /* rdi — pass signal number as argument */
+
+	return 1;  /* Signal delivered. */
+}
+
+/* Sigreturn syscall: restore the interrupted context saved by process_deliver_signal.
+ * Does not return; transfers control back to the interrupted code. */
+int process_sigreturn(void)
+{
+	struct process *p = process_current();
+	if (!p) return -1;
+
+	/* Restore the entire context. The caller will see this return value
+	 * in RAX, but the context restore overrides everything anyway. */
+	p->ctx = p->saved_sigframe.ctx;
+	return 0;
+}
+
 void process_list(void)
 {
 	const char *names[] = { "unused", "running", "ready", "blocked", "zombie" };

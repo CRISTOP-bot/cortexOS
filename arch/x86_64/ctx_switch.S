@@ -102,6 +102,23 @@ syscall_entry:
     call process_record_syscall_result
     mov %r12, 112(%rsp)
 
+    /* Before returning to userspace, check for pending signals. The iret frame
+     * is 40 bytes above the current RSP (after 16 general register pushes).
+     * If a signal is delivered, the frame's RIP will be modified to jump to the
+     * handler, and the frame's RSP will point to the sigreturn stub. */
+    mov %rsp, %rdi
+    mov 128(%rdi), %rsi  /* Load process* from the iret frame's CS slot... wait,
+                          * that's not where process* is. We need to get it from
+                          * process_current(). Let me rethink... */
+    call process_current
+    mov %rax, %rdi       /* First arg: process* */
+    mov %rsp, %rsi
+    add $128, %rsi       /* Second arg: iret frame pointer (rsp + 128) */
+    call process_deliver_signal
+    /* If process_deliver_signal returned 1, the iret frame was modified
+     * and we'll jump to the signal handler on iretq. Otherwise, control
+     * continues normally. */
+
     popq %r15
     popq %r14
     popq %r13
