@@ -9,9 +9,43 @@ the tooling required to build a bootable system.
 The primary bootable path is x86_64 through GRUB Multiboot v1 and QEMU. CortexOS
 is not a general-purpose or daily-use operating system.
 
-Project repository: https://github.com/CRISTOP-bot/nucleos
-Issue tracker: https://github.com/CRISTOP-bot/nucleos/issues
+Project repository: https://github.com/CRISTOP-bot/cortexOS
+Issue tracker: https://github.com/CRISTOP-bot/cortexOS/issues
 Previous project name: cris-os-v2
+
+Project configuration and layout
+================================
+
+CortexOS keeps a Linux-inspired subsystem layout without copying Linux source.
+The active x86_64 build is controlled by `Makefile`; `Kbuild` supplies the
+kernel source manifest and `Kconfig` supplies default configuration values.
+Run `make config` before a clean build when configuration changes.
+
+Public headers are grouped by interface:
+
+* `include/abi/` - kernel/userspace ABI headers;
+* `include/libc/` - freestanding userspace C library headers;
+* `include/sys/` - system and POSIX type headers.
+
+Cortex packages
+===============
+
+A `.cortex` file is a validated package container with a `CORTEXPK` v1 header,
+a text manifest, and an optional payload. Manifest command lines use
+`command=`. From the shell, run a package with:
+
+    pkg run /path/to/package.cortex
+
+At present package commands are shell commands only; the payload is validated
+but is not treated as executable code. See `Documentation/CORTEX_PACKAGES.md`.
+
+VirtualBox
+==========
+
+The kernel detects Oracle VirtualBox's VMMDev PCI device and exposes its basic
+location through the `vbox` shell command. This is hardware detection only;
+Guest Additions services such as clipboard sharing and dynamic resolution are
+not yet implemented. See `Documentation/VIRTUALBOX.md`.
 
 Project Status
 ==============
@@ -65,8 +99,8 @@ Python 3, xorriso, mtools, and QEMU.
 
 Clone and initialize the repository:
 
-    git clone https://github.com/CRISTOP-bot/nucleos.git
-    cd nucleos
+    git clone https://github.com/CRISTOP-bot/cortexOS.git
+    cd cortexOS
     git submodule update --init --recursive
     bash tools/setup/install-deps.sh --check
 
@@ -406,8 +440,8 @@ through Multiboot v1.
 Communication and Support
 =========================
 
-* Issues and bug reports: https://github.com/CRISTOP-bot/nucleos/issues
-* Source code and changes: https://github.com/CRISTOP-bot/nucleos
+* Issues and bug reports: https://github.com/CRISTOP-bot/cortexOS/issues
+* Source code and changes: https://github.com/CRISTOP-bot/cortexOS
 * Project layout: Documentation/PROJECT_LAYOUT.md
 * Architecture status: Documentation/ARCHITECTURES.md
 
