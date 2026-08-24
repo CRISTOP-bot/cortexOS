@@ -77,6 +77,11 @@ AARCH64_OBJECTS = $(AARCH64_BUILD)/boot.o $(AARCH64_BUILD)/early.o \
 ARMV7_CC ?= arm-linux-gnueabihf-gcc
 ARMV7_LD ?= arm-linux-gnueabihf-ld
 QEMU_ARMV7 ?= qemu-system-arm
+QEMU_RISCV64 ?= qemu-system-riscv64
+RISCV64_CC ?= riscv64-linux-gnu-gcc
+RISCV64_LD ?= riscv64-linux-gnu-ld
+RISCV64_BUILD = $(BUILD_DIR)/riscv64
+RISCV64_EARLY = $(RISCV64_BUILD)/early.elf
 ARMV7_BUILD = $(BUILD_DIR)/armv7
 ARMV7_EARLY = $(ARMV7_BUILD)/early.elf
 ARMV7_DTB = $(ARMV7_BUILD)/virt.dtb
@@ -298,6 +303,23 @@ $(ARMV7_BUILD)/early.o: arch/armv7/early.c | $(ARMV7_BUILD)
 
 $(ARMV7_EARLY): $(ARMV7_BUILD)/boot.o $(ARMV7_BUILD)/early.o arch/armv7/linker.ld
 	$(ARMV7_LD) -nostdlib -T arch/armv7/linker.ld -o $@ $(ARMV7_BUILD)/boot.o $(ARMV7_BUILD)/early.o
+
+riscv64-early: $(RISCV64_EARLY)
+
+$(RISCV64_BUILD):
+	mkdir -p $@
+
+$(RISCV64_BUILD)/boot.o: arch/riscv64/boot.S | $(RISCV64_BUILD)
+	$(RISCV64_CC) -c -march=rv64imac -mabi=lp64 -ffreestanding -nostdlib $< -o $@
+
+$(RISCV64_BUILD)/early.o: arch/riscv64/early.c | $(RISCV64_BUILD)
+	$(RISCV64_CC) -c -march=rv64imac -mabi=lp64 -ffreestanding -nostdlib -std=c99 -Wall -Wextra $< -o $@
+
+$(RISCV64_EARLY): $(RISCV64_BUILD)/boot.o $(RISCV64_BUILD)/early.o arch/riscv64/linker.ld
+	$(RISCV64_LD) -nostdlib -T arch/riscv64/linker.ld -o $@ $(RISCV64_BUILD)/boot.o $(RISCV64_BUILD)/early.o
+
+riscv64-run: riscv64-early
+	$(QEMU_RISCV64) -machine virt -nographic -bios default -kernel $(RISCV64_EARLY)
 
 armv7-run: armv7-early
 	$(QEMU_ARMV7) -machine virt,dumpdtb=$(ARMV7_DTB) -cpu cortex-a15 -m 128M -display none

@@ -11,7 +11,7 @@ smoke test.
 | i386 / x86 | Preparada | Pendiente | No | GDT/IDT, paging, ABI y linker de 32 bits |
 | aarch64 / ARM64 | Boot + PMM/EL0/SVC smoke | QEMU `virt` + UART PL011/GICv2 | Sí | aislamiento por proceso, scheduler y rootfs |
 | armv7 / ARM32 | Boot temprano | QEMU `virt` + UART PL011 | Sí | FDT, MMU, GIC, timer y EL0 |
-| riscv64 | Planificada | Pendiente | No | SBI, trap handler, PLIC, timer y paging |
+| riscv64 | Boot temprano | QEMU `virt` + OpenSBI/UART 16550 | Pendiente | traps, PLIC, timer, paging y entrada al kernel común |
 
 ## Selección de arquitectura
 
@@ -24,6 +24,8 @@ make aarch64-early
 make aarch64-run
 make armv7-early
 make armv7-run
+make riscv64-early
+make riscv64-run
 ```
 
 Por seguridad, `make ARCH=i386`, `make ARCH=aarch64` y `make ARCH=armv7`
