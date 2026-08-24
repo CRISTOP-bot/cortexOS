@@ -2,6 +2,8 @@
 #include "console.h"
 #include "fs.h"
 #include "kstring.h"
+#include "vfs.h"
+#include "cortex_package.h"
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -18,6 +20,7 @@ struct lcp_package {
 	const char *maintainer;
 	const char *license;
 	const char *repo;
+	const char *package_path;
 	const char *dependencies[MAX_DEPENDENCIES];
 	size_t dependency_count;
 	const char *files[MAX_FILES];
@@ -90,6 +93,7 @@ static void lcp_parse_package_block(char *block)
 	pkg->maintainer = 0;
 	pkg->license = 0;
 	pkg->repo = 0;
+	pkg->package_path = 0;
 	pkg->dependency_count = 0;
 	pkg->file_count = 0;
 	pkg->size = 0;
@@ -143,6 +147,9 @@ static void lcp_parse_package_block(char *block)
 		} else if (kstrncmp(line, "repo:", 5) == 0) {
 			value = lcp_trim(line + 5);
 			pkg->repo = value;
+		} else if (kstrncmp(line, "package:", 8) == 0) {
+			value = lcp_trim(line + 8);
+			pkg->package_path = value;
 		}
 		line = eol;
 	}
@@ -609,6 +616,7 @@ static void lcp_print_package_info(const lcp_package_t *pkg)
 		lcp_print_line("dependencies: ", output);
 	}
 	lcp_print_line("repository: ", pkg->repo ? pkg->repo : "");
+	lcp_print_line("package: ", pkg->package_path ? pkg->package_path : "(metadata only)");
 	lcp_print_line("author: ", pkg->maintainer ? pkg->maintainer : "");
 	lcp_print_line("license: ", pkg->license ? pkg->license : "");
 }
@@ -619,7 +627,8 @@ static void lcp_print_help(void)
 	console_print("  lcp help [command]\n");
 	console_print("  lcp search <term>\n");
 	console_print("  lcp info <package>\n");
-	console_print("  lcp install <package>\n");
+	console_print("  lcp install <package> [--no-deps]\n");
+	console_print("  Database entries use package:<path.cortex> and dependencies:a,b\n");
 	console_print("  lcp remove <package>\n");
 	console_print("  lcp update\n");
 	console_print("  lcp upgrade [package]\n");
@@ -666,6 +675,13 @@ static bool lcp_install_package(lcp_package_t *pkg, bool no_deps, int *chain, si
 		console_print("Package already installed.\n");
 		return true;
 	}
+	if (pkg->package_path &&
+	    (!vfs_exists(pkg->package_path) || vfs_is_dir(pkg->package_path))) {
+		console_print("Package payload is missing: ");
+		console_print(pkg->package_path);
+		console_print("\n");
+		return false;
+	}
 	int my_idx = (int)(pkg - packages);
 	for (size_t v = 0; v < chain_len; v++) {
 		if (chain[v] == my_idx) {
@@ -686,6 +702,11 @@ static bool lcp_install_package(lcp_package_t *pkg, bool no_deps, int *chain, si
 				}
 			}
 		}
+	}
+	if (pkg->package_path && cortex_package_run(pkg->package_path) < 0) {
+		pkg->installed = false;
+		console_print("Package command manifest failed.\n");
+		return false;
 	}
 	console_print("Installed ");
 	console_print(pkg->name);
