@@ -1,4 +1,5 @@
 #include "shell.h"
+#include "cortex_package.h"
 #include "console.h"
 #include "keyboard.h"
 #include "vfs.h"
@@ -679,6 +680,8 @@ static void cmd_rust(const char *rest, const char *a1, const char *a2) {
 	else{console_print("Rust subcommands: info, fib <n>, fact <n>, prime <n>, gcd <a> <b>, add <a> <b>, div <a> <b>, swap16 <n>, swap32 <n>, popcount <n>, leading <n>, trailing <n>, strlen <s>, toupper <s>, tolower <s>\n");}
 }
 
+static void cmd_pkg(const char *rest, const char *a1, const char *a2);
+
 static const struct { const char *name; cmd_func func; } cmd_table[] = {
 	{"help", cmd_help}, {"clear", cmd_clear}, {"pwd", cmd_pwd}, {"cd", cmd_cd},
 	{"ls", cmd_ls}, {"tree", cmd_tree}, {"mkdir", cmd_mkdir}, {"rmdir", cmd_rmdir},
@@ -702,9 +705,30 @@ static const struct { const char *name; cmd_func func; } cmd_table[] = {
 	{"ps", cmd_ps}, {"proc", cmd_proc}, {"yield", cmd_yield},
 	{"serial", cmd_serial}, {"persist", cmd_persist}, {"net", cmd_net},
 	{"uptime", cmd_uptime}, {"install", cmd_install},
-	{"rust", cmd_rust},
-	{0, 0}
+	{"rust", cmd_rust}, {"pkg", cmd_pkg}, {0, 0}
 };
+
+static void cmd_pkg(const char *rest, const char *a1, const char *a2)
+{
+	(void)rest; (void)a2;
+	if (a1[0] == '\0' || !kstreq(a1, "run")) { cortex_package_help(); return; }
+	/* The package path is the second token in the command line. */
+	{ char path[128]; const char *p = rest; p = parse_token(p, path, sizeof(path));
+		if (path[0] == '\0' || cortex_package_run(path) < 0)
+			console_print_color("pkg: invalid package or command failed\n", VGA_ATTR(VGA_RED, VGA_BLACK)); }
+}
+
+int shell_execute_line(const char *line)
+{
+	char cmd[32], arg1[128], arg2[128], rest[192];
+	const char *p = line, *tail;
+	p = parse_token(p, cmd, sizeof(cmd)); tail = p;
+	p = parse_token(p, arg1, sizeof(arg1)); p = parse_token(p, arg2, sizeof(arg2));
+	copy_rest(tail, rest, sizeof(rest));
+	for (int i = 0; cmd_table[i].name; ++i)
+		if (kstreq(cmd, cmd_table[i].name)) { cmd_table[i].func(rest, arg1, arg2); return 0; }
+	return -1;
+}
 
 void shell_run(void)
 {
@@ -736,14 +760,7 @@ void shell_run(void)
 		p = parse_token(p, arg2, sizeof(arg2));
 		copy_rest(tail, rest, sizeof(rest));
 
-		int found = 0;
-		for (int i = 0; cmd_table[i].name; i++) {
-			if (kstreq(cmd, cmd_table[i].name)) {
-				cmd_table[i].func(rest, arg1, arg2);
-				found = 1;
-				break;
-			}
-		}
+		int found = (shell_execute_line(buf) == 0);
 		if (!found) {
 			console_print_color("cortexos: command not found: ", VGA_ATTR(VGA_RED, VGA_BLACK));
 			console_print_color(cmd, VGA_ATTR(VGA_WHITE, VGA_BLACK));
