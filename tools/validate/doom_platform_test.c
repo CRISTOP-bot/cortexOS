@@ -1,5 +1,5 @@
-#include <libc/stdio.h>
-#include <libc/string.h>
+#include <stdio.h>
+#include <string.h>
 #include "../../usr/doom/cortexos_platform.h"
 
 static int expect_action(unsigned short scancode,
