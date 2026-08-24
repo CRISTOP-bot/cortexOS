@@ -200,7 +200,8 @@ static void draw_desktop(void)
 		unsigned char attr = (i == icon_selected) ? ICON_SEL : DESKTOP_FG;
 		icon_funcs[i](x, y, attr);
 		int lx = x - 1 + (6 - kstrlen(names[i])) / 2;
-		draw_text_safe(lx, y + 5, names[i], DESKTOP_FG);
+		draw_text_safe(lx, y + 5, names[i],
+			(i == icon_selected) ? ICON_SEL : DESKTOP_FG);
 	}
 }
 
@@ -413,6 +414,20 @@ void gui_show(void)
 				c = keyboard_read_char();
 				break;
 			}
+			struct mouse_state mouse;
+			int old_icon = icon_selected, old_menu = menu_idx;
+			mouse_get_state(&mouse);
+			if (start_open) {
+				int hovered = get_menu_item(mouse.x, mouse.y);
+				if (hovered >= 0)
+					menu_idx = hovered;
+			} else {
+				int hovered = get_icon_at(mouse.x, mouse.y);
+				if (hovered >= 0)
+					icon_selected = hovered;
+			}
+			if (old_icon != icon_selected || old_menu != menu_idx)
+				break;
 			int mx, my;
 			if (mouse_get_click(&mx, &my)) {
 				if (handle_mouse_click(mx, my)) {
@@ -422,6 +437,8 @@ void gui_show(void)
 				}
 				break;
 			}
+			/* Sleep until the next hardware interrupt instead of busy-spinning. */
+			__asm__ volatile("hlt");
 		}
 
 		if (c == 'q' && !start_open) {
