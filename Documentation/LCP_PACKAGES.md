@@ -35,3 +35,16 @@ Durante `lcp install`, LCP valida el archivo, instala las dependencias y ejecuta
 el manifiesto `command=` del paquete. Si el manifiesto falla, el paquete no se
 marca como instalado. La base actual es en memoria; la persistencia de la base
 de datos y las transacciones de rollback completo quedan pendientes.
+
+## Registro `cortex.org`
+
+El catálogo integrado identifica sus repositorios como `cortex.org/main`,
+`cortex.org/games`, `cortex.org/drivers` y `cortex.org/dev`. Si existe
+`lcp_repo.txt` en el VFS, ese archivo funciona como espejo local del catálogo y
+lo sustituye al ejecutar `lcp update`.
+
+El kernel todavía no implementa un cliente HTTP ni descarga paquetes desde
+Internet. Por eso `cortex.org` es actualmente la identidad del registro y su
+catálogo local, no una afirmación de que el dominio ya tenga una API compatible.
+La sincronización remota necesitará una especificación de API, TLS y validación
+criptográfica antes de habilitarse.

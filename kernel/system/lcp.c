@@ -11,6 +11,7 @@
 #define MAX_DEPENDENCIES 8
 #define MAX_FILES 8
 #define REPO_BUFFER_SIZE 8192
+#define LCP_REPOSITORY_DOMAIN "cortex.org"
 
 struct lcp_package {
 	const char *name;
@@ -197,7 +198,7 @@ static const char default_repo_data[] =
 	"dependencies:libc,termcap\n"
 	"files:bin/nano-nucleos,share/nano-nucleos/help.txt\n"
 	"size:32000\n"
-	"repo:main\n"
+	"repo:cortex.org/main\n"
 	"---\n"
 	"name:editor-lite\n"
 	"version:0.5.0\n"
@@ -208,7 +209,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:bin/editor-lite\n"
 	"size:12500\n"
-	"repo:main\n"
+	"repo:cortex.org/main\n"
 	"---\n"
 	"name:textpad\n"
 	"version:0.9.1\n"
@@ -219,7 +220,7 @@ static const char default_repo_data[] =
 	"dependencies:libc\n"
 	"files:bin/textpad\n"
 	"size:21200\n"
-	"repo:main\n"
+	"repo:cortex.org/main\n"
 	"---\n"
 	"name:libc\n"
 	"version:1.0.0\n"
@@ -230,7 +231,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:lib/libc.so\n"
 	"size:45000\n"
-	"repo:main\n"
+	"repo:cortex.org/main\n"
 	"---\n"
 	"name:termcap\n"
 	"version:1.2.3\n"
@@ -241,7 +242,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:lib/termcap.so\n"
 	"size:18000\n"
-	"repo:main\n"
+	"repo:cortex.org/main\n"
 	"---\n"
 	"name:snake-game\n"
 	"version:1.0.0\n"
@@ -252,7 +253,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:games/snake-game\n"
 	"size:8200\n"
-	"repo:games\n"
+	"repo:cortex.org/games\n"
 	"---\n"
 	"name:tetris-game\n"
 	"version:1.0.0\n"
@@ -263,7 +264,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:games/tetris-game\n"
 	"size:11500\n"
-	"repo:games\n"
+	"repo:cortex.org/games\n"
 	"---\n"
 	"name:pong-game\n"
 	"version:1.0.0\n"
@@ -274,7 +275,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:games/pong-game\n"
 	"size:7800\n"
-	"repo:games\n"
+	"repo:cortex.org/games\n"
 	"---\n"
 	"name:2048-game\n"
 	"version:1.0.0\n"
@@ -285,7 +286,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:games/2048-game\n"
 	"size:9400\n"
-	"repo:games\n"
+	"repo:cortex.org/games\n"
 	"---\n"
 	"name:ttt-game\n"
 	"version:1.0.0\n"
@@ -296,7 +297,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:games/ttt-game\n"
 	"size:6200\n"
-	"repo:games\n"
+	"repo:cortex.org/games\n"
 	"---\n"
 	"name:minesweeper\n"
 	"version:1.0.0\n"
@@ -307,7 +308,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:games/minesweeper\n"
 	"size:8900\n"
-	"repo:games\n"
+	"repo:cortex.org/games\n"
 	"---\n"
 	"name:breakout\n"
 	"version:1.0.0\n"
@@ -318,7 +319,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:games/breakout\n"
 	"size:10200\n"
-	"repo:games\n"
+	"repo:cortex.org/games\n"
 	"---\n"
 	"name:memory-game\n"
 	"version:1.0.0\n"
@@ -329,7 +330,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:games/memory-game\n"
 	"size:7100\n"
-	"repo:games\n"
+	"repo:cortex.org/games\n"
 	"---\n"
 	"name:calc-app\n"
 	"version:2.0.0\n"
@@ -340,7 +341,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:bin/calc-app\n"
 	"size:4500\n"
-	"repo:tools\n"
+	"repo:cortex.org/tools\n"
 	"---\n"
 	"name:hexview\n"
 	"version:1.0.0\n"
@@ -351,7 +352,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:bin/hexview\n"
 	"size:3200\n"
-	"repo:tools\n"
+	"repo:cortex.org/tools\n"
 	"---\n"
 	"name:sysinfo\n"
 	"version:1.0.0\n"
@@ -362,7 +363,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:bin/sysinfo\n"
 	"size:5100\n"
-	"repo:tools\n"
+	"repo:cortex.org/tools\n"
 	"---\n"
 	"name:filemanager\n"
 	"version:0.8.0\n"
@@ -373,7 +374,7 @@ static const char default_repo_data[] =
 	"dependencies:libc\n"
 	"files:bin/filemanager\n"
 	"size:8700\n"
-	"repo:tools\n"
+	"repo:cortex.org/tools\n"
 	"---\n"
 	"name:htop-lite\n"
 	"version:0.3.0\n"
@@ -384,7 +385,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:bin/htop-lite\n"
 	"size:6300\n"
-	"repo:tools\n"
+	"repo:cortex.org/tools\n"
 	"---\n"
 	"name:gpu-driver\n"
 	"version:0.1.0\n"
@@ -395,7 +396,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:drivers/vga-driver.so\n"
 	"size:24000\n"
-	"repo:drivers\n"
+	"repo:cortex.org/drivers\n"
 	"---\n"
 	"name:net-driver\n"
 	"version:0.1.0\n"
@@ -406,7 +407,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:drivers/rtl8139.so\n"
 	"size:31000\n"
-	"repo:drivers\n"
+	"repo:cortex.org/drivers\n"
 	"---\n"
 	"name:input-driver\n"
 	"version:1.0.0\n"
@@ -417,7 +418,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:drivers/ps2-input.so\n"
 	"size:9500\n"
-	"repo:drivers\n"
+	"repo:cortex.org/drivers\n"
 	"---\n"
 	"name:libc-dev\n"
 	"version:1.0.0\n"
@@ -428,7 +429,7 @@ static const char default_repo_data[] =
 	"dependencies:libc\n"
 	"files:include/stdio.h,include/stdlib.h,include/string.h\n"
 	"size:12000\n"
-	"repo:dev\n"
+	"repo:cortex.org/dev\n"
 	"---\n"
 	"name:gcc-nucleos\n"
 	"version:4.9.0\n"
@@ -439,7 +440,7 @@ static const char default_repo_data[] =
 	"dependencies:libc\n"
 	"files:bin/gcc,libexec/gcc/nucleos/4.9/cc1\n"
 	"size:256000\n"
-	"repo:dev\n"
+	"repo:cortex.org/dev\n"
 	"---\n"
 	"name:make-nucleos\n"
 	"version:4.2.1\n"
@@ -450,7 +451,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:bin/make\n"
 	"size:42000\n"
-	"repo:dev\n"
+	"repo:cortex.org/dev\n"
 	"---\n"
 	"name:binutils-nucleos\n"
 	"version:2.30\n"
@@ -461,7 +462,7 @@ static const char default_repo_data[] =
 	"dependencies:\n"
 	"files:bin/as,bin/ld,bin/objdump\n"
 	"size:89000\n"
-	"repo:dev\n"
+	"repo:cortex.org/dev\n"
 	"---\n"
 	"name:bash-nucleos\n"
 	"version:5.1.0\n"
@@ -517,6 +518,7 @@ bool lcp_init(void)
 		}
 	}
 	lcp_parse_repo(default_repo_data, sizeof(default_repo_data) - 1);
+	console_print("LCP: using built-in cortex.org catalog mirror\n");
 	repo_loaded = true;
 	return true;
 }
@@ -628,7 +630,8 @@ static void lcp_print_help(void)
 	console_print("  lcp search <term>\n");
 	console_print("  lcp info <package>\n");
 	console_print("  lcp install <package> [--no-deps]\n");
-	console_print("  Database entries use package:<path.cortex> and dependencies:a,b\n");
+	console_print("  Database: cortex.org (local metadata mirror)\n");
+	console_print("  Entries use package:<path.cortex> and dependencies:a,b\n");
 	console_print("  lcp remove <package>\n");
 	console_print("  lcp update\n");
 	console_print("  lcp upgrade [package]\n");
