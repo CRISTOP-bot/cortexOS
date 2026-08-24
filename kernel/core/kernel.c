@@ -1,5 +1,6 @@
 #include "console.h"
 #include "boot_helpers.h"
+#include "boot_memory.h"
 #include "asm.h"
 #include "fs.h"
 #include "vfs.h"
@@ -39,45 +40,6 @@
 uint32_t sys_mem_lower;
 uint32_t sys_mem_upper;
 extern uint32_t multiboot_magic;
-
-struct multiboot_info {
-	uint32_t flags;
-	uint32_t mem_lower;
-	uint32_t mem_upper;
-	uint32_t boot_device;
-	uint32_t cmdline;
-	uint32_t mods_count;
-	uint32_t mods_addr;
-};
-
-struct multiboot_module {
-	uint32_t mod_start;
-	uint32_t mod_end;
-	uint32_t cmdline;
-	uint32_t reserved;
-};
-
-static void reserve_boot_modules(unsigned long mbi_addr)
-{
-	if (!mbi_addr)
-		return;
-	struct multiboot_info *mbi = (struct multiboot_info *)(uintptr_t)mbi_addr;
-	pmm_reserve_range(mbi_addr, sizeof(*mbi));
-	if (!(mbi->flags & 0x8))
-		return;
-	struct multiboot_module *mods =
-	    (struct multiboot_module *)(uintptr_t)mbi->mods_addr;
-	pmm_reserve_range(mbi->mods_addr,
-		mbi->mods_count * sizeof(struct multiboot_module));
-	for (unsigned long i = 0; i < mbi->mods_count; ++i) {
-		const char *name = (const char *)(uintptr_t)mods[i].cmdline;
-		if (name)
-			pmm_reserve_range(mods[i].cmdline, kstrlen(name) + 1);
-		if (name && kstrstr(name, "rootfs") && mods[i].mod_end > mods[i].mod_start)
-			pmm_reserve_range(mods[i].mod_start,
-				mods[i].mod_end - mods[i].mod_start);
-	}
-}
 
 static void enable_a20(void)
 {
