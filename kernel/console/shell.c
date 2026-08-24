@@ -1,5 +1,6 @@
 #include "shell.h"
 #include "cortex_package.h"
+#include "virtualbox.h"
 #include "console.h"
 #include "keyboard.h"
 #include "vfs.h"
@@ -680,6 +681,8 @@ static void cmd_rust(const char *rest, const char *a1, const char *a2) {
 	else{console_print("Rust subcommands: info, fib <n>, fact <n>, prime <n>, gcd <a> <b>, add <a> <b>, div <a> <b>, swap16 <n>, swap32 <n>, popcount <n>, leading <n>, trailing <n>, strlen <s>, toupper <s>, tolower <s>\n");}
 }
 
+static void cmd_vbox(const char *rest, const char *a1, const char *a2) { (void)rest; (void)a1; (void)a2; virtualbox_print_info(); }
+
 static void cmd_pkg(const char *rest, const char *a1, const char *a2);
 
 static const struct { const char *name; cmd_func func; } cmd_table[] = {
@@ -705,7 +708,7 @@ static const struct { const char *name; cmd_func func; } cmd_table[] = {
 	{"ps", cmd_ps}, {"proc", cmd_proc}, {"yield", cmd_yield},
 	{"serial", cmd_serial}, {"persist", cmd_persist}, {"net", cmd_net},
 	{"uptime", cmd_uptime}, {"install", cmd_install},
-	{"rust", cmd_rust}, {"pkg", cmd_pkg}, {0, 0}
+	{"rust", cmd_rust}, {"vbox", cmd_vbox}, {"pkg", cmd_pkg}, {0, 0}
 };
 
 static void cmd_pkg(const char *rest, const char *a1, const char *a2)

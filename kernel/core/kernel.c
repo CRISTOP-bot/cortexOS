@@ -19,6 +19,7 @@
 #include "kstring.h"
 #include "pci.h"
 #include "virtio_pci.h"
+#include "virtualbox.h"
 #include "pmm.h"
 #include "vmm.h"
 #include "memory.h"
