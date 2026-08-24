@@ -1,17 +1,13 @@
-# CortexOS source inventory. This mirrors Linux-style subsystem ownership while
-# the active build remains controlled by Makefile/KERNEL_SRC_DIRS.
+# Active source manifest consumed by Makefile. Keep one subsystem per line.
+KERNEL_SRC_DIRS += kernel/core kernel/apps kernel/console kernel/graphics
+KERNEL_SRC_DIRS += kernel/system kernel/services
+KERNEL_SRC_DIRS += drivers/tty drivers/console drivers/input drivers/interrupts
+KERNEL_SRC_DIRS += drivers/pci drivers/serial
+KERNEL_SRC_DIRS += block/ata block/partition
+KERNEL_SRC_DIRS += fs/core fs/crfs fs/elf fs/ext2
+KERNEL_SRC_DIRS += init/core init/openrc
+KERNEL_SRC_DIRS += ipc/process ipc/syscall
+KERNEL_SRC_DIRS += mm/physical mm/virtual mm/heap
+KERNEL_SRC_DIRS += net/core virt lib/core lib/string
 
-obj-y += kernel/core/
-obj-y += kernel/console/
-obj-y += kernel/system/
-obj-y += drivers/
-obj-y += block/
-obj-y += fs/
-obj-y += ipc/
-obj-y += mm/
-obj-y += net/
-obj-y += init/
-obj-y += virt/
-
-# Architecture code is selected by ARCH in Makefile.
-obj-$(CONFIG_ARCH_X86_64) += arch/x86_64/
+# Architecture-specific assembly is selected separately by Makefile.

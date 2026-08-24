@@ -36,7 +36,10 @@ DIST_DIR    = dist
 ISO_DIR     = $(BUILD_DIR)/iso
 KERNEL_DIR  = kernel
 ARCH_DIR    = arch/$(ARCH)
-KERNEL_SRC_DIRS = kernel/core kernel/apps kernel/console kernel/graphics kernel/system kernel/services drivers/tty block/ata block/partition fs/core fs/crfs fs/elf fs/ext2 init/core init/openrc ipc/process ipc/syscall mm/physical mm/virtual mm/heap net/core drivers/console drivers/input drivers/interrupts drivers/pci drivers/serial virt lib/core lib/string
+include Kbuild
+
+CONFIG_MK = $(BUILD_DIR)/config.mk
+-include $(CONFIG_MK)
 CONFIG_DIR  = config
 GRUB_DIR    = $(CONFIG_DIR)/grub
 ROOTFS_DIR  = rootfs
@@ -110,6 +113,11 @@ INSTALLER_FILES = tools/installer/__init__.py \
 LCP_FILES      = tools/lcp/lcp.py tools/lcp/main_repo.json
 
 all: check-arch $(KERNEL)
+
+config: $(CONFIG_MK)
+
+$(CONFIG_MK): Kconfig scripts/kconfig.py | $(BUILD_DIR)
+	$(PYTHON) scripts/kconfig.py Kconfig $@
 
 check-arch:
 ifeq ($(ARCH_SUPPORTED),yes)
