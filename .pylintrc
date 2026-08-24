@@ -1,0 +1,8 @@
+[MASTER]
+py-version=3.10
+
+[MESSAGES CONTROL]
+disable=missing-module-docstring,missing-function-docstring,invalid-name
+
+[FORMAT]
+max-line-length=100

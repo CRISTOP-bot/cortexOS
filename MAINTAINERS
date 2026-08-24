@@ -1,0 +1,18 @@
+CORTEXOS KERNEL
+M: Cristopher Borjas <borjascristopher88@gmail.com>
+S: Maintained
+F: kernel/
+F: arch/
+F: drivers/
+F: block/
+F: fs/
+F: ipc/
+F: mm/
+F: net/
+F: virt/
+
+BUILD AND CI
+M: Cristopher Borjas <borjascristopher88@gmail.com>
+F: Makefile
+F: .github/
+F: scripts/

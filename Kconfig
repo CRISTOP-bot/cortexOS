@@ -1,0 +1,12 @@
+# CortexOS top-level configuration model.
+# The Makefile remains the build entry point; this file documents the
+# future kernel configuration boundary without pretending Kconfig is active.
+
+menu "CortexOS kernel"
+config ARCH_X86_64
+    bool "x86_64 boot path"
+    default y
+config VIRTIO_PCI
+    bool "legacy VirtIO PCI discovery"
+    default y
+endmenu

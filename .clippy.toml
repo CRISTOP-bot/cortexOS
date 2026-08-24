@@ -1,0 +1,2 @@
+# CortexOS Rust lint policy. Keep unsafe kernel boundaries explicit.
+msrv = "1.70"

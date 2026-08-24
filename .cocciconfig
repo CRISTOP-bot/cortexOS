@@ -1,0 +1,3 @@
+[coccinelle]
+# Reserved for future CortexOS semantic patches.
+sp_file = scripts/coccinelle
