@@ -16,6 +16,7 @@
 #include "mouse.h"
 #include "kstring.h"
 #include "pci.h"
+#include "virtio_pci.h"
 #include "pmm.h"
 #include "vmm.h"
 #include "memory.h"
@@ -211,6 +212,11 @@ void kmain(unsigned long mbi_addr)
 
 	pci_init();
 	boot_delay();
+
+	struct virtio_pci_scan_result virtio_devices;
+	int virtio_count = virtio_pci_scan(&virtio_devices);
+	if (virtio_count >= 0)
+		boot_status("Scanned VirtIO PCI devices");
 
 	timer_init(100);
 	boot_status("Started PIT (100 Hz)");
