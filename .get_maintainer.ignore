@@ -1,2 +1,6 @@
 third_party/
 tools/archinstall/upstream/
+*.md
+*.txt
+*.png
+*.jpg

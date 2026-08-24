@@ -1,6 +1,11 @@
 * text=auto eol=lf
 *.bat text eol=crlf
+*.sh text eol=lf
+*.S linguist-language=Assembly
+*.inc linguist-language=C
 *.png binary
 *.jpg binary
+*.gif binary
 *.iso binary
 *.bin binary
+*.img binary

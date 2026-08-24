@@ -1,3 +1,6 @@
-[coccinelle]
-# Reserved for future CortexOS semantic patches.
-sp_file = scripts/coccinelle
+# Semantic-patch conventions for CortexOS.
+# Recipes will live in scripts/coccinelle/ and must be reviewed before use.
+
+[spatch]
+include_path=kernel/include:include:drivers:fs:ipc:mm:net:virt
+jobs=1

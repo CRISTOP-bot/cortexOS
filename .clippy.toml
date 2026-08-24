@@ -1,2 +1,3 @@
-# CortexOS Rust lint policy. Keep unsafe kernel boundaries explicit.
+# CortexOS Rust policy. Unsafe code is expected at FFI and hardware boundaries,
+# but must remain explicit and documented.
 msrv = "1.70"

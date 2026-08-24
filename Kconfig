@@ -1,12 +1,23 @@
-# CortexOS top-level configuration model.
-# The Makefile remains the build entry point; this file documents the
-# future kernel configuration boundary without pretending Kconfig is active.
+# CortexOS configuration model.
+# This is the planned configuration boundary; Makefile remains authoritative
+# until a Kconfig frontend is implemented and tested.
 
-menu "CortexOS kernel"
+mainmenu "CortexOS kernel configuration"
+
 config ARCH_X86_64
-    bool "x86_64 boot path"
+    bool "x86_64 architecture"
     default y
+    help
+      Enable the primary GRUB Multiboot and QEMU boot path.
+
 config VIRTIO_PCI
     bool "legacy VirtIO PCI discovery"
     default y
-endmenu
+    help
+      Scan conventional PCI configuration space for legacy VirtIO devices.
+
+config DEBUG_SERIAL
+    bool "serial boot diagnostics"
+    default y
+    help
+      Keep early boot messages available through the serial console.

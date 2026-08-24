@@ -8,11 +8,20 @@ indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true
 
-[*.{c,h,S,inc}]
+[*.{c,h,S}]
+indent_size = 4
+max_line_length = 100
+
+[*.inc]
 indent_size = 4
 
 [Makefile]
 indent_style = tab
+indent_size = 8
 
-[*.rs]
+[*.{rs,py}]
+indent_size = 4
+max_line_length = 100
+
+[*.{sh,bash}]
 indent_size = 4

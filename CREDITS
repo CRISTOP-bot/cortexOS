@@ -3,6 +3,13 @@ CortexOS Credits
 
 Cristopher Borjas — project author and maintainer.
 
-CortexOS uses and acknowledges third-party projects listed under third_party/
-and in the corresponding license files. Their source and licenses remain
-separate from CortexOS code.
+CortexOS is an independent educational operating-system project. It draws
+architectural inspiration from established Unix-like systems without copying
+kernel implementation code.
+
+Third-party software
+--------------------
+
+External sources are kept under third_party/ or tools/archinstall/upstream/.
+Their authors, licenses, and attribution notices remain in their own trees.
+They are not treated as CortexOS kernel code.

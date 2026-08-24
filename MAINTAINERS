@@ -3,16 +3,36 @@ M: Cristopher Borjas <borjascristopher88@gmail.com>
 S: Maintained
 F: kernel/
 F: arch/
-F: drivers/
-F: block/
-F: fs/
-F: ipc/
-F: mm/
-F: net/
+F: include/
+F: Kconfig
+F: Kbuild
+
+VIRTUAL DEVICES AND PCI
+M: Cristopher Borjas <borjascristopher88@gmail.com>
+S: Maintained
 F: virt/
+F: drivers/pci/
+
+MEMORY MANAGEMENT
+M: Cristopher Borjas <borjascristopher88@gmail.com>
+S: Maintained
+F: mm/
+F: kernel/core/boot_memory.*
+
+FILESYSTEMS AND BLOCK DEVICES
+M: Cristopher Borjas <borjascristopher88@gmail.com>
+S: Maintained
+F: fs/
+F: block/
 
 BUILD AND CI
 M: Cristopher Borjas <borjascristopher88@gmail.com>
+S: Maintained
 F: Makefile
 F: .github/
 F: scripts/
+
+THIRD-PARTY SOURCES
+S: Orphan
+F: third_party/
+F: tools/archinstall/upstream/
