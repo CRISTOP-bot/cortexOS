@@ -18,6 +18,7 @@ static int packet_size = 3;
 static int cursor_old_x = -1, cursor_old_y = -1;
 static unsigned short cursor_saved_cell = 0;
 static bool cursor_shown = false;
+static bool mouse_initialized;
 
 static unsigned char prev_buttons = 0;
 static int click_x = -1, click_y = -1;
@@ -25,6 +26,7 @@ static bool click_pending = false;
 static bool doubleclick_pending = false;
 
 static unsigned long last_click_time = 0;
+static int last_click_x = -1, last_click_y = -1;
 #define DOUBLECLICK_TICKS 25
 
 static int scroll_delta = 0;
@@ -95,6 +97,12 @@ static int apply_acceleration(int delta)
 
 void mouse_init(void)
 {
+	mouse_initialized = false;
+	packet_size = 3;
+	prev_buttons = 0;
+	click_pending = false;
+	doubleclick_pending = false;
+	last_click_x = last_click_y = -1;
 	mstate.x = 40;
 	mstate.y = 12;
 	mstate.buttons = 0;
@@ -147,6 +155,7 @@ void mouse_init(void)
 	/* Enable data reporting */
 	mouse_write(0xF4);
 	mouse_read();
+	mouse_initialized = true;
 
 	console_print("[ OK ] PS/2 mouse initialized");
 	if (packet_size == 4)
@@ -156,9 +165,18 @@ void mouse_init(void)
 
 void mouse_handler(void)
 {
-	unsigned char data = inb(MOUSE_DATA);
+	unsigned char data;
+	if (!mouse_initialized)
+		return;
+	data = inb(MOUSE_DATA); = inb(MOUSE_DATA);
 	pkt_buf[pkt_idx++] = data;
 
+	/* PS/2 packet byte zero always has bit 3 set. Resynchronise after
+	 * dropped bytes instead of decoding a corrupt packet as a click. */
+	if (pkt_idx == 1 && !(data & 0x08)) {
+		pkt_idx = 0;
+		return;
+	}
 	if (pkt_idx < packet_size)
 		return;
 
@@ -210,6 +228,8 @@ int mouse_get_scroll(void)
 
 void mouse_render(void)
 {
+	if (!mouse_initialized)
+		return;
 	mouse_hide();
 
 	if (mstate.x < 0 || mstate.x >= 80 || mstate.y < 0 || mstate.y >= 25)
@@ -234,13 +254,17 @@ void mouse_render(void)
 	/* detect left click release */
 	if ((prev_buttons & 1) && !(mstate.buttons & 1)) {
 		unsigned long now = timer_get_ticks();
-		if ((now - last_click_time) < DOUBLECLICK_TICKS) {
+		if ((now - last_click_time) < DOUBLECLICK_TICKS &&
+			    abs_val(mstate.x - last_click_x) <= 1 &&
+			    abs_val(mstate.y - last_click_y) <= 1) {
 			doubleclick_pending = true;
 		}
 		click_x = mstate.x;
 		click_y = mstate.y;
 		click_pending = true;
 		last_click_time = now;
+		last_click_x = mstate.x;
+		last_click_y = mstate.y;
 	}
 	prev_buttons = mstate.buttons;
 }
