@@ -7,66 +7,74 @@
 static inline void pci_out32(uint16_t port, uint32_t value)
 {
     __asm__ volatile ("outl %0, %1" : : "a"(value), "Nd"(port));
-    }
+}
 
-    static inline uint32_t pci_in32(uint16_t port)
-    {
-        uint32_t value;
-            __asm__ volatile ("inl %1, %0" : "=a"(value) : "Nd"(port));
-                return value;
-                }
+static inline uint32_t pci_in32(uint16_t port)
+{
+    uint32_t value;
+    __asm__ volatile ("inl %1, %0" : "=a"(value) : "Nd"(port));
+    return value;
+}
 
-                static uint32_t pci_address(uint8_t bus, uint8_t slot,
-                                            uint8_t function, uint8_t offset)
-                                            {
-                                                return 0x80000000u | ((uint32_t)bus << 16) |
-                                                           ((uint32_t)slot << 11) | ((uint32_t)function << 8) |
-                                                                      (offset & 0xFCu);
-                                                                      }
+static uint32_t pci_address(uint8_t bus, uint8_t slot,
+                            uint8_t function, uint8_t offset)
+{
+    return 0x80000000u | ((uint32_t)bus << 16) |
+           ((uint32_t)slot << 11) | ((uint32_t)function << 8) |
+           (offset & 0xFCu);
+}
 
-                                                                      uint32_t virtio_pci_config_read(uint8_t bus, uint8_t slot,
-                                                                                                      uint8_t function, uint8_t offset)
-                                                                                                      {
-                                                                                                          pci_out32(PCI_CONFIG_ADDRESS, pci_address(bus, slot, function, offset));
-                                                                                                              return pci_in32(PCI_CONFIG_DATA);
-                                                                                                              }
+uint32_t virtio_pci_config_read(uint8_t bus, uint8_t slot,
+                                uint8_t function, uint8_t offset)
+{
+    pci_out32(PCI_CONFIG_ADDRESS, pci_address(bus, slot, function, offset));
+    return pci_in32(PCI_CONFIG_DATA);
+}
 
-                                                                                                              void virtio_pci_config_write(uint8_t bus, uint8_t slot,
-                                                                                                                                           uint8_t function, uint8_t offset,
-                                                                                                                                                                        uint32_t value)
-                                                                                                                                                                        {
-                                                                                                                                                                            pci_out32(PCI_CONFIG_ADDRESS, pci_address(bus, slot, function, offset));
-                                                                                                                                                                                pci_out32(PCI_CONFIG_DATA, value);
-                                                                                                                                                                                }
+void virtio_pci_config_write(uint8_t bus, uint8_t slot,
+                             uint8_t function, uint8_t offset,
+                             uint32_t value)
+{
+    pci_out32(PCI_CONFIG_ADDRESS, pci_address(bus, slot, function, offset));
+    pci_out32(PCI_CONFIG_DATA, value);
+}
 
-                                                                                                                                                                                int virtio_pci_scan(struct virtio_pci_scan_result *result)
-                                                                                                                                                                                {
-                                                                                                                                                                                    if (!result)
-                                                                                                                                                                                            return -1;
+int virtio_pci_scan(struct virtio_pci_scan_result *result)
+{
+    if (!result)
+        return -1;
 
-                                                                                                                                                                                                result->count = 0;
-                                                                                                                                                                                                    for (uint16_t bus = 0; bus < 256 && result->count < 32; ++bus) {
-                                                                                                                                                                                                            for (uint8_t slot = 0; slot < 32 && result->count < 32; ++slot) {
-                                                                                                                                                                                                                        for (uint8_t function = 0; function < 8 && result->count < 32; ++function) {
-                                                                                                                                                                                                                                        uint32_t id = virtio_pci_config_read((uint8_t)bus, slot, function, 0);
-                                                                                                                                                                                                                                                        uint16_t vendor = (uint16_t)(id & 0xFFFFu);
-                                                                                                                                                                                                                                                                        uint16_t device = (uint16_t)(id >> 16);
-                                                                                                                                                                                                                                                                                        if (vendor == PCI_VENDOR_INVALID || !virtio_is_device(vendor, device))
-                                                                                                                                                                                                                                                                                                            continue;
+    result->count = 0;
+    for (uint16_t bus = 0; bus < 256 && result->count < 32; ++bus) {
+        for (uint8_t slot = 0; slot < 32 && result->count < 32; ++slot) {
+            for (uint8_t function = 0; function < 8 && result->count < 32;
+                 ++function) {
+                uint32_t id = virtio_pci_config_read(
+                    (uint8_t)bus, slot, function, 0);
+                uint16_t vendor = (uint16_t)(id & 0xFFFFu);
+                uint16_t device = (uint16_t)(id >> 16);
 
-                                                                                                                                                                                                                                                                                                                            struct virtio_pci_device *found = &result->devices[result->count];
-                                                                                                                                                                                                                                                                                                                                            found->vendor_id = vendor;
-                                                                                                                                                                                                                                                                                                                                                            found->device_id = device;
-                                                                                                                                                                                                                                                                                                                                                                            uint32_t bar0 = virtio_pci_config_read((uint8_t)bus, slot, function, 0x10);
+                if (vendor == PCI_VENDOR_INVALID ||
+                    !virtio_is_device(vendor, device))
+                    continue;
+
+                uint32_t bar0 = virtio_pci_config_read(
+                    (uint8_t)bus, slot, function, 0x10);
                 if (!(bar0 & 1u))
                     continue;
+
+                struct virtio_pci_device *found =
+                    &result->devices[result->count];
+                found->vendor_id = vendor;
+                found->device_id = device;
                 found->io_base = (uint16_t)(bar0 & 0xFFFCu);
-                                                                                                                                                                                                                                                                                                                                                                                            found->irq_line = (uint8_t)(virtio_pci_config_read((uint8_t)bus, slot, function, 0x3C) & 0xFFu);
-                                                                                                                                                                                                                                                                                                                                                                                                            found->present = 1;
+                found->irq_line = (uint8_t)(virtio_pci_config_read(
+                    (uint8_t)bus, slot, function, 0x3C) & 0xFFu);
+                found->present = 1;
                 result->count++;
-                                                                                                                                                                                                                                                                                                                                                                                                                        }
-                                                                                                                                                                                                                                                                                                                                                                                                                                }
-                                                                                                                                                                                                                                                                                                                                                                                                                                    }
-                                                                                                                                                                                                                                                                                                                                                                                                                                        return result->count;
-                                                                                                                                                                                                                                                                                                                                                                                                                                        }
-                                                                                                                                                                                                                                                                                                                                                                                                                                        
+            }
+        }
+    }
+
+    return result->count;
+}

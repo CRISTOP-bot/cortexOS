@@ -33,6 +33,7 @@ Implemented or verified at the current level:
 * Live rootfs copy from the Multiboot module into PMM-owned RAM.
 * Windows CMD and PowerShell wrappers.
 * Experimental installer, VirtualBox runners, and Archinstall-derived tooling.
+* Initial VirtIO legacy PCI discovery on x86_64, validated by GitHub Actions.
 * Layout, CRFS, Python, and live-RAM validation scripts.
 * Independent AArch64 and ARMv7 early-boot images for QEMU testing.
 
@@ -43,6 +44,7 @@ Not complete:
 * A full ELF loader and broad POSIX compatibility.
 * TTYs, signals, job control, dynamic linking, and a complete userspace runtime.
 * Bash, OpenRC, and Fastfetch as working CortexOS binaries.
+* Complete VirtIO device drivers; current support is limited to PCI discovery.
 * A playable Doom binary. The GPLv2 engine source is pinned as a submodule, but
   the CortexOS platform boundary is not yet wired to userspace; no IWAD/game
   data is included and a compatible IWAD must be supplied separately.
