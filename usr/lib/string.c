@@ -1,6 +1,6 @@
 #include <stddef.h>
-#include <string.h>
-#include <stdlib.h>
+#include <libc/string.h>
+#include <libc/stdlib.h>
 
 void *memcpy(void *dst, const void *src, size_t count)
 {

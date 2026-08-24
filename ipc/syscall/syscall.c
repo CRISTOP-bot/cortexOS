@@ -4,8 +4,8 @@
 #include "vfs.h"
 #include "timer.h"
 #include "kstring.h"
-#include "signal.h"
-#include "termios.h"
+#include "abi/signal.h"
+#include "abi/termios.h"
 
 typedef int64_t (*syscall_fn)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
 

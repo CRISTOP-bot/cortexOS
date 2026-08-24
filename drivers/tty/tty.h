@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
-#include "termios.h"
+#include "abi/termios.h"
 
 #define CORTEXOS_TTY_CONSOLE 0
 #define CORTEXOS_TTY0 0

@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <stddef.h>
-#include <string.h>
+#include <libc/string.h>
 #include "tty_line.h"
 
 static char echoed[128];

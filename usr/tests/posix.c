@@ -1,7 +1,7 @@
-#include <fcntl.h>
+#include <libc/fcntl.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <unistd.h>
+#include <libc/unistd.h>
 
 /* ABI smoke test for the interfaces required by OpenRC, Fastfetch and Bash.
  * It is intentionally small and only proves that the user headers/libc link

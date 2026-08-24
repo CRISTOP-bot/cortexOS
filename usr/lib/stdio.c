@@ -1,7 +1,7 @@
 #include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
+#include <libc/stdio.h>
+#include <libc/string.h>
+#include <libc/unistd.h>
 
 static FILE stdin_object = { 0 };
 static FILE stdout_object = { 1 };

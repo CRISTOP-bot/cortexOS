@@ -1,7 +1,7 @@
 #include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include <libc/stdlib.h>
+#include <libc/string.h>
+#include <libc/unistd.h>
 
 struct allocation {
 	size_t size;

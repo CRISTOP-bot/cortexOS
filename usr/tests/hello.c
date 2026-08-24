@@ -1,8 +1,8 @@
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include <libc/fcntl.h>
+#include <libc/stdio.h>
+#include <libc/stdlib.h>
+#include <libc/string.h>
+#include <libc/unistd.h>
 
 int main(int argc, char **argv, char **envp)
 {

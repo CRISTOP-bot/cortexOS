@@ -1,12 +1,12 @@
 #include <stdarg.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <nucleos_syscall.h>
+#include <libc/errno.h>
+#include <libc/fcntl.h>
+#include <abi/nucleos_syscall.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <unistd.h>
-#include <signal.h>
-#include <termios.h>
+#include <libc/unistd.h>
+#include <abi/signal.h>
+#include <abi/termios.h>
 
 int errno;
 
