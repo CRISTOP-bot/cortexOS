@@ -47,10 +47,20 @@ int virtio_pci_scan(struct virtio_pci_scan_result *result)
     result->count = 0;
     for (uint16_t bus = 0; bus < 256 && result->count < 32; ++bus) {
         for (uint8_t slot = 0; slot < 32 && result->count < 32; ++slot) {
-            for (uint8_t function = 0; function < 8 && result->count < 32;
-                 ++function) {
-                uint32_t id = virtio_pci_config_read(
-                    (uint8_t)bus, slot, function, 0);
+            uint32_t first_id = virtio_pci_config_read(
+                (uint8_t)bus, slot, 0, 0);
+            if ((uint16_t)(first_id & 0xFFFFu) == PCI_VENDOR_INVALID)
+                continue;
+
+            uint32_t header = virtio_pci_config_read(
+                (uint8_t)bus, slot, 0, 0x0C);
+            uint8_t functions = (header & 0x00800000u) ? 8 : 1;
+            for (uint8_t function = 0;
+                 function < functions && result->count < 32; ++function) {
+                uint32_t id = (function == 0)
+                    ? first_id
+                    : virtio_pci_config_read(
+                        (uint8_t)bus, slot, function, 0);
                 uint16_t vendor = (uint16_t)(id & 0xFFFFu);
                 uint16_t device = (uint16_t)(id >> 16);
 
