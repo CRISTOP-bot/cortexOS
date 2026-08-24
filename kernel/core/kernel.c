@@ -77,6 +77,26 @@ static void boot_info(const char *msg)
 	console_print("\n");
 }
 
+static void report_virtio_devices(const struct virtio_pci_scan_result *result)
+{
+    char digits[11];
+    unsigned int value;
+    unsigned int length = 0;
+
+    if (!result)
+        return;
+    value = result->count;
+    do {
+        digits[length++] = (char)('0' + (value % 10));
+        value /= 10;
+    } while (value != 0 && length < sizeof(digits));
+
+    console_print("VirtIO PCI devices detected: ");
+    while (length > 0)
+        console_putchar(digits[--length]);
+    console_print("\n");
+}
+
 static void boot_delay(void)
 {
 	volatile int i;
@@ -215,8 +235,12 @@ void kmain(unsigned long mbi_addr)
 
 	struct virtio_pci_scan_result virtio_devices;
 	int virtio_count = virtio_pci_scan(&virtio_devices);
-	if (virtio_count >= 0)
+	if (virtio_count >= 0) {
 		boot_status("Scanned VirtIO PCI devices");
+		report_virtio_devices(&virtio_devices);
+	} else {
+		boot_failed("VirtIO PCI scan failed");
+	}
 
 	timer_init(100);
 	boot_status("Started PIT (100 Hz)");
