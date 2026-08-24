@@ -28,6 +28,7 @@
 static int icon_selected;
 static int menu_idx;
 static bool start_open;
+static bool gui_active;
 
 static void safe_putxy(int x, int y, char c, unsigned char attr)
 {
@@ -37,6 +38,8 @@ static void safe_putxy(int x, int y, char c, unsigned char attr)
 
 static void fill_area_safe(int x, int y, int w, int h, unsigned char attr)
 {
+	if (w <= 0 || h <= 0)
+		return;
 	for (int row = y; row < y + h && row < 25; ++row)
 		for (int col = x; col < x + w && col < VGA_COLS; ++col)
 			if (col >= 0 && row >= 0)
@@ -67,6 +70,8 @@ static void draw_frame_safe(int x, int y, int w, int h, unsigned char attr, int 
 
 static void draw_text_safe(int x, int y, const char *s, unsigned char attr)
 {
+	if (!s)
+		return;
 	while (*s && x < VGA_COLS && y < 25) {
 		if (x >= 0 && y >= 0)
 			safe_putxy(x, y, *s, attr);
@@ -228,6 +233,8 @@ static void draw_panel(void)
 
 static void draw_start_menu(void)
 {
+	if (menu_idx < 0) menu_idx = 0;
+	if (menu_idx >= NUM_MENU_ITEMS) menu_idx = NUM_MENU_ITEMS - 1;
 	int mx = 1, my = 3, mw = 28, mh = 12;
 	fill_area_safe(mx, my, mw, mh, WIN_BODY);
 	draw_frame_safe(mx, my, mw, mh, VGA_ATTR(VGA_CYAN, VGA_BLACK), 0);
@@ -386,6 +393,9 @@ static void handle_key(char c)
 
 void gui_show(void)
 {
+	if (gui_active)
+		return;
+	gui_active = true;
 	icon_selected = 0;
 	start_open = false;
 	menu_idx = 0;
@@ -407,6 +417,7 @@ void gui_show(void)
 			if (mouse_get_click(&mx, &my)) {
 				if (handle_mouse_click(mx, my)) {
 					console_clear();
+					gui_active = false;
 					return;
 				}
 				break;
@@ -415,6 +426,7 @@ void gui_show(void)
 
 		if (c == 'q' && !start_open) {
 			console_clear();
+			gui_active = false;
 			return;
 		}
 		if (c)
