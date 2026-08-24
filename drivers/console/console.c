@@ -1,11 +1,12 @@
 // Simple VGA text console implementation
 #include "console.h"
 #include "asm.h"
-#include "keyboard.h"
+#include "serial.h"
 #include "kstring.h"
 
 static volatile unsigned short* const VGA = (unsigned short*)0xB8000;
 static int cursor_x = 0, cursor_y = 0;
+static volatile int panic_active;
 
 #define VGA_COLS 80
 #define VGA_ROWS 25
@@ -91,6 +92,13 @@ void kernel_panic(const char* message) {
 
 void kernel_panic_ex(const char* message, unsigned int exception_num,
 		     unsigned int error_code, unsigned int *regs) {
+    if (panic_active)
+        halt_cpu();
+    panic_active = 1;
+    __asm__ volatile("cli" ::: "memory");
+    serial_print("\nCortexOS PANIC: ");
+    serial_print(message ? message : "unknown failure");
+    serial_print("\n");
     console_clear_color(VGA_ATTR(VGA_WHITE, VGA_RED));
 
     console_print_color("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", VGA_ATTR(VGA_WHITE, VGA_RED));
@@ -167,8 +175,7 @@ void kernel_panic_ex(const char* message, unsigned int exception_num,
     }
 
     console_print_color("\n  System halted.\n", VGA_ATTR(VGA_YELLOW, VGA_RED));
-    console_print_color("  Press any key to block...\n", VGA_ATTR(VGA_LIGHT_GREY, VGA_RED));
-    keyboard_read_char();
+    console_print_color("  Interrupts disabled. System halted.\n", VGA_ATTR(VGA_LIGHT_GREY, VGA_RED));
     halt_cpu();
 }
 
