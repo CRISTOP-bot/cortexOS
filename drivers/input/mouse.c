@@ -168,7 +168,7 @@ void mouse_handler(void)
 	unsigned char data;
 	if (!mouse_initialized)
 		return;
-	data = inb(MOUSE_DATA); = inb(MOUSE_DATA);
+	data = inb(MOUSE_DATA);
 	pkt_buf[pkt_idx++] = data;
 
 	/* PS/2 packet byte zero always has bit 3 set. Resynchronise after
